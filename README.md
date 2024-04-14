@@ -59,8 +59,8 @@ conditions of this license.
 Customization
 =============
 
-Conda envirnoment
------------------
+Conda
+-----
 
 ```bash
 conda config --add channels conda-forge
@@ -93,8 +93,8 @@ print(nanobind_example.add(1, 2))
 
 ```
 
-wood submodule and download dependecies
--------------------------------------------
+Wood submodule and download dependecies
+---------------------------------------
 
 ```bash
 cd ~/brg/2_code/wood_nano/src
@@ -111,8 +111,8 @@ sudo rm -r build
 ```
 
 
-link wood dependencies to nanobind cmake
---------------------------------------------
+Link wood dependencies to nanobind
+----------------------------------
 -   Ubuntu - linked, Check: a) PCH is not speeding the build, b) SQL has no be unlocked like this ```sudo chown -R```, be aware that the .sh file installs gmp and mpfr in ubuntu, not as a cmake source code.
 -   Windows - linked, Check: a) C:\Users\petras\.conda\envs\wood\Lib\site-packages\wood_nano must have cgal libgmp-10.dll and libmpfr-4.dll, it would be great that gmp and mpfr would be compiled together into one single .pyd file.
 -   Mac - not linked
@@ -129,7 +129,7 @@ python -m build --wheel
 ```
 -   upload to pip https://github.com/petrasvestartas/compas_snippets
 
-code wrapping
+Code wrapping
 -------------
 -   for development you need to use pip install . and even you changed __init__.py
 -   function based on the EDX tutorial
