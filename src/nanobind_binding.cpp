@@ -341,6 +341,14 @@ void get_connection_zones(
 
 }
 
+void test(){
+    printf("\n________________________________________________________________________\n");
+    printf("\n_______________________Hello from CPP Wood______________________________\n");
+    printf("\n___If you see this message, say hi to the developer Petras Vestartas ___\n");
+    printf("\n____________________petrasvestartas@gmail.com___________________________\n");
+    printf("\n________________________________________________________________________\n");
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // NB_MODULE
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -518,5 +526,7 @@ NB_MODULE(wood_nano_ext, m) {
     "input_custom_joints_types"_a, 
     
     "This function gets connection zones.");
+
+    m.def("test", &test, "This function prints a test message.");
 
 }
