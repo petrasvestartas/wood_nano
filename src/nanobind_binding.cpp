@@ -410,6 +410,33 @@ void read_xml_polylines_and_properties(
         printf("\n");
 }
 
+    void closed_mesh_from_polylines(
+        std::vector<std::vector<IK::Point_3>>& vector_of_polyline,
+        std::vector<IK::Point_3>& out_vertices,
+        std::vector<IK::Point_3>& out_normals,
+        std::vector<std::vector<int>>& out_triangles)
+    {
+
+        std::vector<double> flat_out_vertices;
+        std::vector<double> flat_out_normals;
+        std::vector<int> flat_out_triangles; 
+        cgal::polyline_mesh_util::closed_mesh_from_polylines_vnf(vector_of_polyline, flat_out_vertices, flat_out_normals, flat_out_triangles, 1);
+
+        out_vertices.reserve(flat_out_vertices.size() / 3);
+        out_normals.reserve(flat_out_normals.size() / 3);
+        out_triangles.reserve(flat_out_triangles.size() / 3);
+
+        for (size_t i = 0; i < flat_out_vertices.size(); i += 3)
+            out_vertices.emplace_back(IK::Point_3(flat_out_vertices[i], flat_out_vertices[i + 1], flat_out_vertices[i + 2]));
+        
+        for (size_t i = 0; i < flat_out_normals.size(); i += 3)
+            out_normals.emplace_back(IK::Point_3(flat_out_normals[i], flat_out_normals[i + 1], flat_out_normals[i + 2]));
+
+        for (size_t i = 0; i < flat_out_triangles.size(); i += 3)
+            out_triangles.emplace_back(std::vector<int>{flat_out_triangles[i], flat_out_triangles[i + 1], flat_out_triangles[i + 2]});
+
+    }
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // NB_MODULE
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -620,6 +647,12 @@ NB_MODULE(wood_nano_ext, m) {
     "input_adjacency"_a,
     "This function reads xml polylines and properties.");
 
-
+    m.def("closed_mesh_from_polylines",
+    &closed_mesh_from_polylines,
+    "vector_of_polyline"_a,
+    "out_vertices"_a,
+    "out_normals"_a,
+    "out_triangles"_a,
+    "This function creates a closed mesh from polylines.");
 
 }

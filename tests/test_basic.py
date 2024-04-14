@@ -120,3 +120,28 @@ m.read_xml_polylines_and_properties(
     input_three_valence_element_indices_and_instruction,
     input_adjacency,
 )
+
+######################################################################################################
+# Closed mesh from polylines
+######################################################################################################
+
+for i in range(0, len(polylines_coordinates), 2):
+    input_polyline_pairs0 = m.point1()
+    for j in range(0, len(polylines_coordinates[i]), 3):
+        input_polyline_pairs0.append(m.point(polylines_coordinates[i][j], polylines_coordinates[i][j+1], polylines_coordinates[i][j+2]))
+
+    input_polyline_pairs1 = m.point1()
+    for j in range(0, len(polylines_coordinates[i+1]), 3):
+        input_polyline_pairs1.append(m.point(polylines_coordinates[i+1][j], polylines_coordinates[i+1][j+1], polylines_coordinates[i+1][j+2]))
+
+    input_polyline_pairs = m.point2([input_polyline_pairs0, input_polyline_pairs1])
+
+
+    vertices = m.point1()
+    normals = m.vector1()
+    faces = m.int2()
+    m.closed_mesh_from_polylines(input_polyline_pairs, vertices, normals, faces)
+    print(vertices)
+    print(normals)
+    print(faces)
+    break

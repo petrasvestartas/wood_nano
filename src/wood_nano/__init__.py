@@ -13,3 +13,4 @@ from .wood_nano_ext import cut_type, cut_type1, cut_type2
 from .wood_nano_ext import test
 from .wood_nano_ext import read_xml_polylines
 from .wood_nano_ext import read_xml_polylines_and_properties
+from .wood_nano_ext import closed_mesh_from_polylines
