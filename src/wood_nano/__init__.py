@@ -12,3 +12,4 @@ from .wood_nano_ext import get_connection_zones
 from .wood_nano_ext import cut_type, cut_type1, cut_type2
 from .wood_nano_ext import test
 from .wood_nano_ext import read_xml_polylines
+from .wood_nano_ext import read_xml_polylines_and_properties

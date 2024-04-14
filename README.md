@@ -138,6 +138,11 @@ Code wrapping
         -   run pip install -e . to check if there are no C++ mistake
         -   import the method in src/wood_nano/__init__.py
         -   test the imported method in tests/test_basic.py
+        -   compas_wood - create a file called src/compas_wood/binding/binding_read_xml_polylines.py
+        -   compas_wood - add this name in __init__.py
+        -   compas_wood - fille the contents of the file and create a test under if __name__ == "__main__"
+        -   compas_wood - write docstrings under the method
+        -   compas_wood - invoke docs and check the result
 
 compas_wood
 -----------

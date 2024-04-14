@@ -96,6 +96,27 @@ m.read_xml_polylines(
     polylines_coordinates,
 )
 
-for polyline in polylines_coordinates:
-    for i in range(0, len(polyline), 3):
-        ic(polyline[i], polyline[i+1], polyline[i+2])
+# for polyline in polylines_coordinates:
+#     for i in range(0, len(polyline), 3):
+#         ic(polyline[i], polyline[i+1], polyline[i+2])
+
+######################################################################################################
+# Read xml polylines and properties
+######################################################################################################
+
+input_polyline_pairs_coord = m.double2()
+input_insertion_vectors_coord = m.double2()
+input_joints_types = m.int2()
+input_three_valence_element_indices_and_instruction = m.int2()
+input_adjacency = m.int1()
+
+
+m.read_xml_polylines_and_properties(
+    "/home/petras/brg/2_code/wood_nano/src/wood/cmake/src/wood/dataset/",
+    "type_plates_name_top_to_side_and_side_to_side_outofplane_annen_grid_small",
+    input_polyline_pairs_coord,
+    input_insertion_vectors_coord,
+    input_joints_types,
+    input_three_valence_element_indices_and_instruction,
+    input_adjacency,
+)

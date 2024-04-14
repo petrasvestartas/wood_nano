@@ -373,6 +373,43 @@ void read_xml_polylines(
     wood::xml::read_xml_polylines(polylines_coordinates, false, true);
 }
 
+void read_xml_polylines_and_properties(
+        std::string& foldername,
+        std::string& filename_of_dataset,
+        std::vector<std::vector<double>>& input_polyline_pairs_coord,
+        std::vector<std::vector<double>>& input_insertion_vectors_coord,
+        std::vector<std::vector<int>>& input_joints_types,
+        std::vector<std::vector<int>>& input_three_valence_element_indices_and_instruction,
+        std::vector<int>& input_adjacency)
+   {
+
+        // set file paths
+        wood::globals::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
+        wood::xml::path_and_file_for_input_polylines = wood::globals::DATA_SET_INPUT_FOLDER + filename_of_dataset + ".xml";
+
+        // print the user given values
+        printf("User given values \n");
+        printf(foldername.c_str());
+        printf("\n");
+        printf(filename_of_dataset.c_str());
+        printf("\n");
+        printf(wood::xml::path_and_file_for_input_polylines.c_str());
+        // read the xml file
+        wood::xml::read_xml_polylines_and_properties(input_polyline_pairs_coord, input_insertion_vectors_coord, input_joints_types, input_three_valence_element_indices_and_instruction, input_adjacency, false, true);
+
+        printf("\n input_polyline_pairs_coord ");
+        printf(std::to_string(input_polyline_pairs_coord.size()).c_str());
+        printf("\n input_insertion_vectors_coord ");
+        printf(std::to_string(input_insertion_vectors_coord.size()).c_str());
+        printf("\n input_joints_types ");
+        printf(std::to_string(input_joints_types.size()).c_str());
+        printf("\n input_three_valence_element_indices_and_instruction ");
+        printf(std::to_string(input_three_valence_element_indices_and_instruction.size()).c_str());
+        printf("\n input_adjacency ");
+        printf(std::to_string(input_adjacency.size()).c_str());
+        printf("\n");
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // NB_MODULE
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -571,6 +608,18 @@ NB_MODULE(wood_nano_ext, m) {
     "filename_of_dataset"_a, 
     "polylines_coordinates"_a, 
     "This function reads xml polylines.");
+
+    m.def("read_xml_polylines_and_properties",
+    &read_xml_polylines_and_properties,
+    "foldername"_a,
+    "filename_of_dataset"_a,
+    "input_polyline_pairs_coord"_a,
+    "input_insertion_vectors_coord"_a,
+    "input_joints_types"_a,
+    "input_three_valence_element_indices_and_instruction"_a,
+    "input_adjacency"_a,
+    "This function reads xml polylines and properties.");
+
 
 
 }
