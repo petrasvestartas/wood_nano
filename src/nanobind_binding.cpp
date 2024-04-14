@@ -7,6 +7,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/bind_vector.h>
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/string.h>
 
 // main header
 #include "stdafx.h"
@@ -349,7 +350,11 @@ void test(){
     printf("\n________________________________________________________________________\n");
 }
 
-void read_xml_polylines(std::string& foldername, std::string& filename_of_dataset, std::vector<std::vector<double>>& polylines_coordinates)
+void read_xml_polylines(
+    std::string& foldername,
+    std::string& filename_of_dataset, 
+    std::vector<std::vector<double>>& polylines_coordinates
+    )
 {
     // set file paths
     wood::globals::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
@@ -567,6 +572,5 @@ NB_MODULE(wood_nano_ext, m) {
     "polylines_coordinates"_a, 
     "This function reads xml polylines.");
 
-    
 
 }

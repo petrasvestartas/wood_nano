@@ -133,6 +133,11 @@ Code wrapping
 -------------
 -   for development you need to use pip install . and even you changed __init__.py
 -   function based on the EDX tutorial
+-   Process:
+        -   add c++ and binded method in nanobind_binding.cpp
+        -   run pip install -e . to check if there are no C++ mistake
+        -   import the method in src/wood_nano/__init__.py
+        -   test the imported method in tests/test_basic.py
 
 compas_wood
 -----------
