@@ -103,6 +103,13 @@ cd wood
 sudo '/home/petras/brg/2_code/wood_nano/src/wood/install_ubuntu.sh'
 ```
 
+For update:
+
+```bash
+git submodule foreach git pull origin main
+sudo rm -r build
+```
+
 
 link wood dependencies to nanobind cmake
 --------------------------------------------
@@ -145,7 +152,7 @@ sudo apt install invoke
 pip install -r requirements.txt
 ```
 
--   add requirements wood-cpp-nano
+-   add requirements wood-nano
 -   rewrite examples
 -   compas_wood must be installable by ```pip install compas_wood```
 -   documentation based on edx tutorials

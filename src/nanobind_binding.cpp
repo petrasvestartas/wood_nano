@@ -349,121 +349,23 @@ void bind_wood_nano_types(nb::module_& m) {
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - int
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    nb::class_<std::vector<int>>(m, "int1")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<int>::reserve)
-        .def("__len__", [](const std::vector<int>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<int>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<int>& v, int x) {
-            v.emplace_back(x);
-        });
-
-    nb::class_<std::vector<std::vector<int>>>(m, "int2")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<int>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<int>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<int>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<int>>& v, const std::vector<int>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<int>>>>(m, "int3")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<int>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<int>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<int>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<int>>>& v, const std::vector<std::vector<int>>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<std::vector<int>>>>>(m, "int4")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<std::vector<int>>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<std::vector<int>>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<std::vector<int>>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<std::vector<int>>>>& v, const std::vector<std::vector<std::vector<int>>>& p) {
-            v.emplace_back(p);
-        });
-
+    nb::bind_vector<std::vector<int>>(m, "int1");
+    nb::bind_vector<std::vector<std::vector<int>>>(m, "int2");
+    nb::bind_vector<std::vector<std::vector<std::vector<int>>>>(m, "int3");
+    nb::bind_vector<std::vector<std::vector<std::vector<std::vector<int>>>>>(m, "int4");
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - double
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    nb::class_<std::vector<double>>(m, "double1")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<double>::reserve)
-        .def("__len__", [](const std::vector<double>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<double>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<double>& v, double x) {
-            v.emplace_back(x);
-        });
-
-    nb::class_<std::vector<std::vector<double>>>(m, "double2")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<double>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<double>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<double>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<double>>& v, const std::vector<double>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<double>>>>(m, "double3")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<double>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<double>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<double>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<double>>>& v, const std::vector<std::vector<double>>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<std::vector<double>>>>>(m, "double4")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<std::vector<double>>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<std::vector<double>>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<std::vector<double>>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<std::vector<double>>>>& v, const std::vector<std::vector<std::vector<double>>>& p) {
-            v.emplace_back(p);
-        });
+    nb::bind_vector<std::vector<double>>(m, "double1");
+    nb::bind_vector<std::vector<std::vector<double>>>(m, "double2");
+    nb::bind_vector<std::vector<std::vector<std::vector<double>>>>(m, "double3");
+    nb::bind_vector<std::vector<std::vector<std::vector<std::vector<double>>>>>(m, "double4");
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - bool
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    nb::class_<std::vector<bool>>(m, "bool1")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<bool>::reserve)
-        .def("__len__", [](const std::vector<bool>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<bool>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<bool>& v, bool x) {
-            v.emplace_back(x);
-        });
+    nb::bind_vector<std::vector<bool>>(m, "bool1");
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - point
@@ -479,55 +381,11 @@ void bind_wood_nano_types(nb::module_& m) {
     if (i == 2) return p.z();
     throw std::out_of_range("Index should be 0, 1, or 2 for x, y, z respectively");})
     ;
-    
-    nb::class_<std::vector<IK::Point_3>>(m, "point1")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<IK::Point_3>::reserve)
-        .def("__len__", [](const std::vector<IK::Point_3>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<IK::Point_3>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<IK::Point_3>& v, double x, double y, double z) {
-            v.emplace_back(x, y, z);
-        });
 
-    nb::class_<std::vector<std::vector<IK::Point_3>>>(m, "point2")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<IK::Point_3>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<IK::Point_3>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<IK::Point_3>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<IK::Point_3>>& v, const std::vector<IK::Point_3>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<IK::Point_3>>>>(m, "point3")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<IK::Point_3>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<IK::Point_3>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<IK::Point_3>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<IK::Point_3>>>& v, const std::vector<std::vector<IK::Point_3>>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<std::vector<IK::Point_3>>>>>(m, "point4")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<std::vector<IK::Point_3>>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<std::vector<IK::Point_3>>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<std::vector<IK::Point_3>>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<std::vector<IK::Point_3>>>>& v, const std::vector<std::vector<std::vector<IK::Point_3>>>& p) {
-            v.emplace_back(p);
-        });
-
+    nb::bind_vector<std::vector<IK::Point_3>>(m, "point1");
+    nb::bind_vector<std::vector<std::vector<IK::Point_3>>>(m, "point2");
+    nb::bind_vector<std::vector<std::vector<std::vector<IK::Point_3>>>>(m, "point3");
+    nb::bind_vector<std::vector<std::vector<std::vector<std::vector<IK::Point_3>>>>>(m, "point4");
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - vector
@@ -545,53 +403,10 @@ void bind_wood_nano_types(nb::module_& m) {
             throw std::out_of_range("Index should be 0, 1, or 2 for x, y, z respectively");})    
         ;
 
-    nb::class_<std::vector<IK::Vector_3>>(m, "vector1")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<IK::Vector_3>::reserve)
-        .def("__len__", [](const std::vector<IK::Vector_3>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<IK::Vector_3>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<IK::Vector_3>& v, double x, double y, double z) {
-            v.emplace_back(x, y, z);
-        });
-
-    nb::class_<std::vector<std::vector<IK::Vector_3>>>(m, "vector2")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<IK::Vector_3>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<IK::Vector_3>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<IK::Vector_3>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<IK::Vector_3>>& v, const std::vector<IK::Vector_3>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<IK::Vector_3>>>>(m, "vector3")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<IK::Vector_3>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<IK::Vector_3>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<IK::Vector_3>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<IK::Vector_3>>>& v, const std::vector<std::vector<IK::Vector_3>>& p) {
-            v.emplace_back(p);
-        });
-
-    nb::class_<std::vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>>(m, "vector4")
-        .def(nb::init<>())
-        .def("reserve", &std::vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>::reserve)
-        .def("__len__", [](const std::vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>& v) { return v.size(); })
-        .def("__getitem__", [](const std::vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>& v, size_t i) {
-            if (i < v.size()) return v.at(i);
-            throw std::out_of_range("Index out of range");
-        })
-        .def("emplace_back", [](std::vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>& v, const std::vector<std::vector<std::vector<IK::Vector_3>>>& p) {
-            v.emplace_back(p);
-        });
+    nb::bind_vector<std::vector<IK::Vector_3>>(m, "vector1");
+    nb::bind_vector<std::vector<std::vector<IK::Vector_3>>>(m, "vector2");
+    nb::bind_vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>(m, "vector3");
+    nb::bind_vector<std::vector<std::vector<std::vector<std::vector<IK::Vector_3>>>>>(m, "vector4");
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - Enum classic

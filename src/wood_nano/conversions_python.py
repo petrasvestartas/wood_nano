@@ -8,14 +8,11 @@ import wood_nano as m
 
 def to_int(vectors, depth):
     if depth == 1:
-        vector = m.int1()
-        vector.reserve(len(vectors))
-        for vec in vectors:
-            vector.emplace_back(int(vec))
+        vector = m.int1(vectors)
     else:
         vector = getattr(m, f'int{depth}')()
         for vec in vectors:
-            vector.emplace_back(to_int(vec, depth - 1))
+            vector.append(to_int(vec, depth - 1))
     return vector
 
 def to_int1(vectors):
@@ -31,10 +28,7 @@ def to_int4(vectors):
     return to_int(vectors, 4)
 
 def from_int1(int1):
-    ints = []
-    for i in range(len(int1)):
-        ints.append(int(int1[i]))
-    return ints
+    return list(int1)
 
 def from_int2(int2):
     return [from_int1(i) for i in int2]
@@ -51,14 +45,11 @@ def from_int4(int4):
 
 def to_double(vectors, depth):
     if depth == 1:
-        vector = m.double1()
-        vector.reserve(len(vectors))
-        for vec in vectors:
-            vector.emplace_back(float(vec))
+        vector = m.double1(vectors)
     else:
         vector = getattr(m, f'double{depth}')()
         for vec in vectors:
-            vector.emplace_back(to_double(vec, depth - 1))
+            vector.append(to_double(vec, depth - 1))
     return vector
 
 def to_double1(vectors):
@@ -74,10 +65,7 @@ def to_double4(vectors):
     return to_double(vectors, 4)
 
 def from_double1(double1):
-    doubles = []
-    for i in range(len(double1)):
-        doubles.append(float(double1[i]))
-    return doubles
+    return list(double1)
 
 def from_double2(double2):
     return [from_double1(d) for d in double2]
@@ -93,18 +81,10 @@ def from_double4(double4):
 ######################################################################################################
 
 def to_bool1(vectors):
-    vector = m.bool1()
-    vector.reserve(len(vectors))
-    for vec in vectors:
-        vector.emplace_back(bool(vec))
-    return vector
+    return m.bool1(vectors)
 
 def from_bool1(bool1):
-    bools = []
-    for i in range(len(bool1)):
-        bools.append(bool(bool1[i]))
-    return bools
-
+    return list(bool1)
 
 ######################################################################################################
 # Conversion functions for Enums

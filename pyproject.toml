@@ -5,8 +5,8 @@ build-backend = "scikit_build_core.build"
 
 
 [project]
-name = "wood-cpp-nano"
-version = "0.0.4"
+name = "wood-nano"
+version = "0.0.5"
 description = "Binding for wood project that  is compiled into a binding using nanobind and scikit-build"
 readme = "README.md"
 requires-python = ">=3.8.16"
@@ -47,4 +47,4 @@ test-skip="cp38-macosx_*:arm64"
 MACOSX_DEPLOYMENT_TARGET = "10.14"
 
 [tool.setuptools.package-data]
-"wood-cpp-nano" = ["src/wood_nano/*.dll", "src/wood_nano/*.so", "src/wood_nano/*.dylib"]
+"wood-nano" = ["src/wood_nano/*.dll", "src/wood_nano/*.so", "src/wood_nano/*.dylib"]
