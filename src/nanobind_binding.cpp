@@ -349,6 +349,25 @@ void test(){
     printf("\n________________________________________________________________________\n");
 }
 
+void read_xml_polylines(std::string& foldername, std::string& filename_of_dataset, std::vector<std::vector<double>>& polylines_coordinates)
+{
+    // set file paths
+    wood::globals::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
+    wood::xml::path_and_file_for_input_polylines = wood::globals::DATA_SET_INPUT_FOLDER + filename_of_dataset + ".xml";
+
+    // print the user given values
+    printf("User given values \n");
+    printf(foldername.c_str());
+    printf("\n");
+    printf(filename_of_dataset.c_str());
+    printf("\n");
+    printf(wood::xml::path_and_file_for_input_polylines.c_str());
+    printf("\n");
+
+    // read the xml file
+    wood::xml::read_xml_polylines(polylines_coordinates, false, true);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // NB_MODULE
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -504,11 +523,22 @@ NB_MODULE(wood_nano_ext, m) {
         );
     });
 
-    m.def("middle_point", &middle_point, "a"_a, "b"_a, "This functions gets average of two points.");
+    m.def("middle_point", 
+    &middle_point, 
+    "a"_a, 
+    "b"_a, 
+    "This functions gets average of two points.");
 
-    m.def("rtree", &rtree, "input_polyline_pairs"_a, "elements_neighbours"_a, "elements_AABB"_a, "elements_OOBB"_a, "This function runs RTree from polyline pairs to get collision pairs.");
+    m.def("rtree", 
+    &rtree, 
+    "input_polyline_pairs"_a, 
+    "elements_neighbours"_a, 
+    "elements_AABB"_a, 
+    "elements_OOBB"_a, 
+    "This function runs RTree from polyline pairs to get collision pairs.");
 
-    m.def("get_connection_zones", &get_connection_zones, 
+    m.def("get_connection_zones", 
+    &get_connection_zones, 
     "input_polyline_pairs"_a, 
     "input_insertion_vectors"_a, 
     "input_joint_types"_a, 
@@ -524,9 +554,19 @@ NB_MODULE(wood_nano_ext, m) {
     "face_to_face_side_to_side_joints_all_treated_as_rotated"_a, 
     "input_custom_joints"_a, 
     "input_custom_joints_types"_a, 
-    
     "This function gets connection zones.");
 
-    m.def("test", &test, "This function prints a test message.");
+    m.def("test", 
+    &test, 
+    "This function prints a test message.");
+
+    m.def("read_xml_polylines", 
+    &read_xml_polylines, 
+    "foldername"_a, 
+    "filename_of_dataset"_a, 
+    "polylines_coordinates"_a, 
+    "This function reads xml polylines.");
+
+    
 
 }
