@@ -437,6 +437,54 @@ void read_xml_polylines_and_properties(
 
     }
 
+    void joints(
+        std::vector<std::vector<IK::Point_3>>& input_polyline_pairs,
+        int& search_type,
+        std::vector<std::vector<int>>& element_pairs,
+        std::vector<std::vector<IK::Point_3>>& joint_areas,
+        std::vector<int>& joint_types)
+    {
+
+
+        //////////////////////////////////////////////////////////////////////////////
+        // Create elements, AABB, OBB, P, Pls, thickness
+        //////////////////////////////////////////////////////////////////////////////
+        const int n = input_polyline_pairs.size() * 0.5;
+        std::vector<wood::element> elements;
+        std::vector<std::vector<IK::Vector_3>> input_insertion_vectors;
+        std::vector<std::vector<int>> input_joint_types;
+        wood::main::get_elements(input_polyline_pairs, input_insertion_vectors, input_joint_types, elements);
+
+        //////////////////////////////////////////////////////////////////////////////
+        // Create joints, Perform Joint Area Search
+        //////////////////////////////////////////////////////////////////////////////
+        auto joints = std::vector<wood::joint>();
+        auto joints_map = std::unordered_map<uint64_t, int>();
+        std::vector<int> neighbors;
+        wood::main::adjacency_search(elements, search_type, neighbors, joints, joints_map);
+
+        //////////////////////////////////////////////////////////////////////////////
+        // Get element pairs, joint areas, joint types
+        //////////////////////////////////////////////////////////////////////////////
+        element_pairs.reserve(joints.size() * 3);
+        joint_areas.reserve(joints.size());
+        joint_types.reserve(joints.size());
+
+        for (size_t i = 0; i < joints.size(); i++)
+        {
+            // element pairs and faces ids
+            element_pairs.emplace_back(std::vector<int>{joints[i].v0, joints[i].v1, joints[i].f0_0, joints[i].f1_0, joints[i].f0_1, joints[i].f1_1});
+
+            // joint areas
+            joint_areas.emplace_back(joints[i].joint_area);
+
+            // joint types
+            joint_types.emplace_back(joints[i].type);
+        }
+    }
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // NB_MODULE
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -654,5 +702,14 @@ NB_MODULE(wood_nano_ext, m) {
     "out_normals"_a,
     "out_triangles"_a,
     "This function creates a closed mesh from polylines.");
+
+    m.def("joints",
+    &joints,
+    "input_polyline_pairs"_a,
+    "search_type"_a,
+    "element_pairs"_a,
+    "joint_areas"_a,
+    "joint_types"_a,
+    "This function gets joints.");
 
 }

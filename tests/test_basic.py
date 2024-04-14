@@ -141,7 +141,56 @@ for i in range(0, len(polylines_coordinates), 2):
     normals = m.vector1()
     faces = m.int2()
     m.closed_mesh_from_polylines(input_polyline_pairs, vertices, normals, faces)
-    print(vertices)
-    print(normals)
-    print(faces)
+    ic(vertices)
+    ic(normals)
+    ic(faces)
     break
+
+######################################################################################################
+# Joints
+######################################################################################################
+input_polyline_pair0 = m.point1()
+input_polyline_pair0.append(m.point(0,0,0))
+input_polyline_pair0.append(m.point(1,0,0))
+input_polyline_pair0.append(m.point(1,1,0))
+input_polyline_pair0.append(m.point(0,1,0))
+input_polyline_pair0.append(m.point(0,0,0))
+
+input_polyline_pair1 = m.point1()
+input_polyline_pair1.append(m.point(0,0,1))
+input_polyline_pair1.append(m.point(1,0,1))
+input_polyline_pair1.append(m.point(1,1,1))
+input_polyline_pair1.append(m.point(0,1,1))
+input_polyline_pair1.append(m.point(0,0,1))
+
+input_polyline_pair2 = m.point1()
+input_polyline_pair2.append(m.point(0,0,1))
+input_polyline_pair2.append(m.point(1,0,1))
+input_polyline_pair2.append(m.point(1,1,1))
+input_polyline_pair2.append(m.point(0,1,1))
+input_polyline_pair2.append(m.point(0,0,1))
+
+input_polyline_pair3 = m.point1()
+input_polyline_pair3.append(m.point(0,0,2))
+input_polyline_pair3.append(m.point(1,0,2))
+input_polyline_pair3.append(m.point(1,1,2))
+input_polyline_pair3.append(m.point(0,1,2))
+input_polyline_pair3.append(m.point(0,0,2))
+
+input_polyline_pairs = m.point2([input_polyline_pair0, input_polyline_pair1, input_polyline_pair2, input_polyline_pair3])
+search_type = 0
+element_pairs = m.int2()
+joint_areas = m.point2()
+joint_types = m.int1()
+
+m.joints(
+    input_polyline_pairs,
+    search_type,
+    element_pairs,
+    joint_areas,
+    joint_types
+)
+
+ic(element_pairs)
+ic(joint_areas[0][0][0])
+ic(joint_types)
