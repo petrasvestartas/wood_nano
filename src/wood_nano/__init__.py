@@ -16,3 +16,4 @@ from .wood_nano_ext import read_xml_polylines_and_properties
 from .wood_nano_ext import closed_mesh_from_polylines
 from .wood_nano_ext import joints
 from .wood_nano_ext import joint_parameters_and_types
+from .wood_nano_ext import mesh_boolean_difference_from_polylines

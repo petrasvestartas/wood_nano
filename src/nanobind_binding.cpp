@@ -220,9 +220,10 @@ void get_connection_zones(
     std::vector<std::vector<wood::cut::cut_type>> &output_types,
     // global_parameters
     std::vector<double>& input_joint_volume_parameters,
-    bool& face_to_face_side_to_side_joints_all_treated_as_rotated,
+    bool& input_face_to_face_side_to_side_joints_all_treated_as_rotated,
     std::vector<std::vector<IK::Point_3>>& input_custom_joints,
-    std::vector<int>& input_custom_joints_types
+    std::vector<int>& input_custom_joints_types,
+    bool& input_face_to_face_side_to_side_joints_rotated_joint_as_average
 
 )
 {
@@ -233,8 +234,8 @@ void get_connection_zones(
     if (input_joint_volume_parameters.size() > 2)
         wood::globals::JOINT_VOLUME_EXTENSION = input_joint_volume_parameters;
 
-    wood::globals::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED = face_to_face_side_to_side_joints_all_treated_as_rotated;
-
+    wood::globals::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED = input_face_to_face_side_to_side_joints_all_treated_as_rotated;
+    wood::globals::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE = input_face_to_face_side_to_side_joints_rotated_joint_as_average;
 
     //9
     wood::globals::custom_joints_ss_e_ip_male.clear();
@@ -413,7 +414,7 @@ void read_xml_polylines_and_properties(
     void closed_mesh_from_polylines(
         std::vector<std::vector<IK::Point_3>>& vector_of_polyline,
         std::vector<IK::Point_3>& out_vertices,
-        std::vector<IK::Point_3>& out_normals,
+        std::vector<IK::Vector_3>& out_normals,
         std::vector<std::vector<int>>& out_triangles)
     {
 
@@ -430,7 +431,7 @@ void read_xml_polylines_and_properties(
             out_vertices.emplace_back(IK::Point_3(flat_out_vertices[i], flat_out_vertices[i + 1], flat_out_vertices[i + 2]));
         
         for (size_t i = 0; i < flat_out_normals.size(); i += 3)
-            out_normals.emplace_back(IK::Point_3(flat_out_normals[i], flat_out_normals[i + 1], flat_out_normals[i + 2]));
+            out_normals.emplace_back(IK::Vector_3(flat_out_normals[i], flat_out_normals[i + 1], flat_out_normals[i + 2]));
 
         for (size_t i = 0; i < flat_out_triangles.size(); i += 3)
             out_triangles.emplace_back(std::vector<int>{flat_out_triangles[i], flat_out_triangles[i + 1], flat_out_triangles[i + 2]});
@@ -668,9 +669,10 @@ NB_MODULE(wood_nano_ext, m) {
     "output_plines"_a, 
     "output_types"_a, 
     "input_joint_volume_parameters"_a, 
-    "face_to_face_side_to_side_joints_all_treated_as_rotated"_a, 
+    "input_face_to_face_side_to_side_joints_all_treated_as_rotated"_a, 
     "input_custom_joints"_a, 
     "input_custom_joints_types"_a, 
+    "input_face_to_face_side_to_side_joints_rotated_joint_as_average"_a,
     "This function gets connection zones.");
 
     m.def("test", 
@@ -713,5 +715,14 @@ NB_MODULE(wood_nano_ext, m) {
     "This function gets joints.");
 
     m.attr("joint_parameters_and_types") = wood::globals::JOINTS_PARAMETERS_AND_TYPES;
+
+    m.def("mesh_boolean_difference_from_polylines",
+    &cgal::mesh_boolean::mesh_boolean_difference_from_polylines,
+    "input_plines"_a,
+    "output_plines"_a,
+    "out_vertices"_a,
+    "out_normals"_a,
+    "out_triangles"_a,
+    "This function creates a mesh boolean difference from polylines.");
 
 }
