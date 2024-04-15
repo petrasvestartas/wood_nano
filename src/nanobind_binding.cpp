@@ -712,4 +712,6 @@ NB_MODULE(wood_nano_ext, m) {
     "joint_types"_a,
     "This function gets joints.");
 
+    m.attr("joint_parameters_and_types") = wood::globals::JOINTS_PARAMETERS_AND_TYPES;
+
 }
