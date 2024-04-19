@@ -1,5 +1,13 @@
 wood_nano
-=============
+=========
+
+Repository wood_nano has submodule wood in src directly.
+For new clones incase there is nothing in the src/wood folder do the following:
+-	remove folder src/wood
+-	delete the .gitsubmodules contents folder
+-	git commit -m "REMOVE gitmodules" 
+-	git push
+-	git submodule add https://github.com/petrasvestartas/wood
 
 |      CI              | status |
 |----------------------|--------|

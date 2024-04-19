@@ -1,0 +1,3 @@
+[submodule "src/wood"]
+	path = src/wood
+	url = https://github.com/petrasvestartas/wood
