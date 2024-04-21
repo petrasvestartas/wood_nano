@@ -128,11 +128,11 @@ Link wood dependencies to nanobind
 pip
 ---
 ```bash
-pip install build setuptools wheel
-conda install twine
+conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine auditwheel
 ubuntu:
 export BUILDING_DIST="1" && python -m build --wheel
-windows:
+sudo apt-get install patchelf
+auditwheel repair dist/wood_nano-0.0.7-cp39-cp39-linux_x86_64.whl --plat manylinux_2_35_x86_64 -w dist/
 python -m build --wheel
 ```
 -   upload to pip https://github.com/petrasvestartas/compas_snippets

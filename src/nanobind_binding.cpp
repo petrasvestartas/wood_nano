@@ -360,11 +360,11 @@ void read_xml_polylines(
 
     // print the user given values
     printf("User given values \n");
-    printf(foldername.c_str());
+    printf("%s", foldername.c_str());
     printf("\n");
-    printf(filename_of_dataset.c_str());
+    printf("%s", filename_of_dataset.c_str());
     printf("\n");
-    printf(wood::xml::path_and_file_for_input_polylines.c_str());
+    printf("%s", wood::xml::path_and_file_for_input_polylines.c_str());
     printf("\n");
 
     // read the xml file
@@ -387,24 +387,25 @@ void read_xml_polylines_and_properties(
 
         // print the user given values
         printf("User given values \n");
-        printf(foldername.c_str());
+        printf("%s", foldername.c_str());
         printf("\n");
-        printf(filename_of_dataset.c_str());
+        printf("%s", filename_of_dataset.c_str());
         printf("\n");
-        printf(wood::xml::path_and_file_for_input_polylines.c_str());
+        printf("%s", wood::xml::path_and_file_for_input_polylines.c_str());
+        printf("\n");
         // read the xml file
         wood::xml::read_xml_polylines_and_properties(input_polyline_pairs_coord, input_insertion_vectors_coord, input_joints_types, input_three_valence_element_indices_and_instruction, input_adjacency, false, true);
 
         printf("\n input_polyline_pairs_coord ");
-        printf(std::to_string(input_polyline_pairs_coord.size()).c_str());
+        printf("%s", std::to_string(input_polyline_pairs_coord.size()).c_str());
         printf("\n input_insertion_vectors_coord ");
-        printf(std::to_string(input_insertion_vectors_coord.size()).c_str());
+        printf("%s", std::to_string(input_insertion_vectors_coord.size()).c_str());
         printf("\n input_joints_types ");
-        printf(std::to_string(input_joints_types.size()).c_str());
+        printf("%s", std::to_string(input_joints_types.size()).c_str());
         printf("\n input_three_valence_element_indices_and_instruction ");
-        printf(std::to_string(input_three_valence_element_indices_and_instruction.size()).c_str());
+        printf("%s", std::to_string(input_three_valence_element_indices_and_instruction.size()).c_str());
         printf("\n input_adjacency ");
-        printf(std::to_string(input_adjacency.size()).c_str());
+        printf("%s", std::to_string(input_adjacency.size()).c_str());
         printf("\n");
 }
 
