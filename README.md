@@ -3,11 +3,7 @@ wood_nano
 
 Repository wood_nano has submodule wood in src directly.
 For new clones incase there is nothing in the src/wood folder do the following:
--	remove folder src/wood
--	delete the .gitsubmodules contents folder
--	git commit -m "REMOVE gitmodules" 
--	git push
--	git submodule add https://github.com/petrasvestartas/wood
+-       git submodule update --init --recursive
 
 |      CI              | status |
 |----------------------|--------|
@@ -133,6 +129,8 @@ ubuntu:
 export BUILDING_DIST="1" && python -m build --wheel
 sudo apt-get install patchelf
 auditwheel repair dist/wood_nano-0.0.7-cp39-cp39-linux_x86_64.whl --plat manylinux_2_35_x86_64 -w dist/
+windows:
+conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine
 python -m build --wheel
 ```
 -   upload to pip https://github.com/petrasvestartas/compas_snippets
@@ -157,12 +155,13 @@ compas_wood
 
 
 ```bash
-git branch v2
-git checkout v2
+
 conda config --add channels conda-forge
-conda create -n compas_wood python==3.8.16 pypy=7.3.11
-conda activate compas_wood
-pip install build setuptools wheel cookiecutter jinja2_time compas_invocations
+conda create -n compas_wood_3_9_10 python==3.9_10 compas
+conda activate compas_wood_3_9_10
+conda install build setuptools wheel twine 
+upload to pip https://github.com/petrasvestartas/compas_snippets
+
 sudo apt install twine or conda install twine
 cookiecutter gh:compas-dev/compas_package_template
 export PATH="~/anaconda3/envs/compas_wood/bin:$PATH"
