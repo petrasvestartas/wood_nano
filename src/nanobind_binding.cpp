@@ -69,14 +69,14 @@ int scale = 1e6;
 int add(int a, int b) {
     return a + b;
 
-    wood::globals::DISTANCE = 0.1;
-    wood::globals::DISTANCE_SQUARED = 0.01;
-    wood::globals::ANGLE = 0.11;
-    wood::globals::OUTPUT_GEOMETRY_TYPE = 3;
-    wood::globals::DATA_SET_INPUT_FOLDER = std::filesystem::current_path().parent_path().string() + "/wood_nano/src/wood/cmake/src/wood/dataset/";
-    wood::globals::DATA_SET_OUTPUT_FILE = wood::globals::DATA_SET_INPUT_FOLDER + "out.xml";
-    wood::globals::DATA_SET_OUTPUT_DATABASE = wood::globals::DATA_SET_INPUT_FOLDER + "out.db";
-    wood::globals::OUTPUT_GEOMETRY_TYPE = 3;
+    wood::GLOBALS::DISTANCE = 0.1;
+    wood::GLOBALS::DISTANCE_SQUARED = 0.01;
+    wood::GLOBALS::ANGLE = 0.11;
+    wood::GLOBALS::OUTPUT_GEOMETRY_TYPE = 3;
+    wood::GLOBALS::DATA_SET_INPUT_FOLDER = std::filesystem::current_path().parent_path().string() + "/wood_nano/src/wood/cmake/src/wood/dataset/";
+    wood::GLOBALS::DATA_SET_OUTPUT_FILE = wood::GLOBALS::DATA_SET_INPUT_FOLDER + "out.xml";
+    wood::GLOBALS::DATA_SET_OUTPUT_DATABASE = wood::GLOBALS::DATA_SET_INPUT_FOLDER + "out.db";
+    wood::GLOBALS::OUTPUT_GEOMETRY_TYPE = 3;
     // wood::test::type_plates_name_side_to_side_edge_inplane_hilti();
 }
 
@@ -220,44 +220,41 @@ void get_connection_zones(
     std::vector<std::vector<wood::cut::cut_type>> &output_types,
     // global_parameters
     std::vector<double>& input_joint_volume_parameters,
-    bool& input_face_to_face_side_to_side_joints_all_treated_as_rotated,
     std::vector<std::vector<IK::Point_3>>& input_custom_joints,
-    std::vector<int>& input_custom_joints_types,
-    bool& input_face_to_face_side_to_side_joints_rotated_joint_as_average
-
+    std::vector<int>& input_custom_joints_types
 )
 {
 
-    wood::globals::JOINTS_PARAMETERS_AND_TYPES = input_joint_parameters_and_types;
-    wood::globals::OUTPUT_GEOMETRY_TYPE = input_output_type;
+    wood::GLOBALS::JOINTS_PARAMETERS_AND_TYPES = input_joint_parameters_and_types;
+    wood::GLOBALS::OUTPUT_GEOMETRY_TYPE = input_output_type;
 
     if (input_joint_volume_parameters.size() > 2)
-        wood::globals::JOINT_VOLUME_EXTENSION = input_joint_volume_parameters;
+        wood::GLOBALS::JOINT_VOLUME_EXTENSION = input_joint_volume_parameters;
 
-    wood::globals::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED = input_face_to_face_side_to_side_joints_all_treated_as_rotated;
-    wood::globals::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE = input_face_to_face_side_to_side_joints_rotated_joint_as_average;
+    // wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED = input_face_to_face_side_to_side_joints_all_treated_as_rotated;
+    // wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE = input_face_to_face_side_to_side_joints_rotated_joint_as_average;
 
     //9
-    wood::globals::custom_joints_ss_e_ip_male.clear();
-    wood::globals::custom_joints_ss_e_ip_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE.clear();
     //19
-    wood::globals::custom_joints_ss_e_op_male.clear();
-    wood::globals::custom_joints_ss_e_op_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE.clear();
     //29
-    wood::globals::custom_joints_ts_e_p_male.clear();
-    wood::globals::custom_joints_ts_e_p_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE.clear();
     //39
-    wood::globals::custom_joints_cr_c_ip_male.clear();
-    wood::globals::custom_joints_cr_c_ip_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE.clear();
     //49
-    wood::globals::custom_joints_tt_e_p_male.clear();
-    wood::globals::custom_joints_tt_e_p_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE.clear();
     //59
-    wood::globals::custom_joints_ss_e_r_male.clear();
-    wood::globals::custom_joints_ss_e_r_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE.clear();
     //69
-    wood::globals::custom_joints_b_male.clear();
-    wood::globals::custom_joints_b_female.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_B_MALE.clear();
+    wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE.clear();
 
 
     if (input_custom_joints.size() == input_custom_joints_types.size()) {
@@ -266,46 +263,46 @@ void get_connection_zones(
             switch (input_custom_joints_types[i])
             {
             case (9):
-                wood::globals::custom_joints_ss_e_ip_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-9):
-                wood::globals::custom_joints_ss_e_ip_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
             case (19):
-                wood::globals::custom_joints_ss_e_op_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-19):
-                wood::globals::custom_joints_ss_e_op_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
             case (29):
-                wood::globals::custom_joints_ts_e_p_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-29):
-                wood::globals::custom_joints_ts_e_p_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
             case (39):
-                wood::globals::custom_joints_cr_c_ip_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-39):
-                wood::globals::custom_joints_cr_c_ip_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
             case (49):
-                wood::globals::custom_joints_tt_e_p_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-49):
-                wood::globals::custom_joints_tt_e_p_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
             case (59):
-                wood::globals::custom_joints_ss_e_r_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-59):
-                wood::globals::custom_joints_ss_e_r_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
             case (69):
-                wood::globals::custom_joints_b_male.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_B_MALE.emplace_back(input_custom_joints[i]);
                 break;
             case (-69):
-                wood::globals::custom_joints_b_female.emplace_back(input_custom_joints[i]);
+                wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE.emplace_back(input_custom_joints[i]);
                 break;
 
 
@@ -335,10 +332,10 @@ void get_connection_zones(
         output_types,
         top_face_triangulation,
         // Global Parameters
-        wood::globals::JOINTS_PARAMETERS_AND_TYPES,
+        wood::GLOBALS::JOINTS_PARAMETERS_AND_TYPES,
         input_scale,
         input_search_type,
-        wood::globals::OUTPUT_GEOMETRY_TYPE,
+        wood::GLOBALS::OUTPUT_GEOMETRY_TYPE,
         0);
 
 }
@@ -358,8 +355,8 @@ void read_xml_polylines(
     )
 {
     // set file paths
-    wood::globals::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
-    wood::xml::path_and_file_for_input_polylines = wood::globals::DATA_SET_INPUT_FOLDER + filename_of_dataset + ".xml";
+    wood::GLOBALS::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
+    wood::xml::path_and_file_for_input_polylines = wood::GLOBALS::DATA_SET_INPUT_FOLDER + filename_of_dataset + ".xml";
 
     // print the user given values
     printf("User given values \n");
@@ -385,8 +382,8 @@ void read_xml_polylines_and_properties(
    {
 
         // set file paths
-        wood::globals::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
-        wood::xml::path_and_file_for_input_polylines = wood::globals::DATA_SET_INPUT_FOLDER + filename_of_dataset + ".xml";
+        wood::GLOBALS::DATA_SET_INPUT_FOLDER = foldername; // = "C:\\IBOIS57\\_Code\\Software\\Python\\compas_wood\\frontend\\src\\wood\\dataset\\";
+        wood::xml::path_and_file_for_input_polylines = wood::GLOBALS::DATA_SET_INPUT_FOLDER + filename_of_dataset + ".xml";
 
         // print the user given values
         printf("User given values \n");
@@ -513,6 +510,11 @@ void bind_wood_nano_types(nb::module_& m) {
     nb::bind_vector<std::vector<bool>>(m, "bool1");
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
+    // Types - string
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    nb::bind_vector<std::vector<std::string>>(m, "string1");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////
     // Types - point
     /////////////////////////////////////////////////////////////////////////////////////////////////
     nb::class_<IK::Point_3>(m, "point")
@@ -601,6 +603,41 @@ void bind_wood_nano_types(nb::module_& m) {
             v.emplace_back(p);
         });
 
+    nb::class_<wood::GLOBALS>(m, "GLOBALS")
+        .def_rw_static("CLIPPER_SCALE", &wood::GLOBALS::CLIPPER_SCALE, "Static property docstring")
+        .def_rw_static("CLIPPER_AREA", &wood::GLOBALS::CLIPPER_AREA, "Static property docstring")
+        .def_rw_static("DISTANCE", &wood::GLOBALS::DISTANCE, "Static property docstring")
+        .def_rw_static("DISTANCE_SQUARED", &wood::GLOBALS::DISTANCE_SQUARED, "Static property docstring")
+        .def_rw_static("ANGLE", &wood::GLOBALS::ANGLE, "Static property docstring")
+        .def_rw_static("PATH_AND_FILE_FOR_JOINTS", &wood::GLOBALS::PATH_AND_FILE_FOR_JOINTS, "Static property docstring")
+        .def_rw_static("DATA_SET_INPUT_FOLDER", &wood::GLOBALS::DATA_SET_INPUT_FOLDER, "Static property docstring")
+        .def_rw_static("DATA_SET_OUTPUT_FILE", &wood::GLOBALS::DATA_SET_OUTPUT_FILE, "Static property docstring")
+        .def_rw_static("DATA_SET_OUTPUT_DATABASE", &wood::GLOBALS::DATA_SET_OUTPUT_DATABASE, "Static property docstring")
+        .def_rw_static("JOINT_VOLUME_EXTENSION", &wood::GLOBALS::JOINT_VOLUME_EXTENSION, "Static property docstring")
+        .def_rw_static("OUTPUT_GEOMETRY_TYPE", &wood::GLOBALS::OUTPUT_GEOMETRY_TYPE, "Static property docstring")
+        .def_rw_static("FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED", &wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED, "Static property docstring")
+        .def_rw_static("FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE", &wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE, "Static property docstring")
+        .def_rw_static("FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_DIHEDRAL_ANGLE", &wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_DIHEDRAL_ANGLE, "Static property docstring")
+        .def_rw_static("LIMIT_MIN_JOINT_LENGTH", &wood::GLOBALS::LIMIT_MIN_JOINT_LENGTH, "Static property docstring")
+        .def_rw_static("EXISTING_TYPES", &wood::GLOBALS::EXISTING_TYPES, "Static property docstring")
+        .def_rw_static("JOINTS_PARAMETERS_AND_TYPES", &wood::GLOBALS::JOINTS_PARAMETERS_AND_TYPES, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_SS_E_IP_MALE", &wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_SS_E_IP_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_SS_E_OP_MALE", &wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_SS_E_OP_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_TS_E_P_MALE", &wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_TS_E_P_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_CR_C_IP_MALE", &wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_CR_C_IP_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_TT_E_P_MALE", &wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_TT_E_P_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_SS_E_R_MALE", &wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_SS_E_R_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_B_MALE", &wood::GLOBALS::CUSTOM_JOINTS_B_MALE, "Static property docstring")
+        .def_rw_static("CUSTOM_JOINTS_B_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE, "Static property docstring")
+        .def_rw_static("RUN_COUNT", &wood::GLOBALS::RUN_COUNT, "Static property docstring");
+
+
 
 }
 
@@ -669,10 +706,8 @@ NB_MODULE(wood_nano_ext, m) {
     "output_plines"_a, 
     "output_types"_a, 
     "input_joint_volume_parameters"_a, 
-    "input_face_to_face_side_to_side_joints_all_treated_as_rotated"_a, 
     "input_custom_joints"_a, 
     "input_custom_joints_types"_a, 
-    "input_face_to_face_side_to_side_joints_rotated_joint_as_average"_a,
     "This function gets connection zones.");
 
     m.def("test", 
@@ -714,7 +749,7 @@ NB_MODULE(wood_nano_ext, m) {
     "joint_types"_a,
     "This function gets joints.");
 
-    m.attr("joint_parameters_and_types") = wood::globals::JOINTS_PARAMETERS_AND_TYPES;
+    m.attr("joint_parameters_and_types") = wood::GLOBALS::JOINTS_PARAMETERS_AND_TYPES;
 
     m.def("mesh_boolean_difference_from_polylines",
     &cgal::mesh_boolean::mesh_boolean_difference_from_polylines,

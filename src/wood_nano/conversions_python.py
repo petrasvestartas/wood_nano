@@ -87,6 +87,15 @@ def from_bool1(bool1):
     return list(bool1)
 
 ######################################################################################################
+# Conversion of strings
+######################################################################################################
+def to_string1(vectors):
+    return m.string1(vectors)
+
+def from_string1(string1):
+    return list(string1)
+
+######################################################################################################
 # Conversion functions for Enums
 ######################################################################################################
 
@@ -109,3 +118,4 @@ def from_cut_type(cut_type, enum_types):
 def from_cut_type2(cut_type2):
     enum_types = enum_to_dict(m.cut_type)
     return [from_cut_type(c, enum_types) for c in cut_type2]
+
