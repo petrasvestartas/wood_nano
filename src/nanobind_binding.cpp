@@ -219,9 +219,9 @@ void get_connection_zones(
     std::vector<std::vector<std::vector<IK::Point_3>>>& output_plines,
     std::vector<std::vector<wood::cut::cut_type>> &output_types,
     // global_parameters
-    std::vector<double>& input_joint_volume_parameters,
-    std::vector<std::vector<IK::Point_3>>& input_custom_joints,
-    std::vector<int>& input_custom_joints_types
+    std::vector<double>& input_joint_volume_parameters
+    // std::vector<std::vector<IK::Point_3>>& input_custom_joints,
+    // std::vector<int>& input_custom_joints_types
 )
 {
 
@@ -231,87 +231,87 @@ void get_connection_zones(
     if (input_joint_volume_parameters.size() > 2)
         wood::GLOBALS::JOINT_VOLUME_EXTENSION = input_joint_volume_parameters;
 
-    // wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED = input_face_to_face_side_to_side_joints_all_treated_as_rotated;
-    // wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE = input_face_to_face_side_to_side_joints_rotated_joint_as_average;
+    // // wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ALL_TREATED_AS_ROTATED = input_face_to_face_side_to_side_joints_all_treated_as_rotated;
+    // // wood::GLOBALS::FACE_TO_FACE_SIDE_TO_SIDE_JOINTS_ROTATED_JOINT_AS_AVERAGE = input_face_to_face_side_to_side_joints_rotated_joint_as_average;
 
-    //9
-    wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE.clear();
-    //19
-    wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE.clear();
-    //29
-    wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE.clear();
-    //39
-    wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE.clear();
-    //49
-    wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE.clear();
-    //59
-    wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE.clear();
-    //69
-    wood::GLOBALS::CUSTOM_JOINTS_B_MALE.clear();
-    wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE.clear();
-
-
-    if (input_custom_joints.size() == input_custom_joints_types.size()) {
-        for (int i = 0; i < input_custom_joints.size(); i++) {
-
-            switch (input_custom_joints_types[i])
-            {
-            case (9):
-                wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-9):
-                wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (19):
-                wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-19):
-                wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (29):
-                wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-29):
-                wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (39):
-                wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-39):
-                wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (49):
-                wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-49):
-                wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (59):
-                wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-59):
-                wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (69):
-                wood::GLOBALS::CUSTOM_JOINTS_B_MALE.emplace_back(input_custom_joints[i]);
-                break;
-            case (-69):
-                wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE.emplace_back(input_custom_joints[i]);
-                break;
+    // //9
+    // wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE.clear();
+    // //19
+    // wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE.clear();
+    // //29
+    // wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE.clear();
+    // //39
+    // wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE.clear();
+    // //49
+    // wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE.clear();
+    // //59
+    // wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE.clear();
+    // //69
+    // wood::GLOBALS::CUSTOM_JOINTS_B_MALE.clear();
+    // wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE.clear();
 
 
-            default:
-                break;
-            }
+    // if (input_custom_joints.size() == input_custom_joints_types.size()) {
+    //     for (int i = 0; i < input_custom_joints.size(); i++) {
 
-        }
-    }
+    //         switch (input_custom_joints_types[i])
+    //         {
+    //         case (9):
+    //             wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-9):
+    //             wood::GLOBALS::CUSTOM_JOINTS_SS_E_IP_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (19):
+    //             wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-19):
+    //             wood::GLOBALS::CUSTOM_JOINTS_SS_E_OP_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (29):
+    //             wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-29):
+    //             wood::GLOBALS::CUSTOM_JOINTS_TS_E_P_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (39):
+    //             wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-39):
+    //             wood::GLOBALS::CUSTOM_JOINTS_CR_C_IP_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (49):
+    //             wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-49):
+    //             wood::GLOBALS::CUSTOM_JOINTS_TT_E_P_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (59):
+    //             wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-59):
+    //             wood::GLOBALS::CUSTOM_JOINTS_SS_E_R_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (69):
+    //             wood::GLOBALS::CUSTOM_JOINTS_B_MALE.emplace_back(input_custom_joints[i]);
+    //             break;
+    //         case (-69):
+    //             wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE.emplace_back(input_custom_joints[i]);
+    //             break;
+
+
+    //         default:
+    //             break;
+    //         }
+
+    //     }
+    // }
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -707,8 +707,8 @@ NB_MODULE(wood_nano_ext, m) {
     "output_plines"_a, 
     "output_types"_a, 
     "input_joint_volume_parameters"_a, 
-    "input_custom_joints"_a, 
-    "input_custom_joints_types"_a, 
+    // "input_custom_joints"_a, 
+    // "input_custom_joints_types"_a, 
     "This function gets connection zones.");
 
     m.def("test", 
