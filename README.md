@@ -193,3 +193,9 @@ Press i on your keyboard to enter insert mode in the text editor.
 Make any changes to the commit message if necessary.
 Once you're done, press Esc to exit insert mode.
 Type :wq to save the commit message and exit the text editor. If you're using Vim, this command writes the changes and quits the editor.
+
+Open Rhino from Terminal
+------------------------
+
+/Applications/Rhino\ 8.app/Contents/MacOS/Rhinoceros
+start "" "C:\Program Files\Rhino 8\System\Rhino.exe"
