@@ -179,3 +179,17 @@ pip install -r requirements.txt
 EDX
 ---
 -   answer comments
+
+MAC GIT CONFLICT RESOLVE
+------------------------
+python -m compas_rhino.print_python_path
+sudo -H /Users/petras/.rhinocode/py39-rh8/python3.9 -m pip install .
+sudo -H /Users/petras/.rhinocode/py39-rh8/python3.9 -m pip install . --use-feature=in-tree-build
+
+
+In this case, the default message is pre-filled, but you can modify it if needed. To proceed with the merge and accept the default commit message, you can follow these steps:
+
+Press i on your keyboard to enter insert mode in the text editor.
+Make any changes to the commit message if necessary.
+Once you're done, press Esc to exit insert mode.
+Type :wq to save the commit message and exit the text editor. If you're using Vim, this command writes the changes and quits the editor.
