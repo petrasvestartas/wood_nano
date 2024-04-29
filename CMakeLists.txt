@@ -135,6 +135,17 @@ if (WIN32)
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gtest.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gmock.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/sqlite3.lib)
+elseif(APPLE)
+  message("Apple")
+  target_link_libraries(
+  wood_nano_ext
+  PUBLIC     
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
+  /usr/local/lib/libgmp.a
+  /usr/local/lib/libmpfr.a
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a)
 else()
   message("Linux")
   target_link_libraries(
