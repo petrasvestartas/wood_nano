@@ -8,6 +8,7 @@
 #include <nanobind/stl/bind_vector.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/array.h>
 
 // main header
 #include "stdafx.h"
@@ -638,8 +639,19 @@ void bind_wood_nano_types(nb::module_& m) {
         .def_rw_static("CUSTOM_JOINTS_B_FEMALE", &wood::GLOBALS::CUSTOM_JOINTS_B_FEMALE, "Static property docstring")
         .def_rw_static("RUN_COUNT", &wood::GLOBALS::RUN_COUNT, "Static property docstring");
 
-
-
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // Types - array
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // nb::bind_vector<std::vector<bool>>(m, "bool1");
+    // nb::bind_array<std::array<int, 4>>(m, "array_4_int");
+    // nb::bind_array<std::array<IK::Point_3, 2>>(m, "array_2_point");
+    // nb::bind_array<std::array<std::vector<IK::Point_3>, 4>>(m, "array_4_vector_point");
+    // nb::bind_vector<std::vector<IK::Point_3>>(m, "point1");
+    // m.def("array_out", [](){ return std::array<int, 3>{1, 2, 3}; });
+    // m.def("array_4_int", [](std::array<int, 4> x) { return x[0] + x[1] + x[2]; });
+    //     std::vector<std::array<int, 4>> &polyline0_id_segment0_id_polyline1_id_segment1_id,
+    //     std::vector<std::array<IK::Point_3, 2>> &point_pairs,
+    //     std::vector<std::array<std::vector<IK::Point_3>, 4>> &volume_pairs,
 }
 
 
@@ -760,5 +772,58 @@ NB_MODULE(wood_nano_ext, m) {
     "out_normals"_a,
     "out_triangles"_a,
     "This function creates a mesh boolean difference from polylines.");
+
+    // void beam_volumes(
+    //     std::vector<CGAL_Polyline> &polylines,
+    //     std::vector<std::vector<double>> &polylines_segment_radii,
+    //     std::vector<std::vector<IK::Vector_3>> &polylines_segment_direction,
+    //     std::vector<int> &allowed_types,
+    //     double &min_distance,
+    //     double &volume_length,
+    //     double &cross_or_side_to_end,
+    //     int &flip_male,
+
+    //     // output of wood::joint areas
+    //     std::vector<std::array<int, 4>> &polyline0_id_segment0_id_polyline1_id_segment1_id,
+    //     std::vector<std::array<IK::Point_3, 2>> &point_pairs,
+    //     std::vector<std::array<std::vector<IK::Point_3>, 4>> &volume_pairs,
+    //     std::vector<CGAL_Polyline> &joints_areas,
+    //     std::vector<int> &joints_types,
+
+    //     // Global Parameters and output wood::joint selection and orientation
+    //     std::vector<double> &default_parameters_for_JOINTS_TYPES,
+    //     std::vector<std::vector<CGAL_Polyline>> &output_plines,
+    //     std::vector<std::vector<wood::cut::cut_type>> &output_types,
+    //     bool compute_joints,
+    //     double division_distance,
+    //     double shift,
+    //     int output_type,
+    //     bool use_eccentricities_to_scale_joints
+
+    // )
+    m.def("beam_volumes",
+    &wood::main::beam_volumes,
+    "polylines"_a,
+    "polylines_segment_radii"_a,
+    "polylines_segment_direction"_a,
+    "allowed_types"_a,
+    "min_distance"_a,
+    "volume_length"_a,
+    "cross_or_side_to_end"_a,
+    "flip_male"_a,
+    "polyline0_id_segment0_id_polyline1_id_segment1_id"_a,
+    "point_pairs"_a,
+    "volume_pairs"_a,
+    "joints_areas"_a,
+    "joints_types"_a,
+    "default_parameters_for_JOINTS_TYPES"_a,
+    "output_plines"_a,
+    "output_types"_a,
+    "compute_joints"_a,
+    "division_distance"_a,
+    "shift"_a,
+    "output_type"_a,
+    "use_eccentricities_to_scale_joints"_a,
+    "This function computes beam volumes.");
 
 }

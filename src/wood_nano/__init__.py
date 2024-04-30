@@ -18,6 +18,7 @@ from .wood_nano_ext import joints
 from .wood_nano_ext import joint_parameters_and_types
 from .wood_nano_ext import mesh_boolean_difference_from_polylines
 from .wood_nano_ext import GLOBALS
+from .wood_nano_ext import beam_volumes
 
 
 
