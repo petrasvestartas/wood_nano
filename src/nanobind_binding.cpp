@@ -773,34 +773,6 @@ NB_MODULE(wood_nano_ext, m) {
     "out_triangles"_a,
     "This function creates a mesh boolean difference from polylines.");
 
-    // void beam_volumes(
-    //     std::vector<CGAL_Polyline> &polylines,
-    //     std::vector<std::vector<double>> &polylines_segment_radii,
-    //     std::vector<std::vector<IK::Vector_3>> &polylines_segment_direction,
-    //     std::vector<int> &allowed_types,
-    //     double &min_distance,
-    //     double &volume_length,
-    //     double &cross_or_side_to_end,
-    //     int &flip_male,
-
-    //     // output of wood::joint areas
-    //     std::vector<std::array<int, 4>> &polyline0_id_segment0_id_polyline1_id_segment1_id,
-    //     std::vector<std::array<IK::Point_3, 2>> &point_pairs,
-    //     std::vector<std::array<std::vector<IK::Point_3>, 4>> &volume_pairs,
-    //     std::vector<CGAL_Polyline> &joints_areas,
-    //     std::vector<int> &joints_types,
-
-    //     // Global Parameters and output wood::joint selection and orientation
-    //     std::vector<double> &default_parameters_for_JOINTS_TYPES,
-    //     std::vector<std::vector<CGAL_Polyline>> &output_plines,
-    //     std::vector<std::vector<wood::cut::cut_type>> &output_types,
-    //     bool compute_joints,
-    //     double division_distance,
-    //     double shift,
-    //     int output_type,
-    //     bool use_eccentricities_to_scale_joints
-
-    // )
     m.def("beam_volumes",
     &wood::main::beam_volumes,
     "polylines"_a,
@@ -811,12 +783,13 @@ NB_MODULE(wood_nano_ext, m) {
     "volume_length"_a,
     "cross_or_side_to_end"_a,
     "flip_male"_a,
-    "polyline0_id_segment0_id_polyline1_id_segment1_id"_a,
+    "index_polylines"_a,
+    "index_polylines_segment"_a,
+    "distance"_a,
     "point_pairs"_a,
     "volume_pairs"_a,
     "joints_areas"_a,
     "joints_types"_a,
-    "default_parameters_for_JOINTS_TYPES"_a,
     "output_plines"_a,
     "output_types"_a,
     "compute_joints"_a,
