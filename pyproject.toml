@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "wood-nano"
-version = "0.0.8"
+version = "0.0.9"
 description = "Binding for wood project that  is compiled into a binding using nanobind and scikit-build"
 readme = "README.md"
 requires-python = ">=3.8.16"
