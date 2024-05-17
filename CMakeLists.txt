@@ -5,6 +5,32 @@ add_compile_options(-O3)  # Optimize the build
 
 project(wood_nano LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Platform-specific compiler options
+if(MSVC)
+    # MSVC specific flags
+    # Modify runtime library configuration for static linking
+    set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+    )
+    foreach(CompilerFlag ${CompilerFlags})
+        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+    # GCC specific flags for static linking
+    # Note: This might be needed if you are fully working with static libraries
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
+endif()
+
 if (NOT SKBUILD)
   message(WARNING "\
   This CMake file is meant to be executed using 'scikit-build'. Running
@@ -114,9 +140,9 @@ ${CMAKE_BINARY_DIR}/install/googletest/lib/
 "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/sqlite/"
 )
 
-if (WIN32) # append gmp to the list
-  list(APPEND include_paths "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/include")
-endif()
+# if (WIN32) # append gmp to the list
+#   list(APPEND include_paths "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/include")
+# endif()
 
 target_include_directories(wood_nano_ext PUBLIC "$<BUILD_INTERFACE:${include_paths}>") #header for the library
 
@@ -130,8 +156,8 @@ if (WIN32)
   wood_nano_ext
   PUBLIC     
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/Clipper2.lib 
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.lib
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.lib
+  # ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.lib
+  # ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gtest.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gmock.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/sqlite3.lib)
@@ -141,8 +167,8 @@ elseif(APPLE)
   wood_nano_ext
   PUBLIC     
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
-  /usr/local/lib/libgmp.a
-  /usr/local/lib/libmpfr.a
+  # /usr/local/lib/libgmp.a
+  # /usr/local/lib/libmpfr.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a)
@@ -152,8 +178,8 @@ else()
   wood_nano_ext
   PUBLIC     
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
-  gmp
-  mpfr
+  # gmp
+  # mpfr
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a)
@@ -180,23 +206,23 @@ set(CMAKE_PCH_INSTANTIATE_TEMPLATES ON)
 # Assuming wood_nano_ext is already defined in your CMake as a target
 # Add post-build commands directly to wood_nano_ext
 
-add_custom_command(
-  TARGET wood_nano_ext POST_BUILD
-  COMMENT "Copying GMP DLLs after build completion"
-  # Copy libgmp-10.dll to project directory
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.dll"
-    "${CMAKE_SOURCE_DIR}/src/wood_nano/"
-  # Copy libmpfr-4.dll to project directory
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.dll"
-    "${CMAKE_SOURCE_DIR}/src/wood_nano/"
-  # Copy libgmp-10.dll to Release directory
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.dll"
-    "${CMAKE_BINARY_DIR}/Release"
-  # Copy libmpfr-4.dll to Release directory
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.dll"
-    "${CMAKE_BINARY_DIR}/Release"
-)
+# add_custom_command(
+#   TARGET wood_nano_ext POST_BUILD
+#   COMMENT "Copying GMP DLLs after build completion"
+#   # Copy libgmp-10.dll to project directory
+#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.dll"
+#     "${CMAKE_SOURCE_DIR}/src/wood_nano/"
+#   # Copy libmpfr-4.dll to project directory
+#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.dll"
+#     "${CMAKE_SOURCE_DIR}/src/wood_nano/"
+#   # Copy libgmp-10.dll to Release directory
+#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.dll"
+#     "${CMAKE_BINARY_DIR}/Release"
+#   # Copy libmpfr-4.dll to Release directory
+#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.dll"
+#     "${CMAKE_BINARY_DIR}/Release"
+# )
