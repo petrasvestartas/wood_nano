@@ -105,14 +105,14 @@ def enum_to_dict(enum_type):
     for attribute in enum_attributes:
         if not attribute.startswith('__') and not attribute.startswith('@'): 
             value = getattr(enum_type, attribute)
-            dict[int(value)] = str(attribute)
+            dict[str(value)] = str(attribute)
     return dict
 
 
 def from_cut_type(cut_type, enum_types):
     cut_types = []
     for i in range(len(cut_type)):
-        cut_types.append(enum_types[cut_type[i]])
+        cut_types.append(enum_types[str(cut_type[i])])
     return cut_types
 
 def from_cut_type2(cut_type2):
