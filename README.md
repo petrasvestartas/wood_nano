@@ -110,7 +110,8 @@ sudo '/home/petras/brg/2_code/wood_nano/src/wood/install_ubuntu.sh'
 For update:
 
 ```bash
-git submodule foreach git pull origin main
+git submodule update --init --recursive
+# git submodule foreach git pull origin main
 sudo rm -r build
 ```
 
@@ -128,6 +129,7 @@ conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine a
 ubuntu:
 export BUILDING_DIST="1" && python -m build --wheel
 sudo apt-get install patchelf
+sudo docker build -t manylinux2014_gcc13 .
 auditwheel repair dist/wood_nano-0.0.7-cp39-cp39-linux_x86_64.whl --plat manylinux_2_35_x86_64 -w dist/
 windows:
 conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine

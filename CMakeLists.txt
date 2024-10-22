@@ -178,12 +178,13 @@ else()
   wood_nano_ext
   PUBLIC     
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
-  # gmp
-  # mpfr
+  gmp
+  mpfr
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a)
 endif()
+
 
 
 
