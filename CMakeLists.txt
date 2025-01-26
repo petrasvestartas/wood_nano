@@ -9,6 +9,16 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CGAL_CMAKE_EXACT_NT_BACKEND BOOST_BACKEND CACHE STRING "Set CGAL backend to Boost")
+set(CGAL_DISABLE_GMP ON CACHE BOOL "Disable GMP in CGAL")
+set(CMAKE_DISABLE_FIND_PACKAGE_GMP ON CACHE BOOL "Disable CMake find package for GMP")
+
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/boost")
+set(CGAL_DIR "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/lib/cmake/CGAL")
+find_package(CGAL REQUIRED)
+find_package(Boost 1.72 REQUIRED)
+
 # Platform-specific compiler options
 if(MSVC)
     # MSVC specific flags
@@ -95,8 +105,8 @@ nanobind_add_module(
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/stdafx.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/wood_globals.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_box_util.cpp"
-  "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_inscribe_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/rtree_util.cpp"
+  "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_inscribe_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_intersection_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_xform_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_math_util.cpp"
@@ -104,6 +114,7 @@ nanobind_add_module(
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_polyline_mesh_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_polyline_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_rectangle_util.cpp"
+  "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_skeleton.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_vector_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/clipper_util.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/wood_element.cpp"
@@ -114,6 +125,7 @@ nanobind_add_module(
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/wood_xml.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_mesh_boolean.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/database_writer.cpp"
+  "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/tinyply/tinyply.cpp"
   src/nanobind_binding.cpp
 
 )
@@ -150,6 +162,7 @@ target_include_directories(wood_nano_ext PUBLIC "$<BUILD_INTERFACE:${include_pat
 
 
 
+
 if (WIN32)
   message("Windows")
   target_link_libraries(
@@ -160,7 +173,10 @@ if (WIN32)
   # ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gtest.lib
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gmock.lib
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/sqlite3.lib)
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/sqlite3.lib
+  CGAL::CGAL
+  )
+
 elseif(APPLE)
   message("Apple")
   target_link_libraries(
@@ -171,18 +187,20 @@ elseif(APPLE)
   # /usr/local/lib/libmpfr.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a)
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a
+  CGAL::CGAL)
 else()
   message("Linux")
   target_link_libraries(
   wood_nano_ext
   PUBLIC     
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
-  gmp
-  mpfr
+  # gmp
+  # mpfr
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
   ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a)
+  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a
+  CGAL::CGAL)
 endif()
 
 
@@ -200,30 +218,3 @@ target_precompile_headers(wood_nano_ext PRIVATE "${CMAKE_SOURCE_DIR}/src/wood/cm
 set(CMAKE_PCH_INSTANTIATE_TEMPLATES ON)
 
 
-
-###############################################################################################
-# GMP dlls
-################################################################################################
-# Assuming wood_nano_ext is already defined in your CMake as a target
-# Add post-build commands directly to wood_nano_ext
-
-# add_custom_command(
-#   TARGET wood_nano_ext POST_BUILD
-#   COMMENT "Copying GMP DLLs after build completion"
-#   # Copy libgmp-10.dll to project directory
-#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.dll"
-#     "${CMAKE_SOURCE_DIR}/src/wood_nano/"
-#   # Copy libmpfr-4.dll to project directory
-#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.dll"
-#     "${CMAKE_SOURCE_DIR}/src/wood_nano/"
-#   # Copy libgmp-10.dll to Release directory
-#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.dll"
-#     "${CMAKE_BINARY_DIR}/Release"
-#   # Copy libmpfr-4.dll to Release directory
-#   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#     "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.dll"
-#     "${CMAKE_BINARY_DIR}/Release"
-# )
