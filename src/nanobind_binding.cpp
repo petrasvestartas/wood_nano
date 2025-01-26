@@ -842,4 +842,43 @@ NB_MODULE(wood_nano_ext, m) {
         "output_types"_a, "compute_joints"_a, "division_distance"_a, "shift"_a,
         "output_type"_a, "use_eccentricities_to_scale_joints"_a,
         "This function computes beam volumes.");
+
+  m.def("mesh_skeleton",
+       static_cast<void(*)(std::vector<double>&, std::vector<int>&, std::vector<CGAL_Polyline>&)>(&cgal::skeleton::mesh_skeleton),
+      "v"_a, "f"_a, "output_polylines"_a,
+      "This function creates a skeleton from a closed triangular mesh.");
+
+  m.def("beam_skeleton",
+      &cgal::skeleton::beam_skeleton,
+      "v"_a, "f"_a, "output_polyline"_a, "output_distances"_a, "divisions"_a, "nearest_neighbors"_a, "extend"_a,
+      "This function creates a skeleton from a closed triangular mesh that looks like a beam, that can be approximated by one axis.");
+
+
+
+        // /**
+        //  * @brief Run the skeleton extraction algorithm.
+        //  * @param v The vertices.
+        //  * @param f The faces.
+        //  * @param output_polylines The output vector of polylines.
+        //  * @param output_mesh OPTIONAL: The output CGAL polyhedron.
+        //  */
+        // void mesh_skeleton(std::vector<float>& v, std::vector<int>& f, std::vector<CGAL_Polyline>& output_polylines, CGAL::Polyhedron_3<CK>* output_mesh = nullptr);
+
+
+  // /**
+  //        * @brief Run the beam skeleton extraction algorithm.
+  //        * @param v The vertices.
+  //        * @param f The faces.
+  //        * @param divisions The number of points to generate along the polylines.
+  //        * @param nearest_neighbors The number of nearest neighbors to consider for each point in the polyline.
+  //        * @param extend Whether to extend the polyline to the mesh.
+  //        * @param output_polyline The output polyline.
+  //        * @param output_distances The output vector to store the distances corresponding to the output polyline.
+  //        */
+  //       void beam_skeleton(std::vector<float>& v, std::vector<int>& f, CGAL_Polyline& output_polyline, std::vector<float>& output_distances, int divisions=0, int nearest_neighbors=0, bool extend=false);
+
+	// cgal::skeleton::run(v, f, output_mesh, output_polylines);
+	// cgal::skeleton::divide_polyline(output_polylines, 10, output_polyline);
+	// cgal::skeleton::find_nearest_mesh_distances(output_mesh, output_polyline, 10, output_distances);
+	// cgal::skeleton::extend_polyline_to_mesh(output_mesh, output_polyline, output_distances);
 }

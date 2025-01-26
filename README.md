@@ -1,9 +1,7 @@
 wood_nano
 =========
 
-Repository wood_nano has submodule wood in src directly.
-For new clones incase there is nothing in the src/wood folder do the following:
--       git submodule update --init --recursive
+
 
 |      CI              | status |
 |----------------------|--------|
@@ -29,15 +27,6 @@ Installation
 1. Clone this repository
 2. Run `pip install ./wood_nano`
 
-Afterwards, you should be able to issue the following commands (shown in an
-interactive Python session):
-
-```pycon
->>> import nanobind_example
->>> nanobind_example.add(1, 2)
-3
-```
-
 CI Examples
 -----------
 
@@ -52,16 +41,15 @@ token is provided using GitHub Action's _secrets_ feature, this workflow can
 even automatically upload packages on PyPI.
 
 
-License
--------
-
-_nanobind_ and this example repository are both provided under a BSD-style
-license that can be found in the [LICENSE](./LICENSE) file. By using,
-distributing, or contributing to this project, you agree to the terms and
-conditions of this license.
-
 Customization
 =============
+
+Repository wood_nano has submodule wood in src directly.
+For new clones incase there is nothing in the src/wood folder do the following:
+
+```bash
+ git submodule update --init --recursive
+```
 
 Conda
 -----
@@ -118,27 +106,15 @@ sudo rm -r build
 
 Link wood dependencies to nanobind
 ----------------------------------
--   Ubuntu - linked, Check: a) PCH is not speeding the build, b) SQL has no be unlocked like this ```sudo chown -R```, be aware that the .sh file installs gmp and mpfr in ubuntu, not as a cmake source code.
--   Windows - linked, Check: a) C:\Users\petras\.conda\envs\wood\Lib\site-packages\wood_nano must have cgal libgmp-10.dll and libmpfr-4.dll, it would be great that gmp and mpfr would be compiled together into one single .pyd file.
--   Mac - not linked
+-   Ubuntu - linked, Check: a) PCH is not speeding the build, b) SQL has no be unlocked like this ```sudo chown -R```
 
-pip
----
-```bash
-conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine auditwheel
-ubuntu:
-export BUILDING_DIST="1" && python -m build --wheel
-sudo apt-get install patchelf
-sudo docker build -t manylinux2014_gcc13 .
-auditwheel repair dist/wood_nano-0.0.7-cp39-cp39-linux_x86_64.whl --plat manylinux_2_35_x86_64 -w dist/
-windows:
-conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine
-python -m build --wheel
-```
--   upload to pip https://github.com/petrasvestartas/compas_snippets
+
+
 
 Code wrapping
 -------------
+
+
 -   for development you need to use pip install . and even you changed __init__.py
 -   function based on the EDX tutorial
 -   Process:
@@ -152,6 +128,8 @@ Code wrapping
         -   compas_wood - write docstrings under the method
         -   compas_wood - invoke docs and check the result
 
+
+
 compas_wood
 -----------
 
@@ -162,8 +140,6 @@ conda config --add channels conda-forge
 conda create -n compas_wood_3_9_10 python==3.9_10 compas
 conda activate compas_wood_3_9_10
 conda install build setuptools wheel twine 
-upload to pip https://github.com/petrasvestartas/compas_snippets
-
 sudo apt install twine or conda install twine
 cookiecutter gh:compas-dev/compas_package_template
 export PATH="~/anaconda3/envs/compas_wood/bin:$PATH"
@@ -178,27 +154,60 @@ pip install -r requirements.txt
 -   create compas_model with vizualization
 -   upload to pip https://github.com/petrasvestartas/compas_snippets
 
-EDX
+
+PIP
 ---
--   answer comments
+
+To build and upload your package to PyPI, follow these steps:
+
+1. Build the package:
+    ```bash
+    python -m build --wheel
+    ```
+
+2. Upload the package using `twine` with an API token:
+    ```bash
+    twine upload dist/* -u __token__ -p <your-api-token>
+    ```
+
+3. Upload to pip:
+    [https://github.com/petrasvestartas/pypi](https://github.com/petrasvestartas/pypi)
+
+
+```bash
+conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine auditwheel
+ubuntu:
+export BUILDING_DIST="1" && python -m build --wheel
+sudo apt-get install patchelf
+sudo docker build -t manylinux2014_gcc13 .
+auditwheel repair dist/wood_nano-0.0.7-cp39-cp39-linux_x86_64.whl --plat manylinux_2_35_x86_64 -w dist/
+windows:
+conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine
+```
 
 MAC GIT CONFLICT RESOLVE
 ------------------------
-python -m compas_rhino.print_python_path
-sudo -H /Users/petras/.rhinocode/py39-rh8/python3.9 -m pip install .
-sudo -H /Users/petras/.rhinocode/py39-rh8/python3.9 -m pip install . --use-feature=in-tree-build
 
+To resolve Git conflicts on a Mac, follow these steps:
+
+1. Print the Python path for compas_rhino:
+    ```bash
+    python -m compas_rhino.print_python_path
+    ```
+
+2. Install the package using pip:
+    ```bash
+    sudo -H /Users/petras/.rhinocode/py39-rh8/python3.9 -m pip install .
+    ```
+
+3. Install the package with the in-tree build feature:
+    ```bash
+    sudo -H /Users/petras/.rhinocode/py39-rh8/python3.9 -m pip install . --use-feature=in-tree-build
+    ```
 
 In this case, the default message is pre-filled, but you can modify it if needed. To proceed with the merge and accept the default commit message, you can follow these steps:
 
-Press i on your keyboard to enter insert mode in the text editor.
-Make any changes to the commit message if necessary.
-Once you're done, press Esc to exit insert mode.
-Type :wq to save the commit message and exit the text editor. If you're using Vim, this command writes the changes and quits the editor.
-
-Open Rhino from Terminal
-------------------------
-
-
-/Applications/Rhino\ 8.app/Contents/MacOS/Rhinoceros
-start "" "C:\Program Files\Rhino 8\System\Rhino.exe"
+1. Press `i` on your keyboard to enter insert mode in the text editor.
+2. Make any changes to the commit message if necessary.
+3. Once you're done, press `Esc` to exit insert mode.
+4. Type `:wq` to save the commit message and exit the text editor. If you're using Vim, this command writes the changes and quits the editor.
