@@ -19,7 +19,7 @@ include(FetchContent)
 
 FetchContent_Declare(clipper2
   GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git
-  GIT_TAG main
+  GIT_TAG Clipper2_1.4.0
   SOURCE_SUBDIR CPP
 )
 set(CLIPPER2_TESTS OFF CACHE BOOL "" FORCE)

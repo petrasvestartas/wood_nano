@@ -1,3 +1,5 @@
+__version__ = "0.2.0"
+
 from .wood_nano_ext import add
 from .wood_nano_ext import version
 from .wood_nano_ext import inspect

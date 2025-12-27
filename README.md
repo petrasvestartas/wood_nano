@@ -155,35 +155,27 @@ pip install -r requirements.txt
 -   upload to pip https://github.com/petrasvestartas/compas_snippets
 
 
-PIP
----
+PyPI Release
+------------
 
-To build and upload your package to PyPI, follow these steps:
+Releases are automated via GitHub Actions using trusted publishing.
 
-1. Build the package:
-    ```bash
-    python -m build --wheel
-    ```
+**One-time setup (PyPI):**
+1. Go to https://pypi.org/manage/account/publishing/
+2. Add pending publisher with:
+   - Project: `wood_nano`
+   - Owner: `petrasvestartas`
+   - Repository: `wood_nano`
+   - Workflow: `release.yml`
+   - Environment: *(leave blank)*
 
-2. Upload the package using `twine` with an API token:
-    ```bash
-    twine upload dist/* -u __token__ -p <your-api-token>
-    ```
-
-3. Upload to pip:
-    [https://github.com/petrasvestartas/pypi](https://github.com/petrasvestartas/pypi)
-
-
+**To publish a release:**
 ```bash
-conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine auditwheel
-ubuntu:
-export BUILDING_DIST="1" && python -m build --wheel
-sudo apt-get install patchelf
-sudo docker build -t manylinux2014_gcc13 .
-auditwheel repair dist/wood_nano-0.0.7-cp39-cp39-linux_x86_64.whl --plat manylinux_2_35_x86_64 -w dist/
-windows:
-conda create -n compas_wood_3_9_10 python==3.9.10 build setuptools wheel twine
+git tag v0.2.0
+git push origin v0.2.0
 ```
+
+This triggers the `release.yml` workflow which builds wheels for all platforms and publishes to PyPI.
 
 MAC GIT CONFLICT RESOLVE
 ------------------------
