@@ -6,38 +6,52 @@ on:
       - "v*"
 
 jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        include:
+          - os: ubuntu-latest
+            platform: manylinux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: windows
 
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
+      - name: Install cibuildwheel
+        run: pipx install cibuildwheel==2.23.1
+
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21
-        env:
-          CIBW_BUILD_VERBOSITY: 3
-          CIBW_SKIP: "*_i686 *-musllinux_* *-win32 pp*"
-          CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0"
-          CIBW_BEFORE_ALL_LINUX: |
-            yum install -y epel-release
-            yum install -y boost-devel cgal-devel sqlite-devel
-          CIBW_BEFORE_ALL_MACOS: |
-            brew install boost cgal sqlite3
-          CIBW_BEFORE_ALL_WINDOWS: |
-            choco install -y boost-msvc-14.3
+        run: cibuildwheel --output-dir wheelhouse .
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
-          path: ./wheelhouse/*.whl
+          name: wheels-${{ matrix.platform }}
+          path: wheelhouse/*.whl
 
   build_sdist:
     name: Build source distribution
@@ -45,9 +59,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
-      - name: Build sdist
+      - name: Build SDist
         run: pipx run build --sdist
 
       - uses: actions/upload-artifact@v4
@@ -55,39 +70,29 @@ jobs:
           name: sdist
           path: dist/*.tar.gz
 
-  create_release:
-    name: Create GitHub Release
-    needs: [build_wheels, build_sdist]
+  publish:
+    needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*
-          generate_release_notes: true
-
-  publish_pypi:
-    name: Publish to PyPI
-    needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
-    environment: pypi
+    environment:
+      name: pypi
+      url: https://pypi.org/project/wood_nano
     permissions:
       id-token: write
+
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: wheels-*
           path: dist
           merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+      - name: List files before upload
+        run: ls -lhR dist
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
-

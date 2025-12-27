@@ -1,42 +1,90 @@
-name: Build
+name: build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
+  Build:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'docs-only') }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10"]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python }}
+          channels: conda-forge
+          activate-environment: "wood_nano-dev"
+
+      - name: Configure conda channels
+        shell: bash -el {0}
+        run: |
+          conda config --add channels defaults
+          conda config --set channel_priority strict
+
+      - uses: compas-dev/compas-actions.build@v4
+        with:
+          invoke_lint: true
+          use_conda: true
+          check_import: true
+          python: ${{ matrix.python }}
+
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: cibuildwheel on ${{ matrix.platform }}
+    needs: [Build]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-15, macos-14]
+        include:
+          - os: ubuntu-latest
+            platform: manylinux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: windows
 
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
+      - name: Install cibuildwheel
+        run: pipx install cibuildwheel==2.23.1
+
       - name: Build wheels
-        run: pipx run cibuildwheel==2.23.1 --output-dir wheelhouse .
+        run: cibuildwheel --output-dir wheelhouse .
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
-          path: ./wheelhouse/*.whl
+          name: wheels-${{ matrix.platform }}
+          path: wheelhouse/*.whl
 
   build_sdist:
-    name: Build source distribution
+    name: Test source distribution
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
-      - name: Build sdist
+      - name: Build SDist
         run: pipx run build --sdist
 
       - uses: actions/upload-artifact@v4
