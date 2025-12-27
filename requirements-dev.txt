@@ -1,0 +1,3 @@
+nanobind>=1.3.2
+scikit-build-core>=0.10
+pytest
