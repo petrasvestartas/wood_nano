@@ -8,16 +8,44 @@ project(wood_nano LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CGAL_CMAKE_EXACT_NT_BACKEND BOOST_BACKEND CACHE STRING "Set CGAL backend to Boost")
 set(CGAL_DISABLE_GMP ON CACHE BOOL "Disable GMP in CGAL")
 set(CMAKE_DISABLE_FIND_PACKAGE_GMP ON CACHE BOOL "Disable CMake find package for GMP")
 
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal")
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/boost")
-set(CGAL_DIR "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/lib/cmake/CGAL")
-find_package(CGAL REQUIRED)
+# Use FetchContent to download dependencies automatically (for Linux support)
+include(FetchContent)
+
+FetchContent_Declare(clipper2
+  GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git
+  GIT_TAG main
+  SOURCE_SUBDIR CPP
+)
+set(CLIPPER2_TESTS OFF CACHE BOOL "" FORCE)
+set(CLIPPER2_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(clipper2)
+
+FetchContent_Declare(googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.14.0
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+FetchContent_Declare(eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3.4.0
+)
+FetchContent_GetProperties(eigen)
+if(NOT eigen_POPULATED)
+  FetchContent_Populate(eigen)
+endif()
+
+# Find CGAL and Boost from system/conda
+find_package(CGAL REQUIRED CONFIG)
 find_package(Boost 1.72 REQUIRED)
+find_package(SQLite3 QUIET)
 
 # Platform-specific compiler options
 if(MSVC)
@@ -137,17 +165,8 @@ list(APPEND include_paths
 "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/"
 #cdt
 "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cdt/CDT/include/"
-#clipper
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/clipper_2/CPP/Clipper2Lib/include/"
-#boost
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/boost/include/"
-#eigen
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/eigen/"
-#cgal
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/include"
-#googletest
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/include/"
-${CMAKE_BINARY_DIR}/install/googletest/lib/
+#eigen (from FetchContent)
+"${eigen_SOURCE_DIR}"
 # SQLite
 "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/sqlite/"
 )
@@ -194,13 +213,13 @@ else()
   target_link_libraries(
   wood_nano_ext
   PUBLIC     
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
-  # gmp
-  # mpfr
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a
+  Clipper2
+  gtest
+  gmock
   CGAL::CGAL)
+  if(SQLite3_FOUND)
+    target_link_libraries(wood_nano_ext PUBLIC SQLite::SQLite3)
+  endif()
 endif()
 
 
