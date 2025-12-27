@@ -33,7 +33,7 @@ jobs:
             platform: manylinux
           - os: macos-15
             platform: macos-intel
-          - os: macos-latest
+          - os: macos-14
             platform: macos-arm64
           - os: windows-latest
             platform: windows
