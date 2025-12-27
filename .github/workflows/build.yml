@@ -28,25 +28,23 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-          pip install ruff
+          pip install build scikit-build-core nanobind
 
-      - name: Lint with ruff
+      - name: Build the project
         run: |
-          ruff check src/wood_nano --ignore E501 --exit-zero
+          pip install . -v
 
-      - name: Check Python syntax
+      - name: Test import
         run: |
-          python -m py_compile src/wood_nano/__init__.py
+          python -c "import wood_nano; print(wood_nano.__version__)"
 
-      - name: Verify package structure
+      - name: Run tests
         run: |
-          python -c "import pathlib; assert pathlib.Path('src/wood_nano/__init__.py').exists()"
-          python -c "import pathlib; assert pathlib.Path('pyproject.toml').exists()"
-          python -c "import pathlib; assert pathlib.Path('CMakeLists.txt').exists()"
+          pip install pytest
+          pytest tests -v
 
   build_wheels:
     name: cibuildwheel on ${{ matrix.platform }}
@@ -58,9 +56,9 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: manylinux
-          - os: macos-13
+          - os: macos-15
             platform: macos-intel
-          - os: macos-14
+          - os: macos-latest
             platform: macos-arm64
           - os: windows-latest
             platform: windows
