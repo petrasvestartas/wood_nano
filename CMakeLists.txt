@@ -1,135 +1,120 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 
-set(CMAKE_BUILD_TYPE Release)
-add_compile_options(-O3)  # Optimize the build
-
-project(wood_nano LANGUAGES CXX)
+project(wood_nano LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_TYPE Release)
+
+# Force CGAL/Boost to use Boost.Multiprecision instead of GMP (must be before any includes)
+add_compile_definitions(
+  CGAL_DISABLE_GMP
+  CGAL_NO_GMP
+  CGAL_USE_BOOST_MP
+  CGAL_DO_NOT_USE_MPZF
+  BOOST_ALL_NO_LIB
+)
 
 set(CGAL_CMAKE_EXACT_NT_BACKEND BOOST_BACKEND CACHE STRING "Set CGAL backend to Boost")
 set(CGAL_DISABLE_GMP ON CACHE BOOL "Disable GMP in CGAL")
 set(CMAKE_DISABLE_FIND_PACKAGE_GMP ON CACHE BOOL "Disable CMake find package for GMP")
 
-# Use FetchContent to download dependencies automatically (for Linux support)
-include(FetchContent)
+# Dependencies stored in source tree (persistent across pip builds)
+set(DEPS_DIR "${CMAKE_SOURCE_DIR}/.deps")
+file(MAKE_DIRECTORY ${DEPS_DIR})
 
-FetchContent_Declare(clipper2
-  GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git
-  GIT_TAG Clipper2_1.4.0
-  SOURCE_SUBDIR CPP
-)
+include(FetchContent)
+set(FETCHCONTENT_BASE_DIR "${DEPS_DIR}/_fetch")
+set(FETCHCONTENT_QUIET OFF)
+
+# Boost (header-only) - only download if not present
+if(NOT EXISTS "${DEPS_DIR}/boost/boost")
+  message(STATUS "Downloading Boost...")
+  FetchContent_Declare(boost URL https://archives.boost.io/release/1.82.0/source/boost_1_82_0.tar.gz SOURCE_DIR ${DEPS_DIR}/boost)
+  FetchContent_Populate(boost)
+else()
+  message(STATUS "Boost already present")
+endif()
+
+# CGAL (header-only)
+if(NOT EXISTS "${DEPS_DIR}/cgal/include")
+  message(STATUS "Downloading CGAL...")
+  FetchContent_Declare(cgal URL https://github.com/CGAL/cgal/releases/download/v6.0.1/CGAL-6.0.1-library.zip SOURCE_DIR ${DEPS_DIR}/cgal)
+  FetchContent_Populate(cgal)
+else()
+  message(STATUS "CGAL already present")
+endif()
+
+# Eigen (header-only)
+if(NOT EXISTS "${DEPS_DIR}/eigen/Eigen")
+  message(STATUS "Downloading Eigen...")
+  FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git GIT_TAG 3.4.0 SOURCE_DIR ${DEPS_DIR}/eigen)
+  FetchContent_Populate(eigen)
+else()
+  message(STATUS "Eigen already present")
+endif()
+
+# CDT (header-only)
+if(NOT EXISTS "${DEPS_DIR}/cdt/CDT")
+  message(STATUS "Downloading CDT...")
+  FetchContent_Declare(cdt GIT_REPOSITORY https://github.com/artem-ogre/CDT.git GIT_TAG master SOURCE_DIR ${DEPS_DIR}/cdt)
+  FetchContent_Populate(cdt)
+else()
+  message(STATUS "CDT already present")
+endif()
+
+# SQLite
+if(NOT EXISTS "${DEPS_DIR}/sqlite3/sqlite3.c")
+  message(STATUS "Downloading SQLite...")
+  FetchContent_Declare(sqlite3 URL https://www.sqlite.org/2024/sqlite-amalgamation-3450000.zip SOURCE_DIR ${DEPS_DIR}/sqlite3)
+  FetchContent_Populate(sqlite3)
+else()
+  message(STATUS "SQLite already present")
+endif()
+
+# Clipper2
+if(NOT EXISTS "${DEPS_DIR}/clipper2/CPP")
+  message(STATUS "Downloading Clipper2...")
+  FetchContent_Declare(clipper2 GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git GIT_TAG Clipper2_1.4.0 SOURCE_DIR ${DEPS_DIR}/clipper2)
+  FetchContent_Populate(clipper2)
+endif()
 set(CLIPPER2_TESTS OFF CACHE BOOL "" FORCE)
 set(CLIPPER2_EXAMPLES OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(clipper2)
+add_subdirectory(${DEPS_DIR}/clipper2/CPP ${CMAKE_BINARY_DIR}/clipper2_build EXCLUDE_FROM_ALL)
 
-FetchContent_Declare(googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.14.0
-)
+# GoogleTest
+if(NOT EXISTS "${DEPS_DIR}/googletest/googletest")
+  message(STATUS "Downloading GoogleTest...")
+  FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest.git GIT_TAG v1.14.0 SOURCE_DIR ${DEPS_DIR}/googletest)
+  FetchContent_Populate(googletest)
+endif()
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+add_subdirectory(${DEPS_DIR}/googletest ${CMAKE_BINARY_DIR}/googletest_build EXCLUDE_FROM_ALL)
 
-FetchContent_Declare(eigen
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG 3.4.0
-)
-FetchContent_GetProperties(eigen)
-if(NOT eigen_POPULATED)
-  FetchContent_Populate(eigen)
-endif()
+# SQLite library
+add_library(sqlite3_lib STATIC ${DEPS_DIR}/sqlite3/sqlite3.c)
+target_include_directories(sqlite3_lib PUBLIC ${DEPS_DIR}/sqlite3)
 
-# Find CGAL and Boost from system/conda
-find_package(CGAL REQUIRED CONFIG)
-find_package(Boost 1.72 REQUIRED)
-find_package(SQLite3 QUIET)
+# Global includes for PCH
+include_directories(${DEPS_DIR}/boost ${DEPS_DIR}/cgal/include)
 
-# Platform-specific compiler options
+# Platform options
 if(MSVC)
-    # MSVC specific flags
-    # Modify runtime library configuration for static linking
-    set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-    )
-    foreach(CompilerFlag ${CompilerFlags})
-        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-    endforeach()
-elseif(CMAKE_COMPILER_IS_GNUCXX)
-    # GCC specific flags for static linking
-    # Note: This might be needed if you are fully working with static libraries
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
+  add_compile_options(/O2)
+else()
+  add_compile_options(-O3)
 endif()
 
-if (NOT SKBUILD)
-  message(WARNING "\
-  This CMake file is meant to be executed using 'scikit-build'. Running
-  it directly will almost certainly not produce the desired result. If
-  you are a user trying to install this package, please use the command
-  below, which will install all necessary build dependencies, compile
-  the package in an isolated environment, and then install it.
-  =====================================================================
-   $ pip install .
-  =====================================================================
-  If you are a software developer, and this is your own package, then
-  it is usually much more efficient to install the build dependencies
-  in your environment once and use the following command that avoids
-  a costly creation of a new virtual environment at every compilation:
-  =====================================================================
-   $ pip install nanobind scikit-build-core[pyproject]
-   $ pip install --no-build-isolation -ve .
-  =====================================================================
-  You may optionally add -Ceditable.rebuild=true to auto-rebuild when
-  the package is imported. Otherwise, you need to re-run the above
-  after editing C++ files.")
-endif()
-
-# Try to import all Python components potentially needed by nanobind
-find_package(Python 3.8
-  REQUIRED COMPONENTS Interpreter Development.Module
-  OPTIONAL_COMPONENTS Development.SABIModule)
-
-# Import nanobind through CMake's find_package mechanism
+# Python and nanobind
+find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module OPTIONAL_COMPONENTS Development.SABIModule)
 find_package(nanobind CONFIG REQUIRED)
 
-# run like this: export BUILDING_DIST="1" && python -m build && export BUILDING_DIST="1" && python -m build 
-if(DEFINED ENV{BUILDING_DIST})
-  if( (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
-    SET(CMAKE_SOURCE_DIR "$ENV{HOME}/brg/2_code/wood_nano")
-    
-  # elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  #   SET(CMAKE_SOURCE_DIR "C:/brg/2_code/wood_nano/")
-  #   message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
-  endif()
-endif()
 message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
-# We are now ready to compile the actual extension module
-nanobind_add_module(
-  # Name of the extension
-  wood_nano_ext
 
-  # Target the stable ABI for Python 3.12+, which reduces
-  # the number of binary wheels that must be built. This
-  # does nothing on older Python versions
-  STABLE_ABI
-
-  # Build libnanobind statically and merge it into the
-  # extension (which itself remains a shared library)
-  #
-  # If your project builds multiple extensions, you can
-  # replace this flag by NB_SHARED to conserve space by
-  # reusing a shared libnanobind across libraries
-  NB_STATIC
-
-  # Source code goes here
+# Build extension
+nanobind_add_module(wood_nano_ext STABLE_ABI NB_STATIC
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/stdafx.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/wood_globals.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/cgal_box_util.cpp"
@@ -155,85 +140,23 @@ nanobind_add_module(
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/database_writer.cpp"
   "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/tinyply/tinyply.cpp"
   src/nanobind_binding.cpp
-
 )
 
-# headers
-list(APPEND include_paths 
-#my_code
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/"
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/"
-#cdt
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cdt/CDT/include/"
-#eigen (from FetchContent)
-"${eigen_SOURCE_DIR}"
-# SQLite
-"${CMAKE_SOURCE_DIR}/src/wood/cmake/src/sqlite/"
+target_include_directories(wood_nano_ext PUBLIC
+  ${DEPS_DIR}/boost
+  ${DEPS_DIR}/cgal/include
+  ${DEPS_DIR}/eigen
+  ${DEPS_DIR}/cdt/CDT/include
+  ${DEPS_DIR}/sqlite3
+  ${DEPS_DIR}/clipper2/CPP/Clipper2Lib/include
+  "${CMAKE_SOURCE_DIR}/src/wood/cmake/"
+  "${CMAKE_SOURCE_DIR}/src/wood/cmake/src/wood/include/"
 )
 
-# if (WIN32) # append gmp to the list
-#   list(APPEND include_paths "${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/include")
-# endif()
-
-target_include_directories(wood_nano_ext PUBLIC "$<BUILD_INTERFACE:${include_paths}>") #header for the library
-
-# compiled static libraaries
+target_link_libraries(wood_nano_ext PUBLIC Clipper2 gtest gmock sqlite3_lib)
 
 
-
-
-if (WIN32)
-  message("Windows")
-  target_link_libraries(
-  wood_nano_ext
-  PUBLIC     
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/Clipper2.lib 
-  # ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libgmp-10.lib
-  # ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/cgal/auxiliary/gmp/lib/libmpfr-4.lib
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gtest.lib
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/gmock.lib
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/Release/sqlite3.lib
-  CGAL::CGAL
-  )
-
-elseif(APPLE)
-  message("Apple")
-  target_link_libraries(
-  wood_nano_ext
-  PUBLIC     
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libClipper2.a 
-  # /usr/local/lib/libgmp.a
-  # /usr/local/lib/libmpfr.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgtest.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/install/googletest/lib/libgmock.a
-  ${CMAKE_SOURCE_DIR}/src/wood/cmake/build/libsqlite3.a
-  CGAL::CGAL)
-else()
-  message("Linux")
-  target_link_libraries(
-  wood_nano_ext
-  PUBLIC     
-  Clipper2
-  gtest
-  gmock
-  CGAL::CGAL)
-  if(SQLite3_FOUND)
-    target_link_libraries(wood_nano_ext PUBLIC SQLite::SQLite3)
-  endif()
-endif()
-
-
-
-
-# Install directive for scikit-build-core
 install(TARGETS wood_nano_ext LIBRARY DESTINATION wood_nano)
 
-
-###############################################################################
-# PCH support
-###############################################################################
-target_precompile_headers(wood_nano_ext PRIVATE "${CMAKE_SOURCE_DIR}/src/wood/cmake/stdafx.h") # With PUBLIC they will be used by targets using this target
-
+target_precompile_headers(wood_nano_ext PRIVATE "${CMAKE_SOURCE_DIR}/src/wood/cmake/stdafx.h")
 set(CMAKE_PCH_INSTANTIATE_TEMPLATES ON)
-
-

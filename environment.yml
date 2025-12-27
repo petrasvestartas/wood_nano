@@ -1,0 +1,14 @@
+# Development environment for wood_nano
+# All C++ dependencies (CGAL, Boost, etc.) are downloaded by CMake FetchContent
+# This file only specifies Python dependencies
+
+name: wood_nano_dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+    - nanobind>=1.3.2
+    - scikit-build-core>=0.10
+    - pytest

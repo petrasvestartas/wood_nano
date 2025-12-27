@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -6,37 +6,33 @@ on:
       - "v*"
 
 jobs:
-  create_release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           submodules: recursive
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.23.1
+        uses: pypa/cibuildwheel@v2.21
+        env:
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_SKIP: "*_i686 *-musllinux_* *-win32 pp*"
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0"
+          CIBW_BEFORE_ALL_LINUX: |
+            yum install -y epel-release
+            yum install -y boost-devel cgal-devel sqlite-devel
+          CIBW_BEFORE_ALL_MACOS: |
+            brew install boost cgal sqlite3
+          CIBW_BEFORE_ALL_WINDOWS: |
+            choco install -y boost-msvc-14.3
 
       - uses: actions/upload-artifact@v4
         with:
@@ -49,7 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           submodules: recursive
 
       - name: Build sdist
@@ -60,11 +55,29 @@ jobs:
           name: sdist
           path: dist/*.tar.gz
 
-  publish:
+  create_release:
+    name: Create GitHub Release
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          generate_release_notes: true
+
+  publish_pypi:
     name: Publish to PyPI
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    environment: pypi # Set up environment protection rules in the repository settings
+    environment: pypi
     permissions:
       id-token: write
     steps:
@@ -73,8 +86,8 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: List artifacts
-        run: ls -la dist/
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
