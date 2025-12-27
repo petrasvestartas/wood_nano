@@ -31,8 +31,10 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: manylinux
-          - os: macos-latest
-            platform: mac
+          - os: macos-13
+            platform: macos-intel
+          - os: macos-14
+            platform: macos-arm64
           - os: windows-latest
             platform: windows
 

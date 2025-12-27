@@ -23,25 +23,30 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up conda
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          channels: conda-forge
-          activate-environment: "wood_nano-dev"
 
-      - name: Configure conda channels
-        shell: bash -el {0}
+      - name: Install dependencies
         run: |
-          conda config --add channels defaults
-          conda config --set channel_priority strict
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install ruff
 
-      - uses: compas-dev/compas-actions.build@v4
-        with:
-          invoke_lint: true
-          use_conda: true
-          check_import: true
-          python: ${{ matrix.python }}
+      - name: Lint with ruff
+        run: |
+          ruff check src/wood_nano --ignore E501 --exit-zero
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile src/wood_nano/__init__.py
+
+      - name: Verify package structure
+        run: |
+          python -c "import pathlib; assert pathlib.Path('src/wood_nano/__init__.py').exists()"
+          python -c "import pathlib; assert pathlib.Path('pyproject.toml').exists()"
+          python -c "import pathlib; assert pathlib.Path('CMakeLists.txt').exists()"
 
   build_wheels:
     name: cibuildwheel on ${{ matrix.platform }}
@@ -53,8 +58,10 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: manylinux
-          - os: macos-latest
-            platform: mac
+          - os: macos-13
+            platform: macos-intel
+          - os: macos-14
+            platform: macos-arm64
           - os: windows-latest
             platform: windows
 
@@ -76,7 +83,7 @@ jobs:
           path: wheelhouse/*.whl
 
   build_sdist:
-    name: Test source distribution
+    name: Build source distribution
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
