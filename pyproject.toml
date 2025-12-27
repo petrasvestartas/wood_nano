@@ -42,7 +42,7 @@ CMAKE_POLICY_DEFAULT_CMP0135 = "NEW"
 
 [tool.cibuildwheel]
 build-verbosity = 3
-test-requires = ["pytest"]
+test-requires = ["pytest", "icecream"]
 test-command = "pytest {project}/tests"
 build-frontend = "pip"
 manylinux-x86_64-image = "manylinux2014"
