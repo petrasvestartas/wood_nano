@@ -81,11 +81,27 @@ Releases are automated via GitHub Actions using trusted publishing.
    - Repository: `wood_nano`
    - Workflow: `release.yml`
 
-**To publish:**
-```bash
-git tag v0.2.0
-git push origin v0.2.0
-```
+**To publish a new version:**
+
+1. Update the version number in `src/wood_nano/__init__.py`:
+   ```python
+   __version__ = "0.3.0"  # Change to new version
+   ```
+
+2. Commit the version change:
+   ```bash
+   git add src/wood_nano/__init__.py
+   git commit -m "Bump version to 0.3.0"
+   git push
+   ```
+
+3. Create and push the tag:
+   ```bash
+   git tag v0.3.0
+   git push origin v0.3.0
+   ```
+
+This triggers the release workflow which builds wheels for all platforms and publishes to PyPI.
 
 Development
 -----------
