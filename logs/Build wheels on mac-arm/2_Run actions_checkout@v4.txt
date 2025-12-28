@@ -1,0 +1,114 @@
+﻿2025-12-28T09:10:40.5662290Z ##[group]Run actions/checkout@v4
+2025-12-28T09:10:40.5662890Z with:
+2025-12-28T09:10:40.5663260Z   fetch-depth: 0
+2025-12-28T09:10:40.5663610Z   submodules: recursive
+2025-12-28T09:10:40.5664010Z   repository: petrasvestartas/wood_nano
+2025-12-28T09:10:40.5664610Z   token: ***
+2025-12-28T09:10:40.5664940Z   ssh-strict: true
+2025-12-28T09:10:40.5665310Z   ssh-user: git
+2025-12-28T09:10:40.5665670Z   persist-credentials: true
+2025-12-28T09:10:40.5666060Z   clean: true
+2025-12-28T09:10:40.5666420Z   sparse-checkout-cone-mode: true
+2025-12-28T09:10:40.5666850Z   fetch-tags: false
+2025-12-28T09:10:40.5667220Z   show-progress: true
+2025-12-28T09:10:40.5667600Z   lfs: false
+2025-12-28T09:10:40.5667970Z   set-safe-directory: true
+2025-12-28T09:10:40.5668490Z ##[endgroup]
+2025-12-28T09:10:40.9369490Z Syncing repository: petrasvestartas/wood_nano
+2025-12-28T09:10:40.9371270Z ##[group]Getting Git version info
+2025-12-28T09:10:40.9371940Z Working directory is '/Users/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:40.9372860Z [command]/opt/homebrew/bin/git version
+2025-12-28T09:10:40.9917980Z git version 2.50.1
+2025-12-28T09:10:40.9945410Z ##[endgroup]
+2025-12-28T09:10:40.9951650Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/c520b829-f321-42d2-8101-1f02d5887297/.gitconfig'
+2025-12-28T09:10:40.9960990Z Temporarily overriding HOME='/Users/runner/work/_temp/c520b829-f321-42d2-8101-1f02d5887297' before making global git config changes
+2025-12-28T09:10:40.9962020Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:10:40.9969590Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:41.0051610Z Deleting the contents of '/Users/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:41.0054030Z ##[group]Initializing the repository
+2025-12-28T09:10:41.0058240Z [command]/opt/homebrew/bin/git init /Users/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:41.0254130Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-12-28T09:10:41.0255400Z hint: is subject to change. To configure the initial branch name to use in all
+2025-12-28T09:10:41.0256810Z hint: of your new repositories, which will suppress this warning, call:
+2025-12-28T09:10:41.0257510Z hint:
+2025-12-28T09:10:41.0258040Z hint: 	git config --global init.defaultBranch <name>
+2025-12-28T09:10:41.0258690Z hint:
+2025-12-28T09:10:41.0259320Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-12-28T09:10:41.0260130Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-12-28T09:10:41.0260880Z hint:
+2025-12-28T09:10:41.0261410Z hint: 	git branch -m <name>
+2025-12-28T09:10:41.0261880Z hint:
+2025-12-28T09:10:41.0262520Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-12-28T09:10:41.0263590Z Initialized empty Git repository in /Users/runner/work/wood_nano/wood_nano/.git/
+2025-12-28T09:10:41.0265340Z [command]/opt/homebrew/bin/git remote add origin https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:41.0325530Z ##[endgroup]
+2025-12-28T09:10:41.0326300Z ##[group]Disabling automatic garbage collection
+2025-12-28T09:10:41.0327600Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2025-12-28T09:10:41.0375310Z ##[endgroup]
+2025-12-28T09:10:41.0376010Z ##[group]Setting up auth
+2025-12-28T09:10:41.0380270Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:10:41.0423200Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-12-28T09:10:41.1260250Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:10:41.1310440Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-12-28T09:10:41.2033210Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:10:41.2059490Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2025-12-28T09:10:41.2617980Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-12-28T09:10:41.2665500Z ##[endgroup]
+2025-12-28T09:10:41.2666510Z ##[group]Fetching the repository
+2025-12-28T09:10:41.2670540Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2025-12-28T09:10:42.3182460Z From https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:42.3198520Z  * [new branch]      main       -> origin/main
+2025-12-28T09:10:42.3204200Z  * [new tag]         v0.3.0     -> v0.3.0
+2025-12-28T09:10:42.3205380Z  * [new tag]         v0.3.1     -> v0.3.1
+2025-12-28T09:10:42.3206520Z  * [new tag]         v0.3.2     -> v0.3.2
+2025-12-28T09:10:42.3207370Z  * [new tag]         v0.3.3     -> v0.3.3
+2025-12-28T09:10:42.3271770Z [command]/opt/homebrew/bin/git tag --list v0.3.3
+2025-12-28T09:10:42.3319720Z v0.3.3
+2025-12-28T09:10:42.3324950Z [command]/opt/homebrew/bin/git rev-parse refs/tags/v0.3.3
+2025-12-28T09:10:42.3364890Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829
+2025-12-28T09:10:42.3367290Z ##[endgroup]
+2025-12-28T09:10:42.3368250Z ##[group]Determining the checkout info
+2025-12-28T09:10:42.3369360Z ##[endgroup]
+2025-12-28T09:10:42.3370520Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2025-12-28T09:10:42.3429170Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2025-12-28T09:10:42.3479230Z ##[group]Checking out the ref
+2025-12-28T09:10:42.3480580Z [command]/opt/homebrew/bin/git checkout --progress --force refs/tags/v0.3.3
+2025-12-28T09:10:42.3604850Z HEAD is now at e905ef9 Release v0.3.3
+2025-12-28T09:10:42.3764600Z ##[endgroup]
+2025-12-28T09:10:42.3766770Z ##[group]Setting up auth for fetching submodules
+2025-12-28T09:10:42.3768680Z [command]/opt/homebrew/bin/git config --global http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-12-28T09:10:42.3772120Z [command]/opt/homebrew/bin/git config --global --unset-all url.https://github.com/.insteadOf
+2025-12-28T09:10:42.3775750Z [command]/opt/homebrew/bin/git config --global --add url.https://github.com/.insteadOf git@github.com:
+2025-12-28T09:10:42.3805660Z [command]/opt/homebrew/bin/git config --global --add url.https://github.com/.insteadOf org-18013985@github.com:
+2025-12-28T09:10:42.3850160Z ##[endgroup]
+2025-12-28T09:10:42.3855490Z ##[group]Fetching submodules
+2025-12-28T09:10:42.3922370Z [command]/opt/homebrew/bin/git submodule sync --recursive
+2025-12-28T09:10:42.4500700Z [command]/opt/homebrew/bin/git -c protocol.version=2 submodule update --init --force --recursive
+2025-12-28T09:10:42.4991420Z Submodule 'src/wood' (https://github.com/petrasvestartas/wood) registered for path 'src/wood'
+2025-12-28T09:10:42.5055630Z Cloning into '/Users/runner/work/wood_nano/wood_nano/src/wood'...
+2025-12-28T09:10:46.3197680Z Submodule path 'src/wood': checked out 'f5197f5b7b66c53f9fb39da08c6cf4b39ebb67b5'
+2025-12-28T09:10:46.3247030Z Submodule 'docs/doxygen-awesome-css' (https://github.com/jothepro/doxygen-awesome-css.git) registered for path 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:46.3327630Z Cloning into '/Users/runner/work/wood_nano/wood_nano/src/wood/docs/doxygen-awesome-css'...
+2025-12-28T09:10:47.8289720Z Submodule path 'src/wood/docs/doxygen-awesome-css': checked out 'df88fe4fdd97714fadfd3ef17de0b4401f804052'
+2025-12-28T09:10:47.8592560Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local gc.auto 0
+2025-12-28T09:10:47.9315320Z Entering 'src/wood'
+2025-12-28T09:10:47.9442690Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:47.9573330Z ##[endgroup]
+2025-12-28T09:10:47.9575040Z ##[group]Persisting credentials for submodules
+2025-12-28T09:10:47.9580260Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'url\.https\:\/\/github\.com\/\.insteadOf' && git config --local --unset-all 'url.https://github.com/.insteadOf' || :"
+2025-12-28T09:10:48.0071590Z Entering 'src/wood'
+2025-12-28T09:10:48.0190970Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:48.0332880Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local 'http.https://github.com/.extraheader' 'AUTHORIZATION: basic ***' && git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2025-12-28T09:10:48.0892240Z Entering 'src/wood'
+2025-12-28T09:10:48.1027500Z file:/Users/runner/work/wood_nano/wood_nano/.git/modules/src/wood/config	remote.origin.url
+2025-12-28T09:10:48.1069180Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:48.1195860Z file:/Users/runner/work/wood_nano/wood_nano/.git/modules/src/wood/modules/docs/doxygen-awesome-css/config	remote.origin.url
+2025-12-28T09:10:48.1411890Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --add 'url.https://github.com/.insteadOf' 'git@github.com:'
+2025-12-28T09:10:48.1832960Z Entering 'src/wood'
+2025-12-28T09:10:48.1930480Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:48.2163020Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --add 'url.https://github.com/.insteadOf' 'org-18013985@github.com:'
+2025-12-28T09:10:48.3082550Z Entering 'src/wood'
+2025-12-28T09:10:48.3227430Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:48.3343850Z ##[endgroup]
+2025-12-28T09:10:48.3404230Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2025-12-28T09:10:48.3451510Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829

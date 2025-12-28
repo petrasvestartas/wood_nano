@@ -1,0 +1,5 @@
+2025-12-28T09:10:38.7110000Z Job is about to start running on the hosted runner: GitHub Actions 1000007024
+2025-12-28T09:10:38.7080000Z Requested labels: ubuntu-latest
+2025-12-28T09:10:38.7080000Z Job defined at: petrasvestartas/wood_nano/.github/workflows/release.yml@refs/tags/v0.3.3
+2025-12-28T09:10:38.7080000Z Waiting for a runner to pick up this job...
+2025-12-28T09:10:38.7100000Z Job is waiting for a hosted runner to come online.

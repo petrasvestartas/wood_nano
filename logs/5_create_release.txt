@@ -1,0 +1,142 @@
+﻿2025-12-28T09:10:40.7693447Z Current runner version: '2.330.0'
+2025-12-28T09:10:40.7730158Z ##[group]Runner Image Provisioner
+2025-12-28T09:10:40.7731384Z Hosted Compute Agent
+2025-12-28T09:10:40.7732267Z Version: 20251211.462
+2025-12-28T09:10:40.7733153Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2025-12-28T09:10:40.7734446Z Build Date: 2025-12-11T16:28:49Z
+2025-12-28T09:10:40.7735462Z Worker ID: {78460eed-9c24-4215-b9ef-869ac08ef709}
+2025-12-28T09:10:40.7736625Z ##[endgroup]
+2025-12-28T09:10:40.7737352Z ##[group]Operating System
+2025-12-28T09:10:40.7738176Z Ubuntu
+2025-12-28T09:10:40.7738977Z 24.04.3
+2025-12-28T09:10:40.7739590Z LTS
+2025-12-28T09:10:40.7740285Z ##[endgroup]
+2025-12-28T09:10:40.7741137Z ##[group]Runner Image
+2025-12-28T09:10:40.7742065Z Image: ubuntu-24.04
+2025-12-28T09:10:40.7742925Z Version: 20251215.174.1
+2025-12-28T09:10:40.7745114Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251215.174/images/ubuntu/Ubuntu2404-Readme.md
+2025-12-28T09:10:40.7747932Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251215.174
+2025-12-28T09:10:40.7749792Z ##[endgroup]
+2025-12-28T09:10:40.7751273Z ##[group]GITHUB_TOKEN Permissions
+2025-12-28T09:10:40.7754336Z Contents: write
+2025-12-28T09:10:40.7755383Z Metadata: read
+2025-12-28T09:10:40.7756337Z ##[endgroup]
+2025-12-28T09:10:40.7759137Z Secret source: Actions
+2025-12-28T09:10:40.7761360Z Prepare workflow directory
+2025-12-28T09:10:40.8115491Z Prepare all required actions
+2025-12-28T09:10:40.8153484Z Getting action download info
+2025-12-28T09:10:41.1265158Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2025-12-28T09:10:41.2479017Z Download action repository 'softprops/action-gh-release@v2' (SHA:a06a81a03ee405af7f2048a818ed3f03bbf83c7b)
+2025-12-28T09:10:41.9838824Z Complete job name: create_release
+2025-12-28T09:10:42.0545432Z ##[group]Run actions/checkout@v4
+2025-12-28T09:10:42.0546419Z with:
+2025-12-28T09:10:42.0546867Z   repository: petrasvestartas/wood_nano
+2025-12-28T09:10:42.0547642Z   token: ***
+2025-12-28T09:10:42.0548038Z   ssh-strict: true
+2025-12-28T09:10:42.0548449Z   ssh-user: git
+2025-12-28T09:10:42.0548861Z   persist-credentials: true
+2025-12-28T09:10:42.0549319Z   clean: true
+2025-12-28T09:10:42.0549732Z   sparse-checkout-cone-mode: true
+2025-12-28T09:10:42.0550231Z   fetch-depth: 1
+2025-12-28T09:10:42.0550629Z   fetch-tags: false
+2025-12-28T09:10:42.0551048Z   show-progress: true
+2025-12-28T09:10:42.0551473Z   lfs: false
+2025-12-28T09:10:42.0551860Z   submodules: false
+2025-12-28T09:10:42.0552296Z   set-safe-directory: true
+2025-12-28T09:10:42.0552985Z ##[endgroup]
+2025-12-28T09:10:42.1626332Z Syncing repository: petrasvestartas/wood_nano
+2025-12-28T09:10:42.1628516Z ##[group]Getting Git version info
+2025-12-28T09:10:42.1629402Z Working directory is '/home/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:42.1630431Z [command]/usr/bin/git version
+2025-12-28T09:10:42.1693022Z git version 2.52.0
+2025-12-28T09:10:42.1720131Z ##[endgroup]
+2025-12-28T09:10:42.1741629Z Temporarily overriding HOME='/home/runner/work/_temp/f08e056c-c53f-4ec0-9fc1-dc0b301d8963' before making global git config changes
+2025-12-28T09:10:42.1743916Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:10:42.1746872Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:42.1784275Z Deleting the contents of '/home/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:42.1788009Z ##[group]Initializing the repository
+2025-12-28T09:10:42.1791583Z [command]/usr/bin/git init /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:42.1912551Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-12-28T09:10:42.1915166Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2025-12-28T09:10:42.1916495Z hint: to use in all of your new repositories, which will suppress this warning,
+2025-12-28T09:10:42.1917763Z hint: call:
+2025-12-28T09:10:42.1918375Z hint:
+2025-12-28T09:10:42.1919796Z hint: 	git config --global init.defaultBranch <name>
+2025-12-28T09:10:42.1920411Z hint:
+2025-12-28T09:10:42.1920997Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-12-28T09:10:42.1922299Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-12-28T09:10:42.1923050Z hint:
+2025-12-28T09:10:42.1923442Z hint: 	git branch -m <name>
+2025-12-28T09:10:42.1923900Z hint:
+2025-12-28T09:10:42.1924799Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-12-28T09:10:42.1926049Z Initialized empty Git repository in /home/runner/work/wood_nano/wood_nano/.git/
+2025-12-28T09:10:42.1928502Z [command]/usr/bin/git remote add origin https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:42.1963524Z ##[endgroup]
+2025-12-28T09:10:42.1964576Z ##[group]Disabling automatic garbage collection
+2025-12-28T09:10:42.1969099Z [command]/usr/bin/git config --local gc.auto 0
+2025-12-28T09:10:42.1998107Z ##[endgroup]
+2025-12-28T09:10:42.1999496Z ##[group]Setting up auth
+2025-12-28T09:10:42.2005793Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:10:42.2036571Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-12-28T09:10:42.2383738Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:10:42.2414271Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-12-28T09:10:42.2630856Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:10:42.2662907Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2025-12-28T09:10:42.2880829Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-12-28T09:10:42.2913335Z ##[endgroup]
+2025-12-28T09:10:42.2914985Z ##[group]Fetching the repository
+2025-12-28T09:10:42.2923058Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829:refs/tags/v0.3.3
+2025-12-28T09:10:42.5779330Z From https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:42.5781445Z  * [new ref]         e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829 -> v0.3.3
+2025-12-28T09:10:42.5806949Z ##[endgroup]
+2025-12-28T09:10:42.5807685Z ##[group]Determining the checkout info
+2025-12-28T09:10:42.5808853Z ##[endgroup]
+2025-12-28T09:10:42.5813632Z [command]/usr/bin/git sparse-checkout disable
+2025-12-28T09:10:42.5853735Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-12-28T09:10:42.5878693Z ##[group]Checking out the ref
+2025-12-28T09:10:42.5882060Z [command]/usr/bin/git checkout --progress --force refs/tags/v0.3.3
+2025-12-28T09:10:42.5948691Z Note: switching to 'refs/tags/v0.3.3'.
+2025-12-28T09:10:42.5949410Z 
+2025-12-28T09:10:42.5949950Z You are in 'detached HEAD' state. You can look around, make experimental
+2025-12-28T09:10:42.5950915Z changes and commit them, and you can discard any commits you make in this
+2025-12-28T09:10:42.5951837Z state without impacting any branches by switching back to a branch.
+2025-12-28T09:10:42.5952369Z 
+2025-12-28T09:10:42.5953013Z If you want to create a new branch to retain commits you create, you may
+2025-12-28T09:10:42.5954774Z do so (now or later) by using -c with the switch command. Example:
+2025-12-28T09:10:42.5955689Z 
+2025-12-28T09:10:42.5956101Z   git switch -c <new-branch-name>
+2025-12-28T09:10:42.5956752Z 
+2025-12-28T09:10:42.5957216Z Or undo this operation with:
+2025-12-28T09:10:42.5957836Z 
+2025-12-28T09:10:42.5958196Z   git switch -
+2025-12-28T09:10:42.5958669Z 
+2025-12-28T09:10:42.5959381Z Turn off this advice by setting config variable advice.detachedHead to false
+2025-12-28T09:10:42.5960680Z 
+2025-12-28T09:10:42.5961110Z HEAD is now at e905ef9 Release v0.3.3
+2025-12-28T09:10:42.5963828Z ##[endgroup]
+2025-12-28T09:10:42.5993627Z [command]/usr/bin/git log -1 --format=%H
+2025-12-28T09:10:42.6015425Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829
+2025-12-28T09:10:42.6252676Z ##[group]Run softprops/action-gh-release@v2
+2025-12-28T09:10:42.6253324Z with:
+2025-12-28T09:10:42.6253770Z   generate_release_notes: true
+2025-12-28T09:10:42.6254460Z   overwrite_files: true
+2025-12-28T09:10:42.6255103Z   token: ***
+2025-12-28T09:10:42.6255557Z ##[endgroup]
+2025-12-28T09:10:43.0218879Z 👩‍🏭 Creating new GitHub release for tag v0.3.3...
+2025-12-28T09:10:43.5097553Z Finalizing release...
+2025-12-28T09:10:43.9027295Z 🎉 Release ready at https://github.com/petrasvestartas/wood_nano/releases/tag/v0.3.3
+2025-12-28T09:10:43.9267051Z Post job cleanup.
+2025-12-28T09:10:44.0208986Z [command]/usr/bin/git version
+2025-12-28T09:10:44.0244465Z git version 2.52.0
+2025-12-28T09:10:44.0287381Z Temporarily overriding HOME='/home/runner/work/_temp/736844d1-074f-4b9a-bea7-77074fc52599' before making global git config changes
+2025-12-28T09:10:44.0291382Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:10:44.0293924Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:44.0328207Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:10:44.0360340Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-12-28T09:10:44.0588025Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:10:44.0619158Z http.https://github.com/.extraheader
+2025-12-28T09:10:44.0627392Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-12-28T09:10:44.0664867Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-12-28T09:10:44.0904437Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:10:44.0939920Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2025-12-28T09:10:44.1300769Z Cleaning up orphan processes

@@ -16,7 +16,7 @@ Configure Trusted Publisher at https://pypi.org/manage/project/wood_nano/setting
 1. Update version in `src/wood_nano/__init__.py`
 2. Run:
 ```bash
-git add -A && git commit -m "Release v0.3.3"
-git tag v0.3.3
+git add -A && git commit -m "Release v0.3.4"
+git tag v0.3.4
 git push origin main --tags
 ```

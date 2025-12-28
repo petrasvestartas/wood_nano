@@ -1,0 +1,26 @@
+﻿2025-12-28T09:11:22.9161394Z Post job cleanup.
+2025-12-28T09:11:23.0090589Z [command]/usr/bin/git version
+2025-12-28T09:11:23.0126351Z git version 2.52.0
+2025-12-28T09:11:23.0170188Z Temporarily overriding HOME='/home/runner/work/_temp/5f9ed0ae-91ff-4541-aaf1-fac1d9f98249' before making global git config changes
+2025-12-28T09:11:23.0171498Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:11:23.0176424Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:11:23.0211736Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:11:23.0243621Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-12-28T09:11:23.0447860Z Entering 'src/wood'
+2025-12-28T09:11:23.0488809Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:23.0550649Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:11:23.0570979Z http.https://github.com/.extraheader
+2025-12-28T09:11:23.0582028Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-12-28T09:11:23.0611929Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-12-28T09:11:23.0815582Z Entering 'src/wood'
+2025-12-28T09:11:23.0839275Z http.https://github.com/.extraheader
+2025-12-28T09:11:23.0871264Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:23.0895357Z http.https://github.com/.extraheader
+2025-12-28T09:11:23.0945041Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:11:23.0976041Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2025-12-28T09:11:23.1196207Z Entering 'src/wood'
+2025-12-28T09:11:23.1215023Z file:/home/runner/work/wood_nano/wood_nano/.git/modules/src/wood/config	remote.origin.url
+2025-12-28T09:11:23.1232193Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:23.1251568Z file:/home/runner/work/wood_nano/wood_nano/.git/modules/src/wood/modules/docs/doxygen-awesome-css/config	remote.origin.url
+2025-12-28T09:11:23.1287067Z [command]/usr/bin/git config --file /home/runner/work/wood_nano/wood_nano/.git/modules/src/wood/config --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:11:23.1318042Z [command]/usr/bin/git config --file /home/runner/work/wood_nano/wood_nano/.git/modules/src/wood/modules/docs/doxygen-awesome-css/config --name-only --get-regexp ^includeIf\.gitdir:

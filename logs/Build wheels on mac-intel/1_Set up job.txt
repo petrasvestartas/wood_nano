@@ -1,0 +1,31 @@
+﻿2025-12-28T09:11:52.9889910Z Current runner version: '2.330.0'
+2025-12-28T09:11:52.9907410Z ##[group]Runner Image Provisioner
+2025-12-28T09:11:52.9907940Z Hosted Compute Agent
+2025-12-28T09:11:52.9908270Z Version: 20251211.462
+2025-12-28T09:11:52.9908640Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2025-12-28T09:11:52.9909060Z Build Date: 2025-12-11T16:28:49Z
+2025-12-28T09:11:52.9909460Z Worker ID: {3720cc9c-6347-42a0-b8ca-ad6794918fc6}
+2025-12-28T09:11:52.9909880Z ##[endgroup]
+2025-12-28T09:11:52.9910210Z ##[group]Operating System
+2025-12-28T09:11:52.9910550Z macOS
+2025-12-28T09:11:52.9910840Z 15.7.2
+2025-12-28T09:11:52.9911110Z 24G325
+2025-12-28T09:11:52.9911380Z ##[endgroup]
+2025-12-28T09:11:52.9911670Z ##[group]Runner Image
+2025-12-28T09:11:52.9911990Z Image: macos-15-arm64
+2025-12-28T09:11:52.9912300Z Version: 20251215.0075.1
+2025-12-28T09:11:52.9912980Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20251215.0075/images/macos/macos-15-arm64-Readme.md
+2025-12-28T09:11:52.9913910Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20251215.0075
+2025-12-28T09:11:52.9914590Z ##[endgroup]
+2025-12-28T09:11:52.9915260Z ##[group]GITHUB_TOKEN Permissions
+2025-12-28T09:11:52.9916410Z Contents: read
+2025-12-28T09:11:52.9916710Z Metadata: read
+2025-12-28T09:11:52.9917000Z Packages: read
+2025-12-28T09:11:52.9917300Z ##[endgroup]
+2025-12-28T09:11:52.9918750Z Secret source: Actions
+2025-12-28T09:11:52.9919150Z Prepare workflow directory
+2025-12-28T09:11:53.0203740Z Prepare all required actions
+2025-12-28T09:11:53.0236440Z Getting action download info
+2025-12-28T09:11:53.4789190Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2025-12-28T09:11:53.7132480Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2025-12-28T09:11:53.9199130Z Complete job name: Build wheels on mac-intel

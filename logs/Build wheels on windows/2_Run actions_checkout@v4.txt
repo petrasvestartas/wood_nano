@@ -1,0 +1,118 @@
+﻿2025-12-28T09:10:50.6789559Z ##[group]Run actions/checkout@v4
+2025-12-28T09:10:50.6790603Z with:
+2025-12-28T09:10:50.6790852Z   fetch-depth: 0
+2025-12-28T09:10:50.6791083Z   submodules: recursive
+2025-12-28T09:10:50.6791577Z   repository: petrasvestartas/wood_nano
+2025-12-28T09:10:50.6792121Z   token: ***
+2025-12-28T09:10:50.6792328Z   ssh-strict: true
+2025-12-28T09:10:50.6792531Z   ssh-user: git
+2025-12-28T09:10:50.6792760Z   persist-credentials: true
+2025-12-28T09:10:50.6792994Z   clean: true
+2025-12-28T09:10:50.6793205Z   sparse-checkout-cone-mode: true
+2025-12-28T09:10:50.6793451Z   fetch-tags: false
+2025-12-28T09:10:50.6793687Z   show-progress: true
+2025-12-28T09:10:50.6793893Z   lfs: false
+2025-12-28T09:10:50.6794089Z   set-safe-directory: true
+2025-12-28T09:10:50.6794570Z ##[endgroup]
+2025-12-28T09:10:50.8807422Z Syncing repository: petrasvestartas/wood_nano
+2025-12-28T09:10:50.8809626Z ##[group]Getting Git version info
+2025-12-28T09:10:50.8810270Z Working directory is 'D:\a\wood_nano\wood_nano'
+2025-12-28T09:10:51.2729189Z [command]"C:\Program Files\Git\bin\git.exe" version
+2025-12-28T09:10:52.2078123Z git version 2.52.0.windows.1
+2025-12-28T09:10:52.2138108Z ##[endgroup]
+2025-12-28T09:10:52.2163580Z Temporarily overriding HOME='D:\a\_temp\b5635173-6396-4ed7-8bd8-81113048d1f1' before making global git config changes
+2025-12-28T09:10:52.2165810Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:10:52.2180095Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\wood_nano\wood_nano
+2025-12-28T09:10:52.4076126Z Deleting the contents of 'D:\a\wood_nano\wood_nano'
+2025-12-28T09:10:52.4083460Z ##[group]Initializing the repository
+2025-12-28T09:10:52.4093710Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\wood_nano\wood_nano
+2025-12-28T09:10:52.5491152Z Initialized empty Git repository in D:/a/wood_nano/wood_nano/.git/
+2025-12-28T09:10:52.5546830Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:52.6227900Z ##[endgroup]
+2025-12-28T09:10:52.6228550Z ##[group]Disabling automatic garbage collection
+2025-12-28T09:10:52.6242645Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2025-12-28T09:10:52.6622658Z ##[endgroup]
+2025-12-28T09:10:52.6623398Z ##[group]Setting up auth
+2025-12-28T09:10:52.6647615Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:10:52.7029040Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2025-12-28T09:10:55.7489342Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:10:55.7838450Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2025-12-28T09:10:56.3998948Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:10:56.4401602Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2025-12-28T09:10:57.0980128Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2025-12-28T09:10:57.1387223Z ##[endgroup]
+2025-12-28T09:10:57.1388242Z ##[group]Fetching the repository
+2025-12-28T09:10:57.1403568Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2025-12-28T09:10:59.0142432Z From https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:59.0143364Z  * [new branch]      main       -> origin/main
+2025-12-28T09:10:59.0148477Z  * [new tag]         v0.3.0     -> v0.3.0
+2025-12-28T09:10:59.0149395Z  * [new tag]         v0.3.1     -> v0.3.1
+2025-12-28T09:10:59.0150315Z  * [new tag]         v0.3.2     -> v0.3.2
+2025-12-28T09:10:59.0150840Z  * [new tag]         v0.3.3     -> v0.3.3
+2025-12-28T09:10:59.0537022Z [command]"C:\Program Files\Git\bin\git.exe" tag --list v0.3.3
+2025-12-28T09:10:59.1020909Z v0.3.3
+2025-12-28T09:10:59.1081549Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/tags/v0.3.3
+2025-12-28T09:10:59.1368408Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829
+2025-12-28T09:10:59.1414128Z ##[endgroup]
+2025-12-28T09:10:59.1414802Z ##[group]Determining the checkout info
+2025-12-28T09:10:59.1416550Z ##[endgroup]
+2025-12-28T09:10:59.1432534Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2025-12-28T09:10:59.1956020Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2025-12-28T09:10:59.2344209Z ##[group]Checking out the ref
+2025-12-28T09:10:59.2354942Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/tags/v0.3.3
+2025-12-28T09:10:59.3102825Z Note: switching to 'refs/tags/v0.3.3'.
+2025-12-28T09:10:59.3104549Z 
+2025-12-28T09:10:59.3104893Z You are in 'detached HEAD' state. You can look around, make experimental
+2025-12-28T09:10:59.3105639Z changes and commit them, and you can discard any commits you make in this
+2025-12-28T09:10:59.3106276Z state without impacting any branches by switching back to a branch.
+2025-12-28T09:10:59.3106663Z 
+2025-12-28T09:10:59.3106910Z If you want to create a new branch to retain commits you create, you may
+2025-12-28T09:10:59.3107568Z do so (now or later) by using -c with the switch command. Example:
+2025-12-28T09:10:59.3107936Z 
+2025-12-28T09:10:59.3108096Z   git switch -c <new-branch-name>
+2025-12-28T09:10:59.3108362Z 
+2025-12-28T09:10:59.3108492Z Or undo this operation with:
+2025-12-28T09:10:59.3108711Z 
+2025-12-28T09:10:59.3108856Z   git switch -
+2025-12-28T09:10:59.3110196Z 
+2025-12-28T09:10:59.3110514Z Turn off this advice by setting config variable advice.detachedHead to false
+2025-12-28T09:10:59.3110976Z 
+2025-12-28T09:10:59.3111106Z HEAD is now at e905ef9 Release v0.3.3
+2025-12-28T09:10:59.3149375Z ##[endgroup]
+2025-12-28T09:10:59.3149931Z ##[group]Setting up auth for fetching submodules
+2025-12-28T09:10:59.3165567Z [command]"C:\Program Files\Git\bin\git.exe" config --global http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2025-12-28T09:10:59.3580827Z [command]"C:\Program Files\Git\bin\git.exe" config --global --unset-all url.https://github.com/.insteadOf
+2025-12-28T09:10:59.3962800Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add url.https://github.com/.insteadOf git@github.com:
+2025-12-28T09:10:59.4369403Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add url.https://github.com/.insteadOf org-18013985@github.com:
+2025-12-28T09:10:59.4777850Z ##[endgroup]
+2025-12-28T09:10:59.4798203Z ##[group]Fetching submodules
+2025-12-28T09:10:59.4799070Z [command]"C:\Program Files\Git\bin\git.exe" submodule sync --recursive
+2025-12-28T09:11:00.1267140Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 submodule update --init --force --recursive
+2025-12-28T09:11:00.8718595Z Submodule 'src/wood' (https://github.com/petrasvestartas/wood) registered for path 'src/wood'
+2025-12-28T09:11:05.1036241Z Cloning into 'D:/a/wood_nano/wood_nano/src/wood'...
+2025-12-28T09:11:07.0877397Z Submodule path 'src/wood': checked out 'f5197f5b7b66c53f9fb39da08c6cf4b39ebb67b5'
+2025-12-28T09:11:07.1049739Z Submodule 'docs/doxygen-awesome-css' (https://github.com/jothepro/doxygen-awesome-css.git) registered for path 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:08.2884530Z Cloning into 'D:/a/wood_nano/wood_nano/src/wood/docs/doxygen-awesome-css'...
+2025-12-28T09:11:08.4238103Z Submodule path 'src/wood/docs/doxygen-awesome-css': checked out 'df88fe4fdd97714fadfd3ef17de0b4401f804052'
+2025-12-28T09:11:08.4534162Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local gc.auto 0"
+2025-12-28T09:11:09.2337599Z Entering 'src/wood'
+2025-12-28T09:11:09.3061823Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:09.3722061Z ##[endgroup]
+2025-12-28T09:11:09.3722658Z ##[group]Persisting credentials for submodules
+2025-12-28T09:11:09.3737092Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'url\.https\:\/\/github\.com\/\.insteadOf' && git config --local --unset-all 'url.https://github.com/.insteadOf' || :\""
+2025-12-28T09:11:09.9652348Z Entering 'src/wood'
+2025-12-28T09:11:10.0590188Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:10.1670898Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local 'http.https://github.com/.extraheader' 'AUTHORIZATION: basic ***' && git config --local --show-origin --name-only --get-regexp remote.origin.url\""
+2025-12-28T09:11:10.9196760Z Entering 'src/wood'
+2025-12-28T09:11:11.0118619Z file:D:/a/wood_nano/wood_nano/.git/modules/src/wood/config	remote.origin.url
+2025-12-28T09:11:11.0330535Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:11.1244347Z file:D:/a/wood_nano/wood_nano/.git/modules/src/wood/modules/docs/doxygen-awesome-css/config	remote.origin.url
+2025-12-28T09:11:11.1631302Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --add 'url.https://github.com/.insteadOf' 'git@github.com:'"
+2025-12-28T09:11:11.8188621Z Entering 'src/wood'
+2025-12-28T09:11:11.8774628Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:11.9453807Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --add 'url.https://github.com/.insteadOf' 'org-18013985@github.com:'"
+2025-12-28T09:11:12.5617628Z Entering 'src/wood'
+2025-12-28T09:11:12.6160782Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:11:12.6838363Z ##[endgroup]
+2025-12-28T09:11:12.7384616Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2025-12-28T09:11:12.7708832Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829

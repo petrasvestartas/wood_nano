@@ -1,0 +1,131 @@
+﻿2025-12-28T09:10:41.2970041Z ##[group]Run actions/checkout@v4
+2025-12-28T09:10:41.2970877Z with:
+2025-12-28T09:10:41.2971266Z   fetch-depth: 0
+2025-12-28T09:10:41.2971682Z   submodules: recursive
+2025-12-28T09:10:41.2972129Z   repository: petrasvestartas/wood_nano
+2025-12-28T09:10:41.2972777Z   token: ***
+2025-12-28T09:10:41.2973150Z   ssh-strict: true
+2025-12-28T09:10:41.2973534Z   ssh-user: git
+2025-12-28T09:10:41.2973924Z   persist-credentials: true
+2025-12-28T09:10:41.2974370Z   clean: true
+2025-12-28T09:10:41.2974757Z   sparse-checkout-cone-mode: true
+2025-12-28T09:10:41.2975226Z   fetch-tags: false
+2025-12-28T09:10:41.2975622Z   show-progress: true
+2025-12-28T09:10:41.2976009Z   lfs: false
+2025-12-28T09:10:41.2976381Z   set-safe-directory: true
+2025-12-28T09:10:41.2977003Z ##[endgroup]
+2025-12-28T09:10:41.4039001Z Syncing repository: petrasvestartas/wood_nano
+2025-12-28T09:10:41.4040780Z ##[group]Getting Git version info
+2025-12-28T09:10:41.4041527Z Working directory is '/home/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:41.4042629Z [command]/usr/bin/git version
+2025-12-28T09:10:41.4109413Z git version 2.52.0
+2025-12-28T09:10:41.4135647Z ##[endgroup]
+2025-12-28T09:10:41.4149704Z Temporarily overriding HOME='/home/runner/work/_temp/b5c531b1-9cd8-4d00-97ae-ee5cb31d359f' before making global git config changes
+2025-12-28T09:10:41.4161711Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:10:41.4162877Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:41.4199271Z Deleting the contents of '/home/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:41.4202756Z ##[group]Initializing the repository
+2025-12-28T09:10:41.4206537Z [command]/usr/bin/git init /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:41.4306679Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-12-28T09:10:41.4308077Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2025-12-28T09:10:41.4309612Z hint: to use in all of your new repositories, which will suppress this warning,
+2025-12-28T09:10:41.4311064Z hint: call:
+2025-12-28T09:10:41.4311639Z hint:
+2025-12-28T09:10:41.4312535Z hint: 	git config --global init.defaultBranch <name>
+2025-12-28T09:10:41.4313311Z hint:
+2025-12-28T09:10:41.4313853Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-12-28T09:10:41.4314730Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-12-28T09:10:41.4315402Z hint:
+2025-12-28T09:10:41.4315774Z hint: 	git branch -m <name>
+2025-12-28T09:10:41.4316205Z hint:
+2025-12-28T09:10:41.4316930Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-12-28T09:10:41.4318399Z Initialized empty Git repository in /home/runner/work/wood_nano/wood_nano/.git/
+2025-12-28T09:10:41.4322958Z [command]/usr/bin/git remote add origin https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:41.4355585Z ##[endgroup]
+2025-12-28T09:10:41.4356295Z ##[group]Disabling automatic garbage collection
+2025-12-28T09:10:41.4359699Z [command]/usr/bin/git config --local gc.auto 0
+2025-12-28T09:10:41.4387827Z ##[endgroup]
+2025-12-28T09:10:41.4388518Z ##[group]Setting up auth
+2025-12-28T09:10:41.4394407Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:10:41.4424085Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-12-28T09:10:41.4825159Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:10:41.4861569Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-12-28T09:10:41.5094816Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:10:41.5126031Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2025-12-28T09:10:41.5380036Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-12-28T09:10:41.7077874Z ##[endgroup]
+2025-12-28T09:10:41.7079507Z ##[group]Fetching the repository
+2025-12-28T09:10:41.7089318Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2025-12-28T09:10:41.9990044Z From https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:41.9991660Z  * [new branch]      main       -> origin/main
+2025-12-28T09:10:41.9992753Z  * [new tag]         v0.3.0     -> v0.3.0
+2025-12-28T09:10:41.9993746Z  * [new tag]         v0.3.1     -> v0.3.1
+2025-12-28T09:10:41.9994720Z  * [new tag]         v0.3.2     -> v0.3.2
+2025-12-28T09:10:41.9995827Z  * [new tag]         v0.3.3     -> v0.3.3
+2025-12-28T09:10:42.0041563Z [command]/usr/bin/git tag --list v0.3.3
+2025-12-28T09:10:42.0069742Z v0.3.3
+2025-12-28T09:10:42.0080191Z [command]/usr/bin/git rev-parse refs/tags/v0.3.3
+2025-12-28T09:10:42.0101362Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829
+2025-12-28T09:10:42.0110256Z ##[endgroup]
+2025-12-28T09:10:42.0111417Z ##[group]Determining the checkout info
+2025-12-28T09:10:42.0112658Z ##[endgroup]
+2025-12-28T09:10:42.0113906Z [command]/usr/bin/git sparse-checkout disable
+2025-12-28T09:10:42.0155462Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-12-28T09:10:42.0183023Z ##[group]Checking out the ref
+2025-12-28T09:10:42.0187757Z [command]/usr/bin/git checkout --progress --force refs/tags/v0.3.3
+2025-12-28T09:10:42.0244819Z Note: switching to 'refs/tags/v0.3.3'.
+2025-12-28T09:10:42.0245803Z 
+2025-12-28T09:10:42.0246352Z You are in 'detached HEAD' state. You can look around, make experimental
+2025-12-28T09:10:42.0247960Z changes and commit them, and you can discard any commits you make in this
+2025-12-28T09:10:42.0250149Z state without impacting any branches by switching back to a branch.
+2025-12-28T09:10:42.0251804Z 
+2025-12-28T09:10:42.0252615Z If you want to create a new branch to retain commits you create, you may
+2025-12-28T09:10:42.0254496Z do so (now or later) by using -c with the switch command. Example:
+2025-12-28T09:10:42.0255595Z 
+2025-12-28T09:10:42.0256046Z   git switch -c <new-branch-name>
+2025-12-28T09:10:42.0256873Z 
+2025-12-28T09:10:42.0257636Z Or undo this operation with:
+2025-12-28T09:10:42.0258435Z 
+2025-12-28T09:10:42.0259238Z   git switch -
+2025-12-28T09:10:42.0259713Z 
+2025-12-28T09:10:42.0260301Z Turn off this advice by setting config variable advice.detachedHead to false
+2025-12-28T09:10:42.0261171Z 
+2025-12-28T09:10:42.0261448Z HEAD is now at e905ef9 Release v0.3.3
+2025-12-28T09:10:42.0263405Z ##[endgroup]
+2025-12-28T09:10:42.0264396Z ##[group]Setting up auth for fetching submodules
+2025-12-28T09:10:42.0266052Z [command]/usr/bin/git config --global http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-12-28T09:10:42.0301167Z [command]/usr/bin/git config --global --unset-all url.https://github.com/.insteadOf
+2025-12-28T09:10:42.0330147Z [command]/usr/bin/git config --global --add url.https://github.com/.insteadOf git@github.com:
+2025-12-28T09:10:42.0357716Z [command]/usr/bin/git config --global --add url.https://github.com/.insteadOf org-18013985@github.com:
+2025-12-28T09:10:42.0382902Z ##[endgroup]
+2025-12-28T09:10:42.0384336Z ##[group]Fetching submodules
+2025-12-28T09:10:42.0385777Z [command]/usr/bin/git submodule sync --recursive
+2025-12-28T09:10:42.0614768Z [command]/usr/bin/git -c protocol.version=2 submodule update --init --force --recursive
+2025-12-28T09:10:42.0829981Z Submodule 'src/wood' (https://github.com/petrasvestartas/wood) registered for path 'src/wood'
+2025-12-28T09:10:42.0854090Z Cloning into '/home/runner/work/wood_nano/wood_nano/src/wood'...
+2025-12-28T09:10:45.1812808Z Submodule path 'src/wood': checked out 'f5197f5b7b66c53f9fb39da08c6cf4b39ebb67b5'
+2025-12-28T09:10:45.1832832Z Submodule 'docs/doxygen-awesome-css' (https://github.com/jothepro/doxygen-awesome-css.git) registered for path 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:45.1859320Z Cloning into '/home/runner/work/wood_nano/wood_nano/src/wood/docs/doxygen-awesome-css'...
+2025-12-28T09:10:45.5999727Z Submodule path 'src/wood/docs/doxygen-awesome-css': checked out 'df88fe4fdd97714fadfd3ef17de0b4401f804052'
+2025-12-28T09:10:45.6034694Z [command]/usr/bin/git submodule foreach --recursive git config --local gc.auto 0
+2025-12-28T09:10:45.6250512Z Entering 'src/wood'
+2025-12-28T09:10:45.6285462Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:45.6332062Z ##[endgroup]
+2025-12-28T09:10:45.6332536Z ##[group]Persisting credentials for submodules
+2025-12-28T09:10:45.6338368Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'url\.https\:\/\/github\.com\/\.insteadOf' && git config --local --unset-all 'url.https://github.com/.insteadOf' || :"
+2025-12-28T09:10:45.6540211Z Entering 'src/wood'
+2025-12-28T09:10:45.6581306Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:45.6636285Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local 'http.https://github.com/.extraheader' 'AUTHORIZATION: basic ***' && git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2025-12-28T09:10:45.6837126Z Entering 'src/wood'
+2025-12-28T09:10:45.6874948Z file:/home/runner/work/wood_nano/wood_nano/.git/modules/src/wood/config	remote.origin.url
+2025-12-28T09:10:45.6893532Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:45.6931464Z file:/home/runner/work/wood_nano/wood_nano/.git/modules/src/wood/modules/docs/doxygen-awesome-css/config	remote.origin.url
+2025-12-28T09:10:45.6976153Z [command]/usr/bin/git submodule foreach --recursive git config --local --add 'url.https://github.com/.insteadOf' 'git@github.com:'
+2025-12-28T09:10:45.7179358Z Entering 'src/wood'
+2025-12-28T09:10:45.7214163Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:45.7268055Z [command]/usr/bin/git submodule foreach --recursive git config --local --add 'url.https://github.com/.insteadOf' 'org-18013985@github.com:'
+2025-12-28T09:10:45.7488876Z Entering 'src/wood'
+2025-12-28T09:10:45.7524900Z Entering 'src/wood/docs/doxygen-awesome-css'
+2025-12-28T09:10:45.7572366Z ##[endgroup]
+2025-12-28T09:10:45.7613753Z [command]/usr/bin/git log -1 --format=%H
+2025-12-28T09:10:45.7636940Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829

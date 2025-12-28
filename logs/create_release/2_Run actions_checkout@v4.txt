@@ -1,0 +1,88 @@
+﻿2025-12-28T09:10:42.0545404Z ##[group]Run actions/checkout@v4
+2025-12-28T09:10:42.0546410Z with:
+2025-12-28T09:10:42.0546863Z   repository: petrasvestartas/wood_nano
+2025-12-28T09:10:42.0547638Z   token: ***
+2025-12-28T09:10:42.0548034Z   ssh-strict: true
+2025-12-28T09:10:42.0548446Z   ssh-user: git
+2025-12-28T09:10:42.0548858Z   persist-credentials: true
+2025-12-28T09:10:42.0549316Z   clean: true
+2025-12-28T09:10:42.0549729Z   sparse-checkout-cone-mode: true
+2025-12-28T09:10:42.0550228Z   fetch-depth: 1
+2025-12-28T09:10:42.0550627Z   fetch-tags: false
+2025-12-28T09:10:42.0551045Z   show-progress: true
+2025-12-28T09:10:42.0551470Z   lfs: false
+2025-12-28T09:10:42.0551851Z   submodules: false
+2025-12-28T09:10:42.0552292Z   set-safe-directory: true
+2025-12-28T09:10:42.0552976Z ##[endgroup]
+2025-12-28T09:10:42.1626259Z Syncing repository: petrasvestartas/wood_nano
+2025-12-28T09:10:42.1628497Z ##[group]Getting Git version info
+2025-12-28T09:10:42.1629293Z Working directory is '/home/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:42.1630426Z [command]/usr/bin/git version
+2025-12-28T09:10:42.1692990Z git version 2.52.0
+2025-12-28T09:10:42.1720109Z ##[endgroup]
+2025-12-28T09:10:42.1741600Z Temporarily overriding HOME='/home/runner/work/_temp/f08e056c-c53f-4ec0-9fc1-dc0b301d8963' before making global git config changes
+2025-12-28T09:10:42.1743909Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-28T09:10:42.1746850Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:42.1784244Z Deleting the contents of '/home/runner/work/wood_nano/wood_nano'
+2025-12-28T09:10:42.1787993Z ##[group]Initializing the repository
+2025-12-28T09:10:42.1791567Z [command]/usr/bin/git init /home/runner/work/wood_nano/wood_nano
+2025-12-28T09:10:42.1912522Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-12-28T09:10:42.1915140Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2025-12-28T09:10:42.1916446Z hint: to use in all of your new repositories, which will suppress this warning,
+2025-12-28T09:10:42.1917757Z hint: call:
+2025-12-28T09:10:42.1918369Z hint:
+2025-12-28T09:10:42.1919780Z hint: 	git config --global init.defaultBranch <name>
+2025-12-28T09:10:42.1920407Z hint:
+2025-12-28T09:10:42.1920993Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-12-28T09:10:42.1922285Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-12-28T09:10:42.1923046Z hint:
+2025-12-28T09:10:42.1923439Z hint: 	git branch -m <name>
+2025-12-28T09:10:42.1923896Z hint:
+2025-12-28T09:10:42.1924790Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-12-28T09:10:42.1926041Z Initialized empty Git repository in /home/runner/work/wood_nano/wood_nano/.git/
+2025-12-28T09:10:42.1928485Z [command]/usr/bin/git remote add origin https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:42.1963503Z ##[endgroup]
+2025-12-28T09:10:42.1964539Z ##[group]Disabling automatic garbage collection
+2025-12-28T09:10:42.1969064Z [command]/usr/bin/git config --local gc.auto 0
+2025-12-28T09:10:42.1998070Z ##[endgroup]
+2025-12-28T09:10:42.1999470Z ##[group]Setting up auth
+2025-12-28T09:10:42.2005760Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-12-28T09:10:42.2036539Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-12-28T09:10:42.2383680Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-28T09:10:42.2414234Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-12-28T09:10:42.2630484Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-28T09:10:42.2662876Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2025-12-28T09:10:42.2880788Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-12-28T09:10:42.2913306Z ##[endgroup]
+2025-12-28T09:10:42.2914960Z ##[group]Fetching the repository
+2025-12-28T09:10:42.2923026Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829:refs/tags/v0.3.3
+2025-12-28T09:10:42.5779260Z From https://github.com/petrasvestartas/wood_nano
+2025-12-28T09:10:42.5781416Z  * [new ref]         e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829 -> v0.3.3
+2025-12-28T09:10:42.5806924Z ##[endgroup]
+2025-12-28T09:10:42.5807681Z ##[group]Determining the checkout info
+2025-12-28T09:10:42.5808834Z ##[endgroup]
+2025-12-28T09:10:42.5813614Z [command]/usr/bin/git sparse-checkout disable
+2025-12-28T09:10:42.5853663Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-12-28T09:10:42.5878672Z ##[group]Checking out the ref
+2025-12-28T09:10:42.5882036Z [command]/usr/bin/git checkout --progress --force refs/tags/v0.3.3
+2025-12-28T09:10:42.5948663Z Note: switching to 'refs/tags/v0.3.3'.
+2025-12-28T09:10:42.5949403Z 
+2025-12-28T09:10:42.5949945Z You are in 'detached HEAD' state. You can look around, make experimental
+2025-12-28T09:10:42.5950911Z changes and commit them, and you can discard any commits you make in this
+2025-12-28T09:10:42.5951833Z state without impacting any branches by switching back to a branch.
+2025-12-28T09:10:42.5952365Z 
+2025-12-28T09:10:42.5952996Z If you want to create a new branch to retain commits you create, you may
+2025-12-28T09:10:42.5954751Z do so (now or later) by using -c with the switch command. Example:
+2025-12-28T09:10:42.5955670Z 
+2025-12-28T09:10:42.5956091Z   git switch -c <new-branch-name>
+2025-12-28T09:10:42.5956739Z 
+2025-12-28T09:10:42.5957164Z Or undo this operation with:
+2025-12-28T09:10:42.5957819Z 
+2025-12-28T09:10:42.5958188Z   git switch -
+2025-12-28T09:10:42.5958663Z 
+2025-12-28T09:10:42.5959371Z Turn off this advice by setting config variable advice.detachedHead to false
+2025-12-28T09:10:42.5960669Z 
+2025-12-28T09:10:42.5961096Z HEAD is now at e905ef9 Release v0.3.3
+2025-12-28T09:10:42.5963807Z ##[endgroup]
+2025-12-28T09:10:42.5993598Z [command]/usr/bin/git log -1 --format=%H
+2025-12-28T09:10:42.6015400Z e905ef95d13fed3bbcc0e9dc5dd34b9e6efa1829

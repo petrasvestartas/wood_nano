@@ -28,9 +28,9 @@ jobs:
           - os: ubuntu-latest
             platform: manylinux
           - os: macos-15
-            platform: mac-intel
-          - os: macos-14
             platform: mac-arm
+          - os: macos-15-intel
+            platform: mac-intel
           - os: windows-latest
             platform: windows
 

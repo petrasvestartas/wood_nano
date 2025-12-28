@@ -1,0 +1,20 @@
+﻿2025-12-28T09:19:40.5574910Z ##[group]Run actions/upload-artifact@v4
+2025-12-28T09:19:40.5575230Z with:
+2025-12-28T09:19:40.5575470Z   name: wheels-mac-intel
+2025-12-28T09:19:40.5575700Z   path: wheelhouse/*.whl
+2025-12-28T09:19:40.5575910Z   if-no-files-found: warn
+2025-12-28T09:19:40.5576190Z   compression-level: 6
+2025-12-28T09:19:40.5576420Z   overwrite: false
+2025-12-28T09:19:40.5576600Z   include-hidden-files: false
+2025-12-28T09:19:40.5576840Z ##[endgroup]
+2025-12-28T09:19:40.9826750Z With the provided path, there will be 4 files uploaded
+2025-12-28T09:19:40.9827660Z Artifact name is valid!
+2025-12-28T09:19:40.9828070Z Root directory input is valid!
+2025-12-28T09:19:41.2659230Z Beginning upload of artifact content to blob storage
+2025-12-28T09:19:42.4080960Z Uploaded bytes 6610473
+2025-12-28T09:19:42.4865580Z Finished uploading artifact content to blob storage!
+2025-12-28T09:19:42.4867030Z SHA256 digest of uploaded artifact zip is 0b57e3cb0f19ead354c79b2ca88a68bb5429240d5588e44125e438fbbd9e6cea
+2025-12-28T09:19:42.4868060Z Finalizing artifact upload
+2025-12-28T09:19:42.6430440Z Artifact wheels-mac-intel.zip successfully finalized. Artifact ID 4978088817
+2025-12-28T09:19:42.6431180Z Artifact wheels-mac-intel has been successfully uploaded! Final size is 6610473 bytes. Artifact ID is 4978088817
+2025-12-28T09:19:42.6432110Z Artifact download URL: https://github.com/petrasvestartas/wood_nano/actions/runs/20551663192/artifacts/4978088817
