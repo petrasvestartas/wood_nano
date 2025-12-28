@@ -1,4 +1,4 @@
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 
 from .wood_nano_ext import add
 from .wood_nano_ext import version
