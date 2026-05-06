@@ -4,6 +4,7 @@
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
 namespace nb = nanobind;
@@ -47,6 +48,41 @@ NB_MODULE(_chevron, m) {
             [](const Chevron& c) { return c.insertion_vectors; })
         .def_prop_ro("joints_per_face",
             [](const Chevron& c) { return c.joints_per_face; });
+
+    m.def("make_chevron_annen",
+        [](const std::string& json_path, int surface_idx,
+           int    u_divisions,
+           double v_division_dist,
+           double shift,
+           double scale,
+           double box_height,
+           double top_plate_inlet,
+           double plate_thickness,
+           double edge_rotation,
+           double edge_offset) {
+            auto surfaces = wood_chevron::annen_surfaces(json_path);
+            if (surfaces.empty())
+                throw std::runtime_error("make_chevron_annen: failed to load " + json_path);
+            if (surface_idx < 0 || surface_idx >= (int)surfaces.size())
+                throw std::out_of_range(
+                    "make_chevron_annen: surface_idx " + std::to_string(surface_idx) +
+                    " out of range [0.." + std::to_string((int)surfaces.size() - 1) + "]");
+            return Chevron(surfaces[surface_idx],
+                           u_divisions, v_division_dist, shift, scale,
+                           box_height, top_plate_inlet, plate_thickness,
+                           edge_rotation, edge_offset);
+        },
+        "json_path"_a,
+        "surface_idx"_a     = 0,
+        "u_divisions"_a     = 4,
+        "v_division_dist"_a = 900.0,
+        "shift"_a           = 0.5,
+        "scale"_a           = 0.05799,
+        "box_height"_a      = 760.0,
+        "top_plate_inlet"_a = 80.0,
+        "plate_thickness"_a = 40.0,
+        "edge_rotation"_a   = 1.0,
+        "edge_offset"_a     = 0.5);
 
     m.def("make_default_chevron",
         [](int    u_divisions,

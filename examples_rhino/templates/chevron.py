@@ -1,40 +1,122 @@
 #! python3
+import json
+import System
+import scriptcontext as sc
 import Rhino
+import Rhino.Geometry as rg
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
-from wood_nano import chevron_elements
+from wood_nano import chevron_elements, chevron_elements_annen
+
+# Path to the 23 Annen building NURBS surfaces.
+# surface_idx -1 → built-in flat 3000×5000 surface.
+# surface_idx 0..22 → Annen surface from this JSON.
+ANNEN_JSON = r"c:\pc\3_code\code_cpp\wood\data\annen_surfaces.json"
 
 session = Session()
+_srf_guids = []       # GUIDs of the displayed NURBS surface (managed separately)
+_annen_data = None    # cached JSON data
+
+
+def _load_annen():
+    global _annen_data
+    if _annen_data is None:
+        try:
+            with open(ANNEN_JSON) as f:
+                _annen_data = json.load(f)
+        except Exception as e:
+            Rhino.RhinoApp.WriteLine(f"Cannot load annen_surfaces.json: {e}")
+    return _annen_data
+
+
+def _expand_knots(mults, vals):
+    knots = []
+    for m, v in zip(mults, vals):
+        knots.extend([v] * m)
+    return knots[1:-1]   # strip first/last (OpenNURBS convention)
+
+
+def _build_rhino_surface(s):
+    rsrf = rg.NurbsSurface.Create(
+        3, False, s["degree_u"] + 1, s["degree_v"] + 1, s["n_u"], s["n_v"]
+    )
+    for i, k in enumerate(_expand_knots(s["u_mults"], s["u_nurbsknots"])):
+        rsrf.KnotsU[i] = k
+    for i, k in enumerate(_expand_knots(s["v_mults"], s["v_nurbsknots"])):
+        rsrf.KnotsV[i] = k
+    for i in range(s["n_u"]):
+        for j in range(s["n_v"]):
+            rsrf.Points.SetPoint(i, j, rg.Point3d(*s["points"][i][j]))
+    return rsrf
 
 
 def _run(v, _):
-    if v["plate_thickness"] == 0:
-        Rhino.RhinoApp.WriteLine("plate_thickness must not be zero.")
-        return
-    shell, elements = chevron_elements(
-        u_divisions=v["u_divisions"],
-        v_division_dist=v["v_division_dist"],
-        box_height=v["box_height"],
-        plate_thickness=v["plate_thickness"],
-        edge_rotation=v["edge_rotation"],
-        edge_offset=v["edge_offset"],
-    )
+    global _srf_guids
+
+    # Delete previous NURBS surface display
+    doc = sc.doc
+    for g in _srf_guids:
+        doc.Objects.Delete(g, True)
+    _srf_guids.clear()
+
+    surface_idx = v["surface_idx"]
+
+    if surface_idx >= 0:
+        data = _load_annen()
+        if data is None:
+            return
+        if surface_idx >= len(data):
+            Rhino.RhinoApp.WriteLine(
+                f"surface_idx must be 0..{len(data) - 1}  (got {surface_idx})"
+            )
+            return
+
+        # Display the original NURBS surface alongside the chevron mesh
+        rsrf = _build_rhino_surface(data[surface_idx])
+        if rsrf and rsrf.IsValid:
+            g = doc.Objects.AddSurface(rsrf)
+            if g != System.Guid.Empty:
+                _srf_guids.append(g)
+
+        shell, elements = chevron_elements_annen(
+            ANNEN_JSON, surface_idx,
+            u_divisions=v["u_divisions"],
+            v_division_dist=v["v_division_dist"],
+            box_height=v["box_height"],
+            plate_thickness=v["plate_thickness"],
+            edge_rotation=v["edge_rotation"],
+            edge_offset=v["edge_offset"],
+        )
+    else:
+        shell, elements = chevron_elements(
+            u_divisions=v["u_divisions"],
+            v_division_dist=v["v_division_dist"],
+            box_height=v["box_height"],
+            plate_thickness=v["plate_thickness"],
+            edge_rotation=v["edge_rotation"],
+            edge_offset=v["edge_offset"],
+        )
+
     session.add(shell)
     for el in elements:
         session.add(el.bottom, el.top, el.loft_mesh())
     session.draw()
+    doc.Views.Redraw()
     Rhino.RhinoApp.WriteLine(
-        f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}")
+        f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}"
+        + (f"  [Annen #{surface_idx}]" if surface_idx >= 0 else "  [default]")
+    )
 
 
 process_input(
     {
-        "u_divisions":    (4,     int),
-        "v_division_dist":(900.0, float),
-        "box_height":     (760.0, float),
-        "plate_thickness":(40.0,  float),
-        "edge_rotation":  (1.0,   float),
-        "edge_offset":    (0.5,   float),
+        "surface_idx":     (-1,    int),   # -1 = built-in flat; 0..22 = Annen surface
+        "u_divisions":     (4,     int),
+        "v_division_dist": (900.0, float),
+        "box_height":      (760.0, float),
+        "plate_thickness": (40.0,  float),
+        "edge_rotation":   (1.0,   float),
+        "edge_offset":     (0.5,   float),
     },
     callback=_run,
 )

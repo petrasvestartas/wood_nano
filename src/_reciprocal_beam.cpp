@@ -48,6 +48,34 @@ static nb::list polylines_to_list(const std::vector<Polyline>& pls)
     return result;
 }
 
+static ReciprocalBeam build_from_mesh_data(
+    nb::list vertices_list, nb::list faces_list,
+    double angle, double scale, double beam_w,
+    double extend_factor, double cut_offset_factor)
+{
+    std::vector<Point> pts;
+    pts.reserve(vertices_list.size());
+    for (size_t i = 0; i < vertices_list.size(); i++) {
+        auto row = nb::cast<nb::list>(vertices_list[i]);
+        pts.emplace_back(nb::cast<double>(row[0]),
+                         nb::cast<double>(row[1]),
+                         nb::cast<double>(row[2]));
+    }
+    std::vector<std::vector<size_t>> faces;
+    faces.reserve(faces_list.size());
+    for (size_t i = 0; i < faces_list.size(); i++) {
+        auto fl = nb::cast<nb::list>(faces_list[i]);
+        std::vector<size_t> f;
+        f.reserve(fl.size());
+        for (size_t j = 0; j < fl.size(); j++)
+            f.push_back((size_t)nb::cast<int>(fl[j]));
+        faces.push_back(std::move(f));
+    }
+    Mesh m = Mesh::from_vertices_and_faces(pts, faces);
+    return ReciprocalBeam(std::move(m), angle, scale, beam_w,
+                          extend_factor, cut_offset_factor);
+}
+
 NB_MODULE(_reciprocal_beam, m) {
 
     nb::class_<ReciprocalBeam>(m, "ReciprocalBeam")
@@ -64,6 +92,22 @@ NB_MODULE(_reciprocal_beam, m) {
             [](const ReciprocalBeam& r) { return polylines_to_list(r.side0); })
         .def_prop_ro("side1",
             [](const ReciprocalBeam& r) { return polylines_to_list(r.side1); });
+
+    m.def("make_reciprocal_beam_from_mesh",
+        [](nb::list vertices_list, nb::list faces_list,
+           double angle, double scale, double beam_w,
+           double extend_factor, double cut_offset_factor) {
+            return build_from_mesh_data(vertices_list, faces_list,
+                                        angle, scale, beam_w,
+                                        extend_factor, cut_offset_factor);
+        },
+        "vertices"_a,
+        "faces"_a,
+        "angle"_a             = 0.35,
+        "scale"_a             = 1.4,
+        "beam_w"_a            = 0.10,
+        "extend_factor"_a     = 5.0,
+        "cut_offset_factor"_a = 1.0);
 
     m.def("make_default_reciprocal_beam",
         [](int nx, int ny, double W, double D, double h,

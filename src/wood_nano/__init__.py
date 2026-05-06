@@ -2,8 +2,8 @@ __version__ = "1.0.1"
 
 from wood_nano.translation_shell import translation_shell_elements
 from wood_nano.reflex_fold import reflex_fold_elements
-from wood_nano.chevron import chevron_elements
-from wood_nano.reciprocal_beam import reciprocal_beam_elements
+from wood_nano.chevron import chevron_elements, chevron_elements_annen
+from wood_nano.reciprocal_beam import reciprocal_beam_elements, reciprocal_beam_elements_from_mesh
 from wood_nano.wood_element import WoodElement
 from wood_nano import _wood_element
 from wood_nano import _translation_shell
@@ -15,7 +15,9 @@ __all__ = [
     "translation_shell_elements",
     "reflex_fold_elements",
     "chevron_elements",
+    "chevron_elements_annen",
     "reciprocal_beam_elements",
+    "reciprocal_beam_elements_from_mesh",
     "WoodElement",
     "_wood_element",
     "_translation_shell",
