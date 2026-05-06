@@ -8,6 +8,9 @@ session = Session()
 
 
 def _run(v, _):
+    if v["thickness"] == 0:
+        Rhino.RhinoApp.WriteLine("thickness must not be zero.")
+        return
     pls = v["polylines"]
     if len(pls) == 1:
         Rhino.RhinoApp.WriteLine("Select 2 polylines: cross_section first, profile second.")
@@ -28,7 +31,7 @@ process_input(
         "polylines":     ([], list[Rhino.Geometry.Polyline], "Select 2 polylines: cross_section first, profile second."),
         "thickness":     (10.0, float),
         "chamfer":       (20.0, float),
-        "chamfer_angle": (45.0, float),
+        "chamfer_angle": (180.0, float),
     },
     callback=_run,
 )

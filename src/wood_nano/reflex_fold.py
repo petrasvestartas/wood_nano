@@ -11,7 +11,7 @@ def reflex_fold_elements(
     profile: Polyline | None = None,
     thickness: float = 10.0,
     chamfer: float = 20.0,
-    chamfer_angle: float = 45.0,
+    chamfer_angle: float = 180.0,
 ) -> tuple:
     """Fold profile along cross_section → shell mesh + plate elements.
 

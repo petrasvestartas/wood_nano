@@ -59,7 +59,7 @@ NB_MODULE(_translation_shell, m) {
                                     thickness, chamfer, chamfer_angle);
         },
         "cross_section"_a, "profile"_a,
-        "thickness"_a = 10.0, "chamfer"_a = 1.0, "chamfer_angle"_a = 90.0);
+        "thickness"_a = 10.0, "chamfer"_a = 1.0, "chamfer_angle"_a = 180.0);
 
     m.def("make_default_translation_shell",
         [](double thickness, double chamfer, double chamfer_angle) {
@@ -67,5 +67,5 @@ NB_MODULE(_translation_shell, m) {
                                     TranslationShell::default_profile(),
                                     thickness, chamfer, chamfer_angle);
         },
-        "thickness"_a = 10.0, "chamfer"_a = 1.0, "chamfer_angle"_a = 90.0);
+        "thickness"_a = 10.0, "chamfer"_a = 1.0, "chamfer_angle"_a = 180.0);
 }

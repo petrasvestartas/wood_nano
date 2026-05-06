@@ -40,6 +40,7 @@ find_package(nanobind CONFIG REQUIRED)
 set(WOOD_INCLUDES
     ${SESSION_CPP_DIR}
     ${WOOD_DIR}
+    ${WOOD_DIR}/src
     ${WOOD_DIR}/src/joinery_solver
     ${WOOD_DIR}/src/templates
 )
@@ -71,10 +72,31 @@ target_include_directories(_reflex_fold PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_reflex_fold PRIVATE session_core)
 LINK_PROTOBUF(_reflex_fold)
 
+# _chevron — imports _wood_element for the shared WoodElement type
+nanobind_add_module(_chevron STABLE_ABI NB_STATIC
+    src/_chevron.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
+)
+target_include_directories(_chevron PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_chevron PRIVATE session_core)
+LINK_PROTOBUF(_chevron)
+
+# _reciprocal_beam — no WoodElement; uses session_core Reciprocal + Intersection
+nanobind_add_module(_reciprocal_beam STABLE_ABI NB_STATIC
+    src/_reciprocal_beam.cpp
+)
+target_include_directories(_reciprocal_beam PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_reciprocal_beam PRIVATE session_core)
+LINK_PROTOBUF(_reciprocal_beam)
+
 if(MSVC)
     target_compile_options(_wood_element      PRIVATE /W3 /utf-8)
     target_compile_options(_translation_shell PRIVATE /W3 /utf-8)
     target_compile_options(_reflex_fold       PRIVATE /W3 /utf-8)
+    target_compile_options(_chevron           PRIVATE /W3 /utf-8)
+    target_compile_options(_reciprocal_beam   PRIVATE /W3 /utf-8)
 endif()
 
-install(TARGETS _wood_element _translation_shell _reflex_fold LIBRARY DESTINATION wood_nano)
+install(TARGETS
+    _wood_element _translation_shell _reflex_fold _chevron _reciprocal_beam
+    LIBRARY DESTINATION wood_nano)

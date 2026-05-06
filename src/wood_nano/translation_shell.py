@@ -11,7 +11,7 @@ def translation_shell_elements(
     profile: Polyline | None = None,
     thickness: float = 10.0,
     chamfer: float = 1.0,
-    chamfer_angle: float = 90.0,
+    chamfer_angle: float = 180.0,
 ) -> tuple:
     """Sweep cross_section along profile → shell mesh + plate elements.
 

@@ -60,7 +60,7 @@ NB_MODULE(_reflex_fold, m) {
                               thickness, chamfer, chamfer, chamfer_angle);
         },
         "cross_section"_a, "profile"_a,
-        "thickness"_a = 10.0, "chamfer"_a = 20.0, "chamfer_angle"_a = 45.0);
+        "thickness"_a = 10.0, "chamfer"_a = 20.0, "chamfer_angle"_a = 180.0);
 
     m.def("make_default_reflex_fold",
         [](double thickness, double chamfer, double chamfer_angle) {
@@ -68,5 +68,5 @@ NB_MODULE(_reflex_fold, m) {
                               ReflexFold::default_profile(),
                               thickness, chamfer, chamfer, chamfer_angle);
         },
-        "thickness"_a = 10.0, "chamfer"_a = 20.0, "chamfer_angle"_a = 45.0);
+        "thickness"_a = 10.0, "chamfer"_a = 20.0, "chamfer_angle"_a = 180.0);
 }
