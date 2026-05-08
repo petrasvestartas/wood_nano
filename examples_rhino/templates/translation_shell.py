@@ -3,11 +3,13 @@ import Rhino
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import translation_shell_elements
+from wood_nano.wood_element import unweld_mesh
 
-session = Session()
+session    = Session()
 
 
 def _run(v, _):
+    global _first_run
     if v["thickness"] == 0:
         Rhino.RhinoApp.WriteLine("thickness must not be zero.")
         return
@@ -22,7 +24,7 @@ def _run(v, _):
     )
     session.add(shell)
     for el in elements:
-        session.add(el.bottom, el.top, el.loft_mesh())
+        session.add(el.bottom, el.top, unweld_mesh(el.loft_mesh()))
     session.draw()
 
 

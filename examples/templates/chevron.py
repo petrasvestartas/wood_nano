@@ -1,7 +1,7 @@
 from wood_nano import chevron_elements
 
 # Default chevron shell (built-in 3000×5000 flat surface)
-mesh, elements = chevron_elements(
+mesh, elements, loft_meshes = chevron_elements(
     u_divisions=4,
     v_division_dist=900.0,
     box_height=760.0,

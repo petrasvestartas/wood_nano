@@ -89,14 +89,34 @@ target_include_directories(_reciprocal_beam PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_reciprocal_beam PRIVATE session_core)
 LINK_PROTOBUF(_reciprocal_beam)
 
+# _diamond_mesh — imports _wood_element for WoodElement plates
+nanobind_add_module(_diamond_mesh STABLE_ABI NB_STATIC
+    src/_diamond_mesh.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
+)
+target_include_directories(_diamond_mesh PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_diamond_mesh PRIVATE session_core)
+LINK_PROTOBUF(_diamond_mesh)
+
+# _vda_mesh — mesh-to-plates-and-connectors (no WoodElement dependency)
+nanobind_add_module(_vda_mesh STABLE_ABI NB_STATIC
+    src/_vda_mesh.cpp
+)
+target_include_directories(_vda_mesh PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_vda_mesh PRIVATE session_core)
+LINK_PROTOBUF(_vda_mesh)
+
 if(MSVC)
     target_compile_options(_wood_element      PRIVATE /W3 /utf-8)
     target_compile_options(_translation_shell PRIVATE /W3 /utf-8)
     target_compile_options(_reflex_fold       PRIVATE /W3 /utf-8)
     target_compile_options(_chevron           PRIVATE /W3 /utf-8)
     target_compile_options(_reciprocal_beam   PRIVATE /W3 /utf-8)
+    target_compile_options(_diamond_mesh      PRIVATE /W3 /utf-8)
+    target_compile_options(_vda_mesh          PRIVATE /W3 /utf-8)
 endif()
 
 install(TARGETS
     _wood_element _translation_shell _reflex_fold _chevron _reciprocal_beam
+    _diamond_mesh _vda_mesh
     LIBRARY DESTINATION wood_nano)

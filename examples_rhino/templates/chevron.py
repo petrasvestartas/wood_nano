@@ -6,7 +6,8 @@ import Rhino
 import Rhino.Geometry as rg
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
-from wood_nano import chevron_elements, chevron_elements_annen
+from wood_nano import chevron_elements, chevron_elements_annen, chevron_elements_nurbs
+from wood_nano.wood_element import unweld_mesh
 
 # Path to the 23 Annen building NURBS surfaces.
 # surface_idx -1 → built-in flat 3000×5000 surface.
@@ -36,6 +37,19 @@ def _expand_knots(mults, vals):
     return knots[1:-1]   # strip first/last (OpenNURBS convention)
 
 
+def _extract_surface(rhino_srf):
+    ns = rhino_srf.ToNurbsSurface()
+    n_u, n_v = ns.Points.CountU, ns.Points.CountV
+    pts = []
+    for i in range(n_u):
+        for j in range(n_v):
+            _, p = ns.Points.GetPoint(i, j)
+            pts.append([p.X, p.Y, p.Z])
+    knots_u = [ns.KnotsU[i] for i in range(ns.KnotsU.Count)]
+    knots_v = [ns.KnotsV[j] for j in range(ns.KnotsV.Count)]
+    return pts, knots_u, knots_v, ns.Degree(0), ns.Degree(1), n_u, n_v
+
+
 def _build_rhino_surface(s):
     rsrf = rg.NurbsSurface.Create(
         3, False, s["degree_u"] + 1, s["degree_v"] + 1, s["n_u"], s["n_v"]
@@ -60,8 +74,25 @@ def _run(v, _):
     _srf_guids.clear()
 
     surface_idx = v["surface_idx"]
+    kw = dict(
+        u_divisions=v["u_divisions"],
+        v_division_dist=v["v_division_dist"],
+        box_height=v["box_height"],
+        plate_thickness=v["plate_thickness"],
+        edge_rotation=v["edge_rotation"],
+        edge_offset=v["edge_offset"],
+        ortho_edge0=v["ortho_edge0"],
+        ortho_edge1=v["ortho_edge1"],
+        ortho_edge2=v["ortho_edge2"],
+        ortho_edge3=v["ortho_edge3"],
+    )
 
-    if surface_idx >= 0:
+    if v["surface"]:
+        pts, ku, kv, du, dv, nu, nv = _extract_surface(v["surface"][0])
+        shell, elements, loft_meshes = chevron_elements_nurbs(
+            pts, ku, kv, du, dv, nu, nv, **kw)
+        label = "[user surface]"
+    elif surface_idx >= 0:
         data = _load_annen()
         if data is None:
             return
@@ -78,38 +109,29 @@ def _run(v, _):
             if g != System.Guid.Empty:
                 _srf_guids.append(g)
 
-        shell, elements = chevron_elements_annen(
-            ANNEN_JSON, surface_idx,
-            u_divisions=v["u_divisions"],
-            v_division_dist=v["v_division_dist"],
-            box_height=v["box_height"],
-            plate_thickness=v["plate_thickness"],
-            edge_rotation=v["edge_rotation"],
-            edge_offset=v["edge_offset"],
-        )
+        shell, elements, loft_meshes = chevron_elements_annen(
+            ANNEN_JSON, surface_idx, **kw)
+        label = f"[Annen #{surface_idx}]"
     else:
-        shell, elements = chevron_elements(
-            u_divisions=v["u_divisions"],
-            v_division_dist=v["v_division_dist"],
-            box_height=v["box_height"],
-            plate_thickness=v["plate_thickness"],
-            edge_rotation=v["edge_rotation"],
-            edge_offset=v["edge_offset"],
-        )
+        shell, elements, loft_meshes = chevron_elements(**kw)
+        label = "[default]"
 
     session.add(shell)
     for el in elements:
-        session.add(el.bottom, el.top, el.loft_mesh())
+        session.add(el.bottom, el.top)
+    for m in loft_meshes:
+        session.add(unweld_mesh(m))
     session.draw()
+
     doc.Views.Redraw()
     Rhino.RhinoApp.WriteLine(
-        f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}"
-        + (f"  [Annen #{surface_idx}]" if surface_idx >= 0 else "  [default]")
+        f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}  {label}"
     )
 
 
 process_input(
     {
+        "surface":         ([], list[rg.Surface]),  # overrides surface_idx when set
         "surface_idx":     (-1,    int),   # -1 = built-in flat; 0..22 = Annen surface
         "u_divisions":     (4,     int),
         "v_division_dist": (900.0, float),
@@ -117,6 +139,10 @@ process_input(
         "plate_thickness": (40.0,  float),
         "edge_rotation":   (1.0,   float),
         "edge_offset":     (0.5,   float),
+        "ortho_edge0":     (1,  int),
+        "ortho_edge1":     (1,  int),
+        "ortho_edge2":     (1,  int),
+        "ortho_edge3":     (1,  int),
     },
     callback=_run,
 )

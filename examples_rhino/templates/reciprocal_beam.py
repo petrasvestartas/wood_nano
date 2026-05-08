@@ -1,48 +1,25 @@
 #! python3
 import Rhino
+import Rhino.Geometry as rg
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
-from wood_nano import reciprocal_beam_elements, reciprocal_beam_elements_from_mesh
+from wood_nano import reciprocal_beam_elements, reciprocal_beam_elements_from_surface
+from wood_nano.wood_element import unweld_mesh
 
 session = Session()
 
-# Vertices/faces of a user-selected Rhino mesh, or None to use the parametric dome.
-_mesh_verts = None
-_mesh_faces = None
 
-
-def _select_mesh():
-    """Optionally select a quad mesh from the Rhino scene.
-
-    Press Enter/Escape without selecting to use the parametric sinusoidal dome.
-    """
-    global _mesh_verts, _mesh_faces
-    go = Rhino.Input.Custom.GetObject()
-    go.SetCommandPrompt("Select a quad mesh (Enter/Escape = parametric dome)")
-    go.GeometryFilter = Rhino.DocObjects.ObjectType.Mesh
-    go.AcceptNothing(True)
-    go.Get()
-    if go.CommandResult() != Rhino.Commands.Result.Success:
-        _mesh_verts = None
-        _mesh_faces = None
-        Rhino.RhinoApp.WriteLine("No mesh selected — using parametric dome.")
-        return
-    m = go.Object(0).Mesh()
-    if m is None:
-        _mesh_verts = None
-        _mesh_faces = None
-        return
-    _mesh_verts = [[v.X, v.Y, v.Z] for v in m.Vertices]
-    _mesh_faces = [
-        ([f.A, f.B, f.C, f.D] if f.IsQuad else [f.A, f.B, f.C])
-        for f in m.Faces
-    ]
-    Rhino.RhinoApp.WriteLine(
-        f"Mesh selected: {len(_mesh_verts)} vertices, {len(_mesh_faces)} faces."
-    )
-
-
-_select_mesh()
+def _extract_surface(rhino_srf):
+    ns = rhino_srf.ToNurbsSurface()
+    n_u, n_v = ns.Points.CountU, ns.Points.CountV
+    pts = []
+    for i in range(n_u):
+        for j in range(n_v):
+            _, p = ns.Points.GetPoint(i, j)
+            pts.append([p.X, p.Y, p.Z])
+    knots_u = [ns.KnotsU[i] for i in range(ns.KnotsU.Count)]
+    knots_v = [ns.KnotsV[j] for j in range(ns.KnotsV.Count)]
+    return pts, knots_u, knots_v, ns.Degree(0), ns.Degree(1), n_u, n_v
 
 
 def _run(v, _):
@@ -50,27 +27,41 @@ def _run(v, _):
         Rhino.RhinoApp.WriteLine("beam_w must be positive.")
         return
 
-    if _mesh_verts is not None:
-        dome, beams, side0, side1 = reciprocal_beam_elements_from_mesh(
-            _mesh_verts, _mesh_faces,
+    mesh_type    = v["mesh_type"]
+    srfs         = v["surface"]
+    beam_offsets = v["beam_offsets"] or None
+
+    if srfs:
+        pts, ku, kv, du, dv, nu, nv = _extract_surface(srfs[0])
+        dome, beams, side0, side1 = reciprocal_beam_elements_from_surface(
+            pts, ku, kv, du, dv, nu, nv,
+            mesh_type=mesh_type,
+            u_count=v["u_count"],
+            v_count=v["v_count"],
             angle=v["angle"],
-            scale=v["scale"],
             beam_w=v["beam_w"],
-            extend_factor=v["extend_factor"],
+            beam_h=v["beam_h"],
             cut_offset_factor=v["cut_offset"],
+            beam_offsets=beam_offsets,
         )
+        source_label = f"[surface / {mesh_type}]"
     else:
         dome, beams, side0, side1 = reciprocal_beam_elements(
-            nx=v["nx"], ny=v["ny"],
-            W=v["W"], D=v["D"], h=v["h"],
+            nx=v["u_count"],
+            ny=v["v_count"],
+            W=v["W"],
+            D=v["D"],
+            h=v["h"],
+            mesh_type=mesh_type,
             angle=v["angle"],
-            scale=v["scale"],
             beam_w=v["beam_w"],
-            extend_factor=v["extend_factor"],
+            beam_h=v["beam_h"],
             cut_offset_factor=v["cut_offset"],
+            beam_offsets=beam_offsets,
         )
+        source_label = f"[dome / {mesh_type}]"
 
-    session.add(dome)
+    session.add(unweld_mesh(dome))
     for m in beams:
         session.add(m)
     for pl in side0:
@@ -79,25 +70,29 @@ def _run(v, _):
         session.add(pl)
     session.draw()
     Rhino.RhinoApp.WriteLine(
-        f"dome: {dome.number_of_faces()} faces  beams: {len(beams)}"
-        + (" [user mesh]" if _mesh_verts else " [dome]")
+        f"dome: {dome.number_of_faces()} faces  beams: {len(beams)}  {source_label}"
     )
 
 
 process_input(
     {
-        # Parametric dome parameters (ignored when a mesh is selected)
-        "nx":           (12,   int),
-        "ny":           (10,   int),
-        "W":            (12.0, float),
-        "D":            (10.0, float),
-        "h":            (3.0,  float),
+        "surface":       ([], list[rg.Surface]),  # optional NURBS surface; empty = parametric dome
+        # Subdivision (applies to both surface and default dome)
+        "mesh_type":     (["quad", "hex", "diamond"], list[str]),
+        "u_count":       (6,      int),   # mesh resolution (nx for default dome, u_count for surface)
+        "v_count":       (6,      int),
+        # Default dome size (ignored when a surface is provided)
+        "W":             (6000.0, float),
+        "D":             (5000.0, float),
+        "h":             (1500.0, float),
         # Reciprocal frame parameters
-        "angle":        (0.35, float),   # rotation about face normal (radians)
-        "scale":        (1.4,  float),   # scales beam lines about midpoint (1.0 = original edge length)
-        "beam_w":       (0.10, float),   # beam width; height = 2 × beam_w
-        "extend_factor":(5.0,  float),   # extend = extend_factor × beam_w past endpoints
-        "cut_offset":   (1.0,  float),   # cut plane offset = cut_offset × beam_w
+        "angle":         (0.175,  float),
+        "beam_w":        (100.0,  float),
+        "beam_h":        (400.0,  float),
+        "cut_offset":    (1.0,    float),
+        # Per-direction Z offsets: 2 values (quad/diamond u,v) or 3 values (hex)
+        # e.g. [0.0, 50.0] to raise every second direction by 50 mm
+        "beam_offsets":  ([], list[float]),
     },
     callback=_run,
 )
