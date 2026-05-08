@@ -6,21 +6,17 @@ from session_py.mesh import Mesh
 from session_py.point import Point
 from session_py.polyline import Polyline
 
-from wood_nano._reciprocal_beam import (
-    make_default_reciprocal_beam,
-    make_default_reciprocal_beam_typed,
-    make_reciprocal_beam_from_mesh,
-    make_reciprocal_beam_from_surface,
+from wood_nano._reciprocal_rotation import (
+    make_default_reciprocal_rotation,
+    make_default_reciprocal_rotation_typed,
+    make_reciprocal_rotation_from_mesh,
+    make_reciprocal_rotation_from_surface,
 )
 from wood_nano.wood_element import _to_mesh, unweld_mesh as _unweld_mesh
 
 
 def _pts_to_polyline(pts: list) -> Polyline:
     return Polyline([Point(float(p[0]), float(p[1]), float(p[2])) for p in pts])
-
-
-
-    return (ux, uy, uz), axis_angle
 
 
 def _translate_mesh(mesh: Mesh, dx: float, dy: float, dz: float) -> Mesh:
@@ -65,17 +61,13 @@ def _apply_beam_offsets(beams, side0, side1, beam_dirs, beam_ups, beam_offsets):
     for i, bm in enumerate(beams):
         if i >= len(beam_dirs) or i >= len(beam_ups):
             continue
-        # XY angle of the beam axis, from exact construction data
         bdx, bdy = beam_dirs[i][0], beam_dirs[i][1]
         angle = math.atan2(bdy, bdx) % math.pi
-        # Shift bin boundaries so they sit between the expected direction angles
         dir_idx = int((angle + bin_width * 0.5) / bin_width) % n_dirs
         offset = beam_offsets[dir_idx]
         if offset == 0.0:
             continue
-        # Up direction straight from construction — no inference needed
         ux, uy, uz = beam_ups[i][0], beam_ups[i][1], beam_ups[i][2]
-        # Ensure offset points away from surface (positive Z half-space)
         if uz < 0.0:
             ux, uy, uz = -ux, -uy, -uz
         dx, dy, dz = ux * offset, uy * offset, uz * offset
@@ -103,7 +95,7 @@ def _unpack(rb, beam_offsets=None, unweld_beams: bool = True) -> tuple:
     return dome, beams, side0, side1
 
 
-def reciprocal_beam_elements(
+def reciprocal_rotation_elements(
     nx: int = 12,
     ny: int = 10,
     W: float = 12000.0,
@@ -119,7 +111,7 @@ def reciprocal_beam_elements(
     beam_offsets: list | None = None,
     unweld_beams: bool = True,
 ) -> tuple:
-    """Reciprocal beam frame on a sinusoidal dome.
+    """Reciprocal rotation frame on a sinusoidal dome (rotation-based nexorade).
 
     Parameters
     ----------
@@ -145,14 +137,14 @@ def reciprocal_beam_elements(
     tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]
         (dome_mesh, beam_meshes, side0_outlines, side1_outlines)
     """
-    rb = make_default_reciprocal_beam_typed(
+    rb = make_default_reciprocal_rotation_typed(
         nx, ny, W, D, h, mesh_type,
         angle, scale, beam_w, beam_h,
         extend_factor, cut_offset_factor)
     return _unpack(rb, beam_offsets=beam_offsets, unweld_beams=unweld_beams)
 
 
-def reciprocal_beam_elements_from_surface(
+def reciprocal_rotation_elements_from_surface(
     pts,
     knots_u,
     knots_v,
@@ -172,7 +164,7 @@ def reciprocal_beam_elements_from_surface(
     beam_offsets: list | None = None,
     unweld_beams: bool = True,
 ) -> tuple:
-    """Reciprocal beam frame on a NURBS surface.
+    """Reciprocal rotation frame on a NURBS surface.
 
     Parameters
     ----------
@@ -191,8 +183,7 @@ def reciprocal_beam_elements_from_surface(
     angle, scale, beam_w, beam_h, extend_factor, cut_offset_factor :
         Reciprocal frame parameters. beam_h=0 defaults to beam_w*2.
     beam_offsets : list[float] | None
-        Per-direction offsets along each beam's local height (normal) axis:
-        2 values for quad/diamond (u/v), 3 values for hex.
+        Per-direction offsets along each beam's local height (normal) axis.
     unweld_beams : bool
         If True, return beams with per-face vertex copies (flat shading).
 
@@ -201,7 +192,7 @@ def reciprocal_beam_elements_from_surface(
     tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]
         (base_mesh, beam_meshes, side0_outlines, side1_outlines)
     """
-    rb = make_reciprocal_beam_from_surface(
+    rb = make_reciprocal_rotation_from_surface(
         pts, knots_u, knots_v,
         degree_u, degree_v, n_u, n_v,
         mesh_type, u_count, v_count,
@@ -210,7 +201,7 @@ def reciprocal_beam_elements_from_surface(
     return _unpack(rb, beam_offsets=beam_offsets, unweld_beams=unweld_beams)
 
 
-def reciprocal_beam_elements_from_mesh(
+def reciprocal_rotation_elements_from_mesh(
     vertices,
     faces,
     angle: float = 0.35,
@@ -222,7 +213,7 @@ def reciprocal_beam_elements_from_mesh(
     beam_offsets: list | None = None,
     unweld_beams: bool = True,
 ) -> tuple:
-    """Reciprocal beam frame on a user-supplied mesh.
+    """Reciprocal rotation frame on a user-supplied mesh.
 
     Parameters
     ----------
@@ -242,7 +233,7 @@ def reciprocal_beam_elements_from_mesh(
     tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]
         (base_mesh, beam_meshes, side0_outlines, side1_outlines)
     """
-    rb = make_reciprocal_beam_from_mesh(
+    rb = make_reciprocal_rotation_from_mesh(
         vertices, faces,
         angle, scale, beam_w, beam_h,
         extend_factor, cut_offset_factor)

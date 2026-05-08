@@ -3,7 +3,7 @@ import Rhino
 import Rhino.Geometry as rg
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
-from wood_nano import reciprocal_beam_elements, reciprocal_beam_elements_from_surface
+from wood_nano import reciprocal_rotation_elements, reciprocal_rotation_elements_from_surface
 from wood_nano.wood_element import unweld_mesh
 
 session = Session()
@@ -33,7 +33,7 @@ def _run(v, _):
 
     if srfs:
         pts, ku, kv, du, dv, nu, nv = _extract_surface(srfs[0])
-        dome, beams, side0, side1 = reciprocal_beam_elements_from_surface(
+        dome, beams, side0, side1 = reciprocal_rotation_elements_from_surface(
             pts, ku, kv, du, dv, nu, nv,
             mesh_type=mesh_type,
             u_count=v["u_count"],
@@ -46,7 +46,7 @@ def _run(v, _):
         )
         source_label = f"[surface / {mesh_type}]"
     else:
-        dome, beams, side0, side1 = reciprocal_beam_elements(
+        dome, beams, side0, side1 = reciprocal_rotation_elements(
             nx=v["u_count"],
             ny=v["v_count"],
             W=v["W"],
@@ -91,7 +91,6 @@ process_input(
         "beam_h":        (400.0,  float),
         "cut_offset":    (1.0,    float),
         # Per-direction Z offsets: 2 values (quad/diamond u,v) or 3 values (hex)
-        # e.g. [0.0, 50.0] to raise every second direction by 50 mm
         "beam_offsets":  ([], list[float]),
     },
     callback=_run,

@@ -20,6 +20,7 @@ Run when `.cpp`, `.h`, or `CMakeLists.txt` files change:
 
 ```
 uv pip install --no-build-isolation -e C:/pc/3_code/code_cpp/wood_nano
+"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e C:/pc/3_code/code_cpp/wood_nano    
 ```
 
 Then click **Reset Python Engine** in the ScriptEditor toolbar.

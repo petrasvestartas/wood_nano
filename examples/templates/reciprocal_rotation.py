@@ -1,7 +1,7 @@
-from wood_nano import reciprocal_beam_elements
+from wood_nano import reciprocal_rotation_elements
 
-# Default reciprocal frame (12×10 sinusoidal dome)
-dome, beams, side0, side1 = reciprocal_beam_elements(
+# Default reciprocal rotation frame (12×10 sinusoidal dome)
+dome, beams, side0, side1 = reciprocal_rotation_elements(
     nx=12, ny=10,
     W=12.0, D=10.0, h=3.0,
     angle=0.35, scale=1.4,

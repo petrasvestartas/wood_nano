@@ -1,4 +1,4 @@
-#include "reciprocal_beam.h"
+#include "reciprocal_move.h"
 #include "primitives.h"
 
 #include <nanobind/nanobind.h>
@@ -25,7 +25,7 @@ static nb::dict mesh_to_dict(const Mesh& mesh)
     size_t shape[2] = {nv, 3};
 
     nb::list face_list;
-    nb::list face_tris_list;   // fan triangulation per face (empty list for tri faces)
+    nb::list face_tris_list;
     for (const auto& f : faces) {
         nb::list fl;
         for (size_t vi : f) fl.append((int)vi);
@@ -33,7 +33,7 @@ static nb::dict mesh_to_dict(const Mesh& mesh)
 
         nb::list tris;
         int n = (int)f.size();
-        if (n > 4) {  // only for n>4 (pent/hex); quads stay as quads
+        if (n > 4) {
             for (int i = 1; i < n - 1; ++i) {
                 nb::list tri;
                 tri.append((int)f[0]);
@@ -45,9 +45,9 @@ static nb::dict mesh_to_dict(const Mesh& mesh)
         face_tris_list.append(tris);
     }
     nb::dict out;
-    out["vertices"]   = nb::ndarray<nb::numpy, double, nb::ndim<2>>(vd, 2, shape, owner);
-    out["faces"]      = face_list;
-    out["face_tris"]  = face_tris_list;  // populated for n>3 faces; empty otherwise
+    out["vertices"]  = nb::ndarray<nb::numpy, double, nb::ndim<2>>(vd, 2, shape, owner);
+    out["faces"]     = face_list;
+    out["face_tris"] = face_tris_list;
     return out;
 }
 
@@ -68,8 +68,6 @@ static nb::list polylines_to_list(const std::vector<Polyline>& pls)
 }
 
 /// Rotate each face's vertex list until the first three vertices are non-collinear.
-/// Diamond boundary quads at j=0 have three collinear vertices at the start, which
-/// causes face_normal to return nullopt and crash Reciprocal::from_mesh.
 static bool _collinear3(const Point& a, const Point& b, const Point& c, double eps = 1e-6)
 {
     double abx = b[0]-a[0], aby = b[1]-a[1], abz = b[2]-a[2];
@@ -96,80 +94,21 @@ static Mesh fix_face_starts(const Mesh& m)
 }
 
 /// Ensure every face's normal has a positive z-component (points upward).
-/// Uses the Newell method to compute each face's area-weighted normal, then
-/// reverses the vertex order only for faces whose z-normal is negative.
-/// A simple blind reversal fails when the source mesh has mixed winding
-/// (Primitives::hex_mesh has a few pentagon boundary cells that are already
-/// CCW; blindly reversing them would flip them to CW and leave them invisible).
 static Mesh orient_faces_upward(const Mesh& m)
 {
     auto [pts, faces] = m.to_vertices_and_faces();
     for (auto& face : faces) {
         int n = (int)face.size();
-        // Newell method: accumulate cross-products of consecutive edge pairs
         double nz = 0.0;
         for (int i = 0; i < n; ++i) {
             const auto& a = pts[face[i]];
             const auto& b = pts[face[(i + 1) % n]];
             nz += (a[0] - b[0]) * (a[1] + b[1]);
         }
-        if (nz < 0.0)   // nz < 0 → CW winding → normals point down → flip
+        if (nz < 0.0)
             std::reverse(face.begin(), face.end());
     }
     return Mesh::from_vertices_and_faces(pts, faces);
-}
-
-/// Fan-triangulate every face with more than 3 vertices.
-/// After orient_faces_upward the hex dome mesh has faces of size 4-6.
-/// Rhino's to_rhino() function takes the fast, reliable welded-triangles
-/// path (_to_rhino_welded_tri) only when ALL faces are triangles; this
-/// helper ensures that condition so the mesh is always visible in Rhino.
-static Mesh fan_triangulate_mesh(const Mesh& m)
-{
-    auto [pts, faces] = m.to_vertices_and_faces();
-    std::vector<std::vector<size_t>> out;
-    out.reserve(faces.size() * 4);
-    for (const auto& face : faces) {
-        int n = (int)face.size();
-        if (n <= 3) {
-            out.push_back(face);
-        } else {
-            for (int i = 1; i < n - 1; ++i)
-                out.push_back({face[0], face[i], face[i + 1]});
-        }
-    }
-    return Mesh::from_vertices_and_faces(pts, out);
-}
-
-/// Remove beams that sit on boundary edges (edges adjacent to only one face).
-/// Boundary edges lack a neighbour to cut against, so their end-planes are
-/// degenerate and the line-plane intersections in Reciprocal::get_lines can
-/// produce astronomically large t-values → NaN / Inf beam vertices.
-static void filter_boundary_beams(ReciprocalBeam& rb)
-{
-    auto ekeys = rb.dome_mesh.edges();
-    std::vector<Mesh>     beams_ok;
-    std::vector<Polyline> side0_ok, side1_ok;
-    std::vector<std::array<double,3>> dirs_ok, ups_ok;
-    beams_ok.reserve(rb.beams.size());
-    side0_ok.reserve(rb.side0.size());
-    side1_ok.reserve(rb.side1.size());
-
-    for (int i = 0; i < (int)ekeys.size(); i++) {
-        auto adj = rb.dome_mesh.edge_faces(ekeys[i].first, ekeys[i].second);
-        if (adj && adj->size() == 2) {
-            beams_ok.push_back(std::move(rb.beams[i]));
-            side0_ok.push_back(std::move(rb.side0[i]));
-            side1_ok.push_back(std::move(rb.side1[i]));
-            dirs_ok.push_back(rb.beam_dirs[i]);
-            ups_ok.push_back(rb.beam_ups[i]);
-        }
-    }
-    rb.beams     = std::move(beams_ok);
-    rb.side0     = std::move(side0_ok);
-    rb.side1     = std::move(side1_ok);
-    rb.beam_dirs = std::move(dirs_ok);
-    rb.beam_ups  = std::move(ups_ok);
 }
 
 /// Build a NurbsSurface (degree-1 bilinear) from sinusoidal dome sample points.
@@ -177,10 +116,8 @@ static NurbsSurface build_dome_surface(int nx, int ny, double W, double D, doubl
 {
     int nu = nx + 1, nv = ny + 1;
     NurbsSurface srf;
-    srf.create_raw(3, false, 2, 2, nu, nv);   // order=2 → degree 1
+    srf.create_raw(3, false, 2, 2, nu, nv);
 
-    // Clamped uniform knot vectors for degree-1 with nu/nv control points:
-    // OpenNURBS stripped format has (n+p-1) = n+0 = n knots per direction.
     for (int i = 0; i < nu; i++)
         srf.set_nurbsknot(0, i, (double)i / nx);
     for (int j = 0; j < nv; j++)
@@ -197,9 +134,9 @@ static NurbsSurface build_dome_surface(int nx, int ny, double W, double D, doubl
     return srf;
 }
 
-static ReciprocalBeam build_from_mesh_data(
+static ReciprocalMove build_from_mesh_data(
     nb::list vertices_list, nb::list faces_list,
-    double angle, double scale, double beam_w, double beam_h,
+    double angle, double beam_w, double beam_h,
     double extend_factor, double cut_offset_factor)
 {
     std::vector<Point> pts;
@@ -221,27 +158,27 @@ static ReciprocalBeam build_from_mesh_data(
         faces.push_back(std::move(f));
     }
     Mesh mesh = Mesh::from_vertices_and_faces(pts, faces);
-    return ReciprocalBeam(std::move(mesh), angle, scale, beam_w, beam_h,
+    return ReciprocalMove(std::move(mesh), angle, beam_w, beam_h,
                           extend_factor, cut_offset_factor);
 }
 
-NB_MODULE(_reciprocal_beam, m) {
+NB_MODULE(_reciprocal_move, m) {
 
-    nb::class_<ReciprocalBeam>(m, "ReciprocalBeam")
+    nb::class_<ReciprocalMove>(m, "ReciprocalMove")
         .def(nb::init<>())
         .def_prop_ro("dome_mesh",
-            [](const ReciprocalBeam& r) { return mesh_to_dict(r.dome_mesh); })
-        .def_prop_ro("beams", [](const ReciprocalBeam& r) {
+            [](const ReciprocalMove& r) { return mesh_to_dict(r.dome_mesh); })
+        .def_prop_ro("beams", [](const ReciprocalMove& r) {
             nb::list result;
             for (const auto& bm : r.beams)
                 result.append(mesh_to_dict(bm));
             return result;
         })
         .def_prop_ro("side0",
-            [](const ReciprocalBeam& r) { return polylines_to_list(r.side0); })
+            [](const ReciprocalMove& r) { return polylines_to_list(r.side0); })
         .def_prop_ro("side1",
-            [](const ReciprocalBeam& r) { return polylines_to_list(r.side1); })
-        .def_prop_ro("beam_dirs", [](const ReciprocalBeam& r) {
+            [](const ReciprocalMove& r) { return polylines_to_list(r.side1); })
+        .def_prop_ro("beam_dirs", [](const ReciprocalMove& r) {
             nb::list result;
             for (const auto& d : r.beam_dirs) {
                 nb::list v; v.append(d[0]); v.append(d[1]); v.append(d[2]);
@@ -249,7 +186,7 @@ NB_MODULE(_reciprocal_beam, m) {
             }
             return result;
         })
-        .def_prop_ro("beam_ups", [](const ReciprocalBeam& r) {
+        .def_prop_ro("beam_ups", [](const ReciprocalMove& r) {
             nb::list result;
             for (const auto& u : r.beam_ups) {
                 nb::list v; v.append(u[0]); v.append(u[1]); v.append(u[2]);
@@ -258,81 +195,51 @@ NB_MODULE(_reciprocal_beam, m) {
             return result;
         });
 
-    m.def("make_reciprocal_beam_from_mesh",
+    m.def("make_reciprocal_move_from_mesh",
         [](nb::list vertices_list, nb::list faces_list,
-           double angle, double scale, double beam_w, double beam_h,
+           double angle, double beam_w, double beam_h,
            double extend_factor, double cut_offset_factor) {
             return build_from_mesh_data(vertices_list, faces_list,
-                                        angle, scale, beam_w, beam_h,
+                                        angle, beam_w, beam_h,
                                         extend_factor, cut_offset_factor);
         },
         "vertices"_a,
         "faces"_a,
-        "angle"_a             = 0.35,
-        "scale"_a             = 1.4,
+        "angle"_a             = 50.0,
         "beam_w"_a            = 100.0,
         "beam_h"_a            = 0.0,
         "extend_factor"_a     = 5.0,
         "cut_offset_factor"_a = 1.0);
 
-    // Default sinusoidal dome — quad mesh only (legacy, no boundary filtering).
-    m.def("make_default_reciprocal_beam",
-        [](int nx, int ny, double W, double D, double h,
-           double angle, double scale, double beam_w, double beam_h,
-           double extend_factor, double cut_offset_factor) {
-            return ReciprocalBeam(nx, ny, W, D, h,
-                                  angle, scale, beam_w, beam_h,
-                                  extend_factor, cut_offset_factor);
-        },
-        "nx"_a                = 12,
-        "ny"_a                = 10,
-        "W"_a                 = 12000.0,
-        "D"_a                 = 10000.0,
-        "h"_a                 = 3000.0,
-        "angle"_a             = 0.35,
-        "scale"_a             = 1.4,
-        "beam_w"_a            = 100.0,
-        "beam_h"_a            = 0.0,
-        "extend_factor"_a     = 5.0,
-        "cut_offset_factor"_a = 1.0);
-
-    // Default sinusoidal dome with selectable mesh subdivision and boundary-beam filtering.
+    // Default sinusoidal dome with selectable mesh subdivision.
     // mesh_type: "quad" | "hex" | "diamond"
-    m.def("make_default_reciprocal_beam_typed",
+    // angle: translation distance in model units (e.g. mm) — typically 0.3–0.7 × beam_w
+    m.def("make_default_reciprocal_move_typed",
         [](int nx, int ny, double W, double D, double h,
            const std::string& mesh_type,
-           double angle, double scale, double beam_w, double beam_h,
+           double angle, double beam_w, double beam_h,
            double extend_factor, double cut_offset_factor) {
-            ReciprocalBeam rb;
+            ReciprocalMove rm;
             if (mesh_type == "quad") {
-                rb = ReciprocalBeam(nx, ny, W, D, h,
-                                    angle, scale, beam_w, beam_h,
+                rm = ReciprocalMove(nx, ny, W, D, h,
+                                    angle, beam_w, beam_h,
                                     extend_factor, cut_offset_factor);
-                filter_boundary_beams(rb);
             } else {
                 NurbsSurface srf = build_dome_surface(nx, ny, W, D, h);
                 if (mesh_type == "hex") {
                     Mesh base_mesh = Primitives::hex_mesh(srf, nx, ny);
-                    rb = ReciprocalBeam(std::move(base_mesh), angle, scale, beam_w, beam_h,
+                    base_mesh = orient_faces_upward(base_mesh);
+                    rm = ReciprocalMove(std::move(base_mesh), angle, beam_w, beam_h,
                                        extend_factor, cut_offset_factor);
-                    filter_boundary_beams(rb);
-                    // hex_mesh face winding is CW from +Z → normals point down → invisible
-                    // in Rhino; reverse all faces so normals face outward for display.
-                    rb.dome_mesh = orient_faces_upward(rb.dome_mesh);
+                    rm.dome_mesh = orient_faces_upward(rm.dome_mesh);
                 } else {  // diamond
-                    // Diamond boundary quads have 3 collinear first-vertices → face_normal
-                    // crashes.  Rotate each face until the first 3 are non-collinear, then
-                    // include ALL faces (boundary faces included) so their non-naked edges
-                    // produce beams; only the naked edges themselves are removed by
-                    // filter_boundary_beams.
                     Mesh full_mesh = Primitives::diamond_mesh(srf, nx, ny);
-                    rb = ReciprocalBeam(fix_face_starts(full_mesh), angle, scale, beam_w, beam_h,
+                    rm = ReciprocalMove(fix_face_starts(full_mesh), angle, beam_w, beam_h,
                                        extend_factor, cut_offset_factor);
-                    filter_boundary_beams(rb);
-                    rb.dome_mesh = std::move(full_mesh);
+                    rm.dome_mesh = std::move(full_mesh);
                 }
             }
-            return rb;
+            return rm;
         },
         "nx"_a                = 12,
         "ny"_a                = 10,
@@ -340,17 +247,15 @@ NB_MODULE(_reciprocal_beam, m) {
         "D"_a                 = 10000.0,
         "h"_a                 = 3000.0,
         "mesh_type"_a         = "quad",
-        "angle"_a             = 0.35,
-        "scale"_a             = 1.4,
+        "angle"_a             = 50.0,
         "beam_w"_a            = 100.0,
         "beam_h"_a            = 0.0,
         "extend_factor"_a     = 5.0,
         "cut_offset_factor"_a = 1.0);
 
     // Build from a NURBS surface using a chosen subdivision method.
-    // Boundary edges (single-face) are skipped — they produce infinite intersections.
     // mesh_type: "quad" | "hex" | "diamond"
-    m.def("make_reciprocal_beam_from_surface",
+    m.def("make_reciprocal_move_from_surface",
         [](const std::vector<std::vector<double>>& pts,
            const std::vector<double>& knots_u,
            const std::vector<double>& knots_v,
@@ -358,7 +263,7 @@ NB_MODULE(_reciprocal_beam, m) {
            int n_u, int n_v,
            const std::string& mesh_type,
            int u_count, int v_count,
-           double angle, double scale, double beam_w, double beam_h,
+           double angle, double beam_w, double beam_h,
            double extend_factor, double cut_offset_factor) {
             NurbsSurface srf;
             srf.create_raw(3, false, degree_u + 1, degree_v + 1, n_u, n_v);
@@ -367,40 +272,31 @@ NB_MODULE(_reciprocal_beam, m) {
             for (int j = 0; j < (int)knots_v.size(); j++)
                 srf.set_nurbsknot(1, j, knots_v[j]);
             if ((int)pts.size() != n_u * n_v)
-                throw std::runtime_error("make_reciprocal_beam_from_surface: pts.size() must equal n_u*n_v");
+                throw std::runtime_error("make_reciprocal_move_from_surface: pts.size() must equal n_u*n_v");
             for (int i = 0; i < n_u; i++)
                 for (int j = 0; j < n_v; j++) {
                     const auto& p = pts[i * n_v + j];
                     srf.set_cv(i, j, Point(p[0], p[1], p[2]));
                 }
             if (!srf.is_valid())
-                throw std::runtime_error("make_reciprocal_beam_from_surface: resulting NurbsSurface is invalid");
+                throw std::runtime_error("make_reciprocal_move_from_surface: resulting NurbsSurface is invalid");
             srf.transpose();
-            Mesh base_mesh;
             if (mesh_type == "hex") {
-                base_mesh = Primitives::hex_mesh(srf, u_count, v_count);
-                ReciprocalBeam rb(std::move(base_mesh), angle, scale, beam_w, beam_h,
+                Mesh base_mesh = orient_faces_upward(Primitives::hex_mesh(srf, u_count, v_count));
+                ReciprocalMove rm(std::move(base_mesh), angle, beam_w, beam_h,
                                   extend_factor, cut_offset_factor);
-                filter_boundary_beams(rb);
-                rb.dome_mesh = orient_faces_upward(rb.dome_mesh);
-                return rb;
+                rm.dome_mesh = orient_faces_upward(rm.dome_mesh);
+                return rm;
             } else if (mesh_type == "diamond") {
-                // Diamond boundary quads have 3 collinear first-vertices → face_normal
-                // crashes.  fix_face_starts rotates each face until the first 3 are
-                // non-collinear; ALL faces (including boundary ones) are kept so their
-                // non-naked edges still produce beams; only naked edges are filtered.
                 Mesh full_mesh = Primitives::diamond_mesh(srf, u_count, v_count);
-                ReciprocalBeam rb(fix_face_starts(full_mesh), angle, scale, beam_w, beam_h,
+                ReciprocalMove rm(fix_face_starts(full_mesh), angle, beam_w, beam_h,
                                   extend_factor, cut_offset_factor);
-                filter_boundary_beams(rb);
-                rb.dome_mesh = std::move(full_mesh);
-                return rb;
+                rm.dome_mesh = std::move(full_mesh);
+                return rm;
             } else {
-                base_mesh = Primitives::quad_mesh(srf, u_count, v_count);
-                ReciprocalBeam rb(std::move(base_mesh), angle, scale, beam_w, beam_h,
-                                  extend_factor, cut_offset_factor);
-                filter_boundary_beams(rb);
-                return rb;
+                Mesh base_mesh = Primitives::quad_mesh(srf, u_count, v_count);
+                return ReciprocalMove(std::move(base_mesh), angle, beam_w, beam_h,
+                                      extend_factor, cut_offset_factor);
             }
         },
         "pts"_a,
@@ -413,8 +309,7 @@ NB_MODULE(_reciprocal_beam, m) {
         "mesh_type"_a         = "quad",
         "u_count"_a           = 12,
         "v_count"_a           = 10,
-        "angle"_a             = 0.35,
-        "scale"_a             = 1.4,
+        "angle"_a             = 50.0,
         "beam_w"_a            = 100.0,
         "beam_h"_a            = 0.0,
         "extend_factor"_a     = 5.0,

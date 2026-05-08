@@ -81,13 +81,21 @@ target_include_directories(_chevron PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_chevron PRIVATE session_core)
 LINK_PROTOBUF(_chevron)
 
-# _reciprocal_beam — no WoodElement; uses session_core Reciprocal + Intersection
-nanobind_add_module(_reciprocal_beam STABLE_ABI NB_STATIC
-    src/_reciprocal_beam.cpp
+# _reciprocal_rotation — rotation-based nexorade; uses session_core Reciprocal + Intersection
+nanobind_add_module(_reciprocal_rotation STABLE_ABI NB_STATIC
+    src/_reciprocal_rotation.cpp
 )
-target_include_directories(_reciprocal_beam PRIVATE ${WOOD_INCLUDES})
-target_link_libraries(_reciprocal_beam PRIVATE session_core)
-LINK_PROTOBUF(_reciprocal_beam)
+target_include_directories(_reciprocal_rotation PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_reciprocal_rotation PRIVATE session_core)
+LINK_PROTOBUF(_reciprocal_rotation)
+
+# _reciprocal_move — translation-based nexorade; uses session_core geometry only
+nanobind_add_module(_reciprocal_move STABLE_ABI NB_STATIC
+    src/_reciprocal_move.cpp
+)
+target_include_directories(_reciprocal_move PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_reciprocal_move PRIVATE session_core)
+LINK_PROTOBUF(_reciprocal_move)
 
 # _diamond_mesh — imports _wood_element for WoodElement plates
 nanobind_add_module(_diamond_mesh STABLE_ABI NB_STATIC
@@ -111,12 +119,14 @@ if(MSVC)
     target_compile_options(_translation_shell PRIVATE /W3 /utf-8)
     target_compile_options(_reflex_fold       PRIVATE /W3 /utf-8)
     target_compile_options(_chevron           PRIVATE /W3 /utf-8)
-    target_compile_options(_reciprocal_beam   PRIVATE /W3 /utf-8)
+    target_compile_options(_reciprocal_rotation PRIVATE /W3 /utf-8)
+    target_compile_options(_reciprocal_move   PRIVATE /W3 /utf-8)
     target_compile_options(_diamond_mesh      PRIVATE /W3 /utf-8)
     target_compile_options(_vda_mesh          PRIVATE /W3 /utf-8)
 endif()
 
 install(TARGETS
-    _wood_element _translation_shell _reflex_fold _chevron _reciprocal_beam
+    _wood_element _translation_shell _reflex_fold _chevron
+    _reciprocal_rotation _reciprocal_move
     _diamond_mesh _vda_mesh
     LIBRARY DESTINATION wood_nano)
