@@ -5,8 +5,10 @@ from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import reciprocal_rotation_elements, reciprocal_rotation_elements_from_surface
 from wood_nano.wood_element import unweld_mesh
+from wood_nano.plate_topology import PlateTopology
 
 session = Session()
+topo    = PlateTopology()
 
 
 def _extract_surface(rhino_srf):
@@ -62,13 +64,12 @@ def _run(v, _):
         source_label = f"[dome / {mesh_type}]"
 
     session.add(unweld_mesh(dome))
-    for m in beams:
-        session.add(m)
-    for pl in side0:
-        session.add(pl)
-    for pl in side1:
-        session.add(pl)
     session.draw()
+
+    topo.clear()
+    for i, (m, b, t) in enumerate(zip(beams, side0, side1)):
+        topo.add_plate(i, b, t, unweld_mesh(m))
+
     Rhino.RhinoApp.WriteLine(
         f"dome: {dome.number_of_faces()} faces  beams: {len(beams)}  {source_label}"
     )
@@ -86,10 +87,10 @@ process_input(
         "D":             (5000.0, float),
         "h":             (1500.0, float),
         # Reciprocal frame parameters
-        "angle":         (0.175,  float),
-        "beam_w":        (100.0,  float),
-        "beam_h":        (400.0,  float),
-        "cut_offset":    (1.0,    float),
+        "angle":         (0.2,  float),
+        "beam_w":        (50.0,  float),
+        "beam_h":        (200.0,  float),
+        "cut_offset":    (2.0,    float),
         # Per-direction Z offsets: 2 values (quad/diamond u,v) or 3 values (hex)
         "beam_offsets":  ([], list[float]),
     },

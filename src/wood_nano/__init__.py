@@ -7,6 +7,11 @@ from wood_nano.reciprocal_rotation import reciprocal_rotation_elements, reciproc
 from wood_nano.reciprocal_move import reciprocal_move_elements, reciprocal_move_elements_from_mesh, reciprocal_move_elements_from_surface
 from wood_nano.diamond_mesh import diamond_mesh_elements, diamond_mesh_elements_annen, diamond_mesh_elements_from_surface
 from wood_nano.vda_mesh import vda_mesh_elements
+from wood_nano.joinery_solver import joinery_solver_elements
+try:
+    from wood_nano.plate_topology import PlateTopology
+except ImportError:
+    PlateTopology = None  # not available outside Rhino
 from wood_nano.wood_element import WoodElement
 from wood_nano import _wood_element
 from wood_nano import _translation_shell
@@ -16,6 +21,7 @@ from wood_nano import _reciprocal_rotation
 from wood_nano import _reciprocal_move
 from wood_nano import _diamond_mesh
 from wood_nano import _vda_mesh
+from wood_nano import _joinery_solver
 
 __all__ = [
     "translation_shell_elements",
@@ -33,6 +39,8 @@ __all__ = [
     "diamond_mesh_elements_annen",
     "diamond_mesh_elements_from_surface",
     "vda_mesh_elements",
+    "joinery_solver_elements",
+    "PlateTopology",
     "WoodElement",
     "_wood_element",
     "_translation_shell",
@@ -42,4 +50,5 @@ __all__ = [
     "_reciprocal_move",
     "_diamond_mesh",
     "_vda_mesh",
+    "_joinery_solver",
 ]

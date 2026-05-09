@@ -114,6 +114,26 @@ target_include_directories(_vda_mesh PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_vda_mesh PRIVATE session_core)
 LINK_PROTOBUF(_vda_mesh)
 
+# _joinery_solver — cross-joint detection + merge pipeline
+# Compiles the full wood joinery kernel (8 translation units) alongside the
+# nanobind binding.  joint geometry headers (joints/*.h) are header-only.
+nanobind_add_module(_joinery_solver STABLE_ABI NB_STATIC
+    src/_joinery_solver.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_main.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_merge.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_joint.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_joint_detection.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_face_to_face.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_assign.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_globals.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_internal.cpp
+    ${WOOD_DIR}/src/joinery_solver/wood_beams.cpp
+)
+target_include_directories(_joinery_solver PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_joinery_solver PRIVATE session_core)
+LINK_PROTOBUF(_joinery_solver)
+
 if(MSVC)
     target_compile_options(_wood_element      PRIVATE /W3 /utf-8)
     target_compile_options(_translation_shell PRIVATE /W3 /utf-8)
@@ -123,10 +143,11 @@ if(MSVC)
     target_compile_options(_reciprocal_move   PRIVATE /W3 /utf-8)
     target_compile_options(_diamond_mesh      PRIVATE /W3 /utf-8)
     target_compile_options(_vda_mesh          PRIVATE /W3 /utf-8)
+    target_compile_options(_joinery_solver    PRIVATE /W3 /utf-8)
 endif()
 
 install(TARGETS
     _wood_element _translation_shell _reflex_fold _chevron
     _reciprocal_rotation _reciprocal_move
-    _diamond_mesh _vda_mesh
+    _diamond_mesh _vda_mesh _joinery_solver
     LIBRARY DESTINATION wood_nano)

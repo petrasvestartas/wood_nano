@@ -8,6 +8,7 @@ from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import chevron_elements, chevron_elements_annen, chevron_elements_nurbs
 from wood_nano.wood_element import unweld_mesh
+from wood_nano.plate_topology import PlateTopology
 
 # Path to the 23 Annen building NURBS surfaces.
 # surface_idx -1 → built-in flat 3000×5000 surface.
@@ -15,8 +16,9 @@ from wood_nano.wood_element import unweld_mesh
 ANNEN_JSON = r"c:\pc\3_code\code_cpp\wood\data\annen_surfaces.json"
 
 session = Session()
-_srf_guids = []       # GUIDs of the displayed NURBS surface (managed separately)
-_annen_data = None    # cached JSON data
+topo = PlateTopology()     # plate topology: UserStrings + named groups per plate
+_srf_guids = []            # GUIDs of the displayed NURBS surface (managed separately)
+_annen_data = None         # cached JSON data
 
 
 def _load_annen():
@@ -116,12 +118,14 @@ def _run(v, _):
         shell, elements, loft_meshes = chevron_elements(**kw)
         label = "[default]"
 
+    # Draw shell mesh via Session (no topology needed for the shell)
     session.add(shell)
-    for el in elements:
-        session.add(el.bottom, el.top)
-    for m in loft_meshes:
-        session.add(unweld_mesh(m))
     session.draw()
+
+    # Add plate geometry with persistent topology tagging (UserStrings + groups)
+    topo.clear()
+    for i, (el, m) in enumerate(zip(elements, loft_meshes)):
+        topo.add_plate(i, el.bottom, el.top, unweld_mesh(m))
 
     doc.Views.Redraw()
     Rhino.RhinoApp.WriteLine(

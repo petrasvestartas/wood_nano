@@ -53,6 +53,10 @@ def _to_mesh(r: dict) -> Mesh:
         for fk, tris in zip(sorted(mesh.face.keys()), face_tris):
             if tris:
                 mesh.triangulation[fk] = [tuple(t) for t in tris]
+    face_holes = r.get("face_holes")
+    if face_holes:
+        for fk_str, rings in face_holes.items():
+            mesh.face_holes[int(fk_str)] = [list(map(int, ring)) for ring in rings]
     return mesh
 
 

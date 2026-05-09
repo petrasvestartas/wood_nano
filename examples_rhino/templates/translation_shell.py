@@ -4,12 +4,13 @@ from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import translation_shell_elements
 from wood_nano.wood_element import unweld_mesh
+from wood_nano.plate_topology import PlateTopology
 
-session    = Session()
+session = Session()
+topo    = PlateTopology()
 
 
 def _run(v, _):
-    global _first_run
     if v["thickness"] == 0:
         Rhino.RhinoApp.WriteLine("thickness must not be zero.")
         return
@@ -23,9 +24,11 @@ def _run(v, _):
         thickness=v["thickness"], chamfer=v["chamfer"], chamfer_angle=v["chamfer_angle"],
     )
     session.add(shell)
-    for el in elements:
-        session.add(el.bottom, el.top, unweld_mesh(el.loft_mesh()))
     session.draw()
+
+    topo.clear()
+    for i, el in enumerate(elements):
+        topo.add_plate(i, el.bottom, el.top, unweld_mesh(el.loft_mesh()))
 
 
 process_input(

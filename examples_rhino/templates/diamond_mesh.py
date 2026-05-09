@@ -10,8 +10,10 @@ from wood_nano import (
     diamond_mesh_elements_from_surface,
 )
 from wood_nano.wood_element import unweld_mesh
+from wood_nano.plate_topology import PlateTopology
 
 session    = Session()
+topo       = PlateTopology()
 _srf_guids = []
 
 
@@ -65,10 +67,12 @@ def _run(v, _):
         label = "[default]"
 
     session.add(shell)
-    for el in elements:
-        session.add(el.bottom, el.top)
-        session.add(unweld_mesh(el.loft_mesh()))
     session.draw()
+
+    topo.clear()
+    for i, el in enumerate(elements):
+        topo.add_plate(i, el.bottom, el.top, unweld_mesh(el.loft_mesh()))
+
     Rhino.RhinoApp.WriteLine(
         f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}  {label}"
     )

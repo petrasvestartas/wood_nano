@@ -11,10 +11,11 @@ import scriptcontext as sc
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import vda_mesh_elements
+from session_rhino.rhino_polyline import to_rhino as _pl_to_rhino
+from wood_nano.plate_topology import PlateTopology
 
-session     = Session()
-_first_run  = True
-_mesh_guids = []  # tracks lofted panel/connector meshes added directly to the doc
+session = Session()
+topo    = PlateTopology()
 
 
 def _extract_mesh(rhino_mesh: rg.Mesh):
@@ -110,12 +111,7 @@ def _loft_panel(bot_pl, top_pl):
 
 
 def _run(v, _):
-    global _first_run, _mesh_guids
     doc = sc.doc
-
-    for guid in _mesh_guids:
-        doc.Objects.Delete(guid, True)
-    _mesh_guids = []
 
     meshes        = v["mesh"]
     face_thick    = v["face_thickness"]
@@ -144,41 +140,42 @@ def _run(v, _):
         rect_thickness=rt,
     )
 
-    # Polyline outlines
-    for face_row in f_pl:
-        for pl in face_row:
-            if len(pl.get_points()) > 1:
-                session.add(pl)
-
-    for edge_row in e_pl:
-        for pl in edge_row:
-            if len(pl.get_points()) > 1:
-                session.add(pl)
-
-    # Lofted solid meshes (panels + connectors)
+    # Add face plates and edge connectors with persistent topology tagging.
+    # Each (bot, top) polyline pair at positions [j, j+1] in a row is one plate.
+    # Loft meshes are RhinoCommon-native (from _loft_panel), so use add_plate_rh.
+    topo.clear()
+    face_mesh_count = 0
+    face_id = 0
     for face_row in f_pl:
         for j in range(0, len(face_row) - 1, 2):
-            m = _loft_panel(face_row[j], face_row[j + 1])
-            if m:
-                _mesh_guids.append(doc.Objects.AddMesh(m))
+            bot, top = face_row[j], face_row[j + 1]
+            if len(bot.get_points()) < 2:
+                continue
+            rh_mesh = _loft_panel(bot, top)
+            topo.add_plate_rh(face_id, _pl_to_rhino(bot), _pl_to_rhino(top), rh_mesh,
+                              plate_type="face")
+            if rh_mesh:
+                face_mesh_count += 1
+            face_id += 1
 
+    edge_id = face_id  # continue from face IDs so plate_id is globally unique
     for edge_row in e_pl:
         for j in range(0, len(edge_row) - 1, 2):
             bot, top = edge_row[j], edge_row[j + 1]
-            if len(bot.get_points()) > 1 and len(top.get_points()) > 1:
-                m = _loft_panel(bot, top)
-                if m:
-                    _mesh_guids.append(doc.Objects.AddMesh(m))
+            if len(bot.get_points()) < 2 or len(top.get_points()) < 2:
+                continue
+            rh_mesh = _loft_panel(bot, top)
+            topo.add_plate_rh(edge_id, _pl_to_rhino(bot), _pl_to_rhino(top), rh_mesh,
+                              plate_type="edge")
+            edge_id += 1
 
     session.draw()
     doc.Views.Redraw()
 
-    n_face_pl = sum(len(r) for r in f_pl)
-    n_edge_pl = sum(len(r) for r in e_pl if any(len(p.get_points()) > 1 for p in r))
     Rhino.RhinoApp.WriteLine(
-        f"faces: {len(f_pl)}  face polylines: {n_face_pl}"
-        f"  internal edges: {n_edge_pl // 2}"
-        f"  meshes: {len(_mesh_guids)}"
+        f"faces: {len(f_pl)}  face plates: {face_id}"
+        f"  edge connectors: {edge_id - face_id}"
+        f"  face meshes: {face_mesh_count}"
         f"  {label}"
     )
 
