@@ -1,5 +1,7 @@
 #! python3
 """PlateTopology — persist plate-element membership in a Rhino .3dm file.
+Also stores per-plate joinery metadata (joint_types, insertion_vector) as UserStrings,
+and global chevron joinery data (three_valence, adjacency) as document-level strings.
 
 Each plate is tagged on its constituent Rhino objects with two UserStrings
 that survive save/open without any compiled plugin:
@@ -25,6 +27,7 @@ Usage (in a template script):
     # → {plate_id: {"bot": guid, "top": guid, "mesh": guid}, ...}
 """
 
+import json
 import System
 import Rhino
 import scriptcontext as sc
@@ -54,7 +57,7 @@ class PlateTopology:
         self._guids.clear()
         self._group_indices.clear()
 
-    def add_plate(self, plate_id, bottom, top, mesh, plate_type="plate"):
+    def add_plate(self, plate_id, bottom, top, mesh, holes_bot=None, holes_top=None, plate_type="plate"):
         """Add one plate's geometry to the document with topology tags.
 
         Parameters
@@ -67,6 +70,10 @@ class PlateTopology:
             Top outline polyline.
         mesh : session_py.Mesh
             Loft mesh between bottom and top.
+        holes_bot : list[session_py.Polyline] or None
+            Per-hole bottom outline polylines.  None = no holes.
+        holes_top : list[session_py.Polyline] or None
+            Per-hole top outline polylines.  Same length as holes_bot.
         plate_type : str, optional
             Logical type tag stored as UserString ``plate_type`` (default ``"plate"``).
             Use e.g. ``"face"`` / ``"edge"`` for vda_mesh face/connector plates.
@@ -75,6 +82,26 @@ class PlateTopology:
         rh_top  = _pl_to_rhino(top)
         rh_mesh = _mesh_to_rhino(mesh)
         self._add_rh(plate_id, rh_bot, rh_top, rh_mesh, plate_type)
+        if holes_bot and holes_top:
+            doc     = sc.doc
+            pid_str = str(int(plate_id))
+            for hi, (hb, ht) in enumerate(zip(holes_bot, holes_top)):
+                rh_hb = _pl_to_rhino(hb)
+                rh_ht = _pl_to_rhino(ht)
+                for role, rh_geo in (
+                    (f"hole_bot_{hi}", rh_hb),
+                    (f"hole_top_{hi}", rh_ht),
+                ):
+                    if rh_geo is None:
+                        continue
+                    attr = Rhino.DocObjects.ObjectAttributes()
+                    attr.Name = f"{plate_type}_{pid_str}_{role}"
+                    attr.SetUserString("plate_id",   pid_str)
+                    attr.SetUserString("plate_role", role)
+                    attr.SetUserString("plate_type", plate_type)
+                    guid = doc.Objects.AddCurve(rh_geo, attr)
+                    if guid != System.Guid.Empty:
+                        self._guids.append(guid)
 
     def add_plate_rh(self, plate_id, rh_bottom, rh_top, rh_mesh, plate_type="plate"):
         """Same as add_plate but accepts already-converted RhinoCommon geometry.
@@ -157,6 +184,45 @@ class PlateTopology:
                 found[role] = obj.Id
         return found   # {"bot": guid, "top": guid, "mesh": guid}
 
+    def find_plate_holes(self, plate_id):
+        """Return parallel GUID lists for the hole polylines of a plate.
+
+        Parameters
+        ----------
+        plate_id : int
+
+        Returns
+        -------
+        tuple[list[System.Guid], list[System.Guid]]
+            (hole_bot_guids, hole_top_guids), sorted by hole index N where
+            the role is ``hole_bot_N`` / ``hole_top_N``.  Both lists have the
+            same length (pairs where either side is missing are skipped).
+        """
+        pid_str = str(int(plate_id))
+        bot_map = {}  # N -> guid
+        top_map = {}  # N -> guid
+        for obj in sc.doc.Objects.GetObjectList(
+            Rhino.DocObjects.ObjectType.AnyObject
+        ):
+            if obj.Attributes.GetUserString("plate_id") != pid_str:
+                continue
+            role = obj.Attributes.GetUserString("plate_role") or ""
+            if role.startswith("hole_bot_"):
+                try:
+                    n = int(role[len("hole_bot_"):])
+                    bot_map[n] = obj.Id
+                except ValueError:
+                    pass
+            elif role.startswith("hole_top_"):
+                try:
+                    n = int(role[len("hole_top_"):])
+                    top_map[n] = obj.Id
+                except ValueError:
+                    pass
+        # Return only complete pairs, sorted by index.
+        indices = sorted(set(bot_map) & set(top_map))
+        return [bot_map[n] for n in indices], [top_map[n] for n in indices]
+
     def collect_plates_from_selection(self, selected_guids):
         """Expand a user selection to full plate sets.
 
@@ -211,3 +277,87 @@ class PlateTopology:
                 except ValueError:
                     pass
         return sorted(ids)
+
+    # ------------------------------------------------------------------
+    # Chevron joinery metadata
+    # ------------------------------------------------------------------
+
+    def tag_plate_joinery(self, plate_id, joint_types, insertion_vector):
+        """Store per-plate joinery metadata on the plate's bot and top curves.
+
+        Parameters
+        ----------
+        plate_id : int
+        joint_types : list[int]
+            6 joint-type codes, one per face of the plate box.
+        insertion_vector : list[float]
+            18 floats — 6 Vec3 insertion directions (x0,y0,z0, …, x5,y5,z5).
+        """
+        pid_str = str(int(plate_id))
+        jt_str  = json.dumps([int(x)   for x in joint_types])
+        iv_str  = json.dumps([float(x) for x in insertion_vector])
+        for obj in sc.doc.Objects.GetObjectList(
+            Rhino.DocObjects.ObjectType.AnyObject
+        ):
+            if obj.Attributes.GetUserString("plate_id") != pid_str:
+                continue
+            role = obj.Attributes.GetUserString("plate_role")
+            if role in ("bot", "top"):
+                obj.Attributes.SetUserString("joint_types",      jt_str)
+                obj.Attributes.SetUserString("insertion_vector", iv_str)
+                obj.CommitChanges()
+
+    def set_chevron_global_joinery(self, three_valence, adjacency):
+        """Store chevron global joinery data in the Rhino document string table.
+
+        Parameters
+        ----------
+        three_valence : list[list[int]]
+            Annen [s0, s1, e20, e31] groups.
+        adjacency : list[tuple[int, int] | list[int]]
+            Adjacent plate-pair indices.
+        """
+        sc.doc.Strings.SetString(
+            "wood_nano::three_valence", json.dumps(three_valence))
+        sc.doc.Strings.SetString(
+            "wood_nano::adjacency",     json.dumps(adjacency))
+
+    def get_chevron_global_joinery(self):
+        """Read chevron global joinery data from the Rhino document string table.
+
+        Returns
+        -------
+        tuple[list, list]
+            (three_valence, adjacency); each defaults to [] when not stored.
+        """
+        tv_str  = sc.doc.Strings.GetValue("wood_nano::three_valence")
+        adj_str = sc.doc.Strings.GetValue("wood_nano::adjacency")
+        three_valence = json.loads(tv_str)  if tv_str  else []
+        adjacency     = json.loads(adj_str) if adj_str else []
+        return three_valence, adjacency
+
+    def get_plate_joinery(self, plate_id):
+        """Read per-plate joinery metadata from the Rhino document.
+
+        Reads the ``joint_types`` and ``insertion_vector`` UserStrings from
+        the bot curve of the given plate.
+
+        Returns
+        -------
+        tuple[list[int], list[float]]
+            (joint_types, insertion_vector); each defaults to [] when absent.
+        """
+        pid_str = str(int(plate_id))
+        for obj in sc.doc.Objects.GetObjectList(
+            Rhino.DocObjects.ObjectType.AnyObject
+        ):
+            if obj.Attributes.GetUserString("plate_id") != pid_str:
+                continue
+            if obj.Attributes.GetUserString("plate_role") != "bot":
+                continue
+            jt_str = obj.Attributes.GetUserString("joint_types")
+            iv_str = obj.Attributes.GetUserString("insertion_vector")
+            jt = json.loads(jt_str) if jt_str else []
+            iv = json.loads(iv_str) if iv_str else []
+            return jt, iv
+        return [], []

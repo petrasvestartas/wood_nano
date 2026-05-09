@@ -91,7 +91,7 @@ def _run(v, _):
 
     if v["surface"]:
         pts, ku, kv, du, dv, nu, nv = _extract_surface(v["surface"][0])
-        shell, elements, loft_meshes = chevron_elements_nurbs(
+        shell, elements, loft_meshes, joint_data = chevron_elements_nurbs(
             pts, ku, kv, du, dv, nu, nv, **kw)
         label = "[user surface]"
     elif surface_idx >= 0:
@@ -111,11 +111,11 @@ def _run(v, _):
             if g != System.Guid.Empty:
                 _srf_guids.append(g)
 
-        shell, elements, loft_meshes = chevron_elements_annen(
+        shell, elements, loft_meshes, joint_data = chevron_elements_annen(
             ANNEN_JSON, surface_idx, **kw)
         label = f"[Annen #{surface_idx}]"
     else:
-        shell, elements, loft_meshes = chevron_elements(**kw)
+        shell, elements, loft_meshes, joint_data = chevron_elements(**kw)
         label = "[default]"
 
     # Draw shell mesh via Session (no topology needed for the shell)
@@ -126,6 +126,19 @@ def _run(v, _):
     topo.clear()
     for i, (el, m) in enumerate(zip(elements, loft_meshes)):
         topo.add_plate(i, el.bottom, el.top, unweld_mesh(m))
+        if joint_data and i < len(joint_data["joints_per_face"]):
+            topo.tag_plate_joinery(
+                i,
+                joint_data["joints_per_face"][i],
+                joint_data["insertion_vectors"][i],
+            )
+
+    # Store global chevron joinery data (three_valence + adjacency) in doc strings
+    if joint_data:
+        topo.set_chevron_global_joinery(
+            joint_data["three_valence"],
+            joint_data["adjacency"],
+        )
 
     doc.Views.Redraw()
     Rhino.RhinoApp.WriteLine(

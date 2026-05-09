@@ -84,7 +84,7 @@ process_input(
         "u_div":         (5,      int),
         "v_div":         (2,      int),
         "thickness":     (-15.0,  float),
-        "chamfer":       (20.0,   float),
+        "chamfer":       (30.0,   float),
         "chamfer_angle": (180.0,  float),
     },
     callback=_run,

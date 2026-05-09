@@ -218,6 +218,7 @@ _LAYER_DEFS = [
     ("JoinerySolver::JointArea",       "JoinerySolver",   (  0, 200,   0), False),
     ("JoinerySolver::JointVolumes",    "JoinerySolver",   (220,  50,  50), False),
     ("JoinerySolver::JointLines",      "JoinerySolver",   (255, 200,   0), False),
+    ("JoinerySolver::CDTDebug",        "JoinerySolver",   (180,  80, 180), False),
 ]
 
 def _ensure_layer(full_path, parent_path, rgb, visible):
@@ -315,8 +316,10 @@ def run():
     _log(f"Joinery solver: {len(plate_map)} plates found in selection.")
 
     # ── 3. Reconstruct bottom/top polylines from the Rhino document ───────
-    bottom_pls = []
-    top_pls    = []
+    bottom_pls      = []
+    top_pls         = []
+    bottom_hole_pls = []
+    top_hole_pls    = []
 
     for pid in sorted(plate_map.keys()):
         roles  = plate_map[pid]
@@ -335,11 +338,45 @@ def run():
         bottom_pls.append(bot_pl)
         top_pls.append(top_pl)
 
+        # Read hole polylines for this plate.
+        h_bots_guids, h_tops_guids = topo.find_plate_holes(pid)
+        hole_bots = [_guid_to_session_polyline(g) for g in h_bots_guids]
+        hole_tops = [_guid_to_session_polyline(g) for g in h_tops_guids]
+        valid_holes_b = [h for h in hole_bots if h is not None]
+        valid_holes_t = [h for h in hole_tops if h is not None]
+        if valid_holes_b:
+            _log(f"  plate {pid}: {len(valid_holes_b)} hole(s) found.")
+        bottom_hole_pls.append(valid_holes_b)
+        top_hole_pls.append(valid_holes_t)
+
     if not bottom_pls:
         _log("Joinery solver: no complete plate pairs found.")
         return
 
     _log(f"Joinery solver: {len(bottom_pls)} complete plate pairs ready.")
+
+    # ── 3b. Read chevron joinery metadata (joint_types, insertion_vectors,
+    #        three_valence, adjacency) stored as UserStrings / doc strings.
+    #        These are written by the chevron template; absent for other
+    #        templates so the solver falls back to automatic detection.
+    per_element_iv = []
+    per_element_jt = []
+    for pid in sorted(plate_map.keys()):
+        jt, iv = topo.get_plate_joinery(pid)
+        per_element_jt.append(jt)
+        per_element_iv.append(iv)
+
+    three_valence_data, adjacency_data = topo.get_chevron_global_joinery()
+    has_chevron = (any(jt for jt in per_element_jt)
+                   or bool(three_valence_data)
+                   or bool(adjacency_data))
+    if has_chevron:
+        n_tagged = sum(1 for jt in per_element_jt if jt)
+        _log(
+            f"  chevron joinery data: {n_tagged} plates tagged, "
+            f"{len(three_valence_data)} three_valence groups, "
+            f"{len(adjacency_data)} adjacency pairs."
+        )
 
     # ── 4. Dump polyline coords to verify round-trip correctness ──────────
     for i, (bp, tp) in enumerate(zip(bottom_pls, top_pls)):
@@ -377,11 +414,18 @@ def run():
     _log(f"Joinery solver: running search_type={search_type} ({choice}) ...")
 
     # ── 6. Run C++ — wrapped so Python exceptions are visible ────────────
+    has_holes = any(h for h in bottom_hole_pls)
     try:
         elements, joints = joinery_solver_elements(
             bottom_pls, top_pls, search_type,
             joint_params=_joint_params if _joint_params else None,
             joint_volume_ext=_joint_volume_ext if _joint_volume_ext else None,
+            per_element_insertion_vectors=per_element_iv  if has_chevron else None,
+            per_element_joint_types      =per_element_jt  if has_chevron else None,
+            three_valence                =three_valence_data if has_chevron else None,
+            adjacency                    =adjacency_data     if has_chevron else None,
+            bottom_hole_polylines=bottom_hole_pls if has_holes else None,
+            top_hole_polylines   =top_hole_pls    if has_holes else None,
         )
     except Exception as exc:
         import traceback as _tb
@@ -419,6 +463,26 @@ def run():
         if rh_mesh and rh_mesh.Vertices.Count > 0:
             _add(rh_mesh, l_mesh)
             n_meshes += 1
+
+    # ── CDT debug: draw triangulation wireframe for each lofted mesh ─────
+    l_debug = layers["JoinerySolver::CDTDebug"]
+    for el in elements:
+        tri_data  = el._mesh_data
+        face_tris = tri_data.get("face_tris", [])
+        verts     = tri_data.get("vertices")   # numpy array shape (N, 3)
+        if verts is None:
+            continue
+        for tri_list in face_tris:
+            if tri_list is None:
+                continue
+            for tri in tri_list:
+                if len(tri) == 3 and all(t >= 0 for t in tri):
+                    pts_tri = [
+                        rg.Point3d(float(verts[t][0]), float(verts[t][1]), float(verts[t][2]))
+                        for t in tri
+                    ]
+                    pts_tri.append(pts_tri[0])
+                    _add(rg.Polyline(pts_tri), l_debug)
 
     # ── Merged cut outlines (top + bottom face with joint notches) ────────
     n_outlines = 0

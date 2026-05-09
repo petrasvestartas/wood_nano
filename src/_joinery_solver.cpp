@@ -4,6 +4,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
 
 #include <fstream>
@@ -138,7 +139,11 @@ NB_MODULE(_joinery_solver, m) {
         [](const std::vector<std::vector<Pts>>& plates_data,
            int search_type_int,
            std::vector<double> joint_params,
-           std::vector<double> joint_volume_ext) -> nb::dict {
+           std::vector<double> joint_volume_ext,
+           std::vector<std::array<double,18>> per_element_insertion_vectors,
+           std::vector<std::array<int,6>>     per_element_joint_types,
+           std::vector<std::array<int,4>>     three_valence,
+           std::vector<std::pair<int,int>>    adjacency) -> nb::dict {
             // Initialise all wood globals to their documented defaults.
             // Tests do this via reset_defaults(); without it JOINTS_PARAMETERS_AND_TYPES
             // is an empty vector → JPT[row*3] crashes on first cross/lap joint.
@@ -169,6 +174,8 @@ NB_MODULE(_joinery_solver, m) {
 
             // Build WoodElements from bottom/top polyline pairs.
             std::vector<wood_session::WoodElement> elements;
+            std::vector<session_cpp::Polyline> elem_outer_bots, elem_outer_tops;
+            std::vector<std::vector<session_cpp::Polyline>> elem_hole_bots, elem_hole_tops;
             elements.reserve(plates_data.size());
             for (size_t i = 0; i < plates_data.size(); ++i) {
                 const auto& pair = plates_data[i];
@@ -192,6 +199,15 @@ NB_MODULE(_joinery_solver, m) {
                 elements.emplace_back(pts_to_polyline(pair[0]), pts_to_polyline(pair[1]));
                 dbg("    -> WoodElement planes=" + std::to_string(elements.back().planes.size())
                     + " polylines=" + std::to_string(elements.back().polylines.size()));
+                elem_outer_bots.push_back(pts_to_polyline(pair[0]));
+                elem_outer_tops.push_back(pts_to_polyline(pair[1]));
+                std::vector<session_cpp::Polyline> hbots, htops;
+                for (size_t hi = 2; hi + 1 < pair.size(); hi += 2) {
+                    hbots.push_back(pts_to_polyline(pair[hi]));
+                    htops.push_back(pts_to_polyline(pair[hi + 1]));
+                }
+                elem_hole_bots.push_back(std::move(hbots));
+                elem_hole_tops.push_back(std::move(htops));
             }
             if (elements.empty()) { dbg("no elements built"); return empty; }
 
@@ -200,7 +216,24 @@ NB_MODULE(_joinery_solver, m) {
             // with merged cut outlines.
             dbg("get_connection_zones start  elements=" + std::to_string(elements.size()));
             SearchType search_type = static_cast<SearchType>(search_type_int);
-            auto joints = get_connection_zones(elements, search_type);
+            std::vector<wood_session::WoodJoint> joints;
+            bool use_chevron = !adjacency.empty()
+                            || !per_element_insertion_vectors.empty()
+                            || !three_valence.empty();
+            if (use_chevron) {
+                dbg("  using ChevronJoineryData overload  adjacency=" +
+                    std::to_string(adjacency.size()) +
+                    "  iv=" + std::to_string(per_element_insertion_vectors.size()) +
+                    "  tv=" + std::to_string(three_valence.size()));
+                wood_session::ChevronJoineryData cd;
+                cd.adjacency        = std::move(adjacency);
+                cd.insertion_vectors= std::move(per_element_insertion_vectors);
+                cd.joints_per_face  = std::move(per_element_joint_types);
+                cd.three_valence    = std::move(three_valence);
+                joints = get_connection_zones(elements, search_type, cd);
+            } else {
+                joints = get_connection_zones(elements, search_type);
+            }
             dbg("get_connection_zones done  joints=" + std::to_string(joints.size()));
 
             // ── Convert joints ────────────────────────────────────────────
@@ -239,11 +272,21 @@ NB_MODULE(_joinery_solver, m) {
             dbg("converting elements  count=" + std::to_string(elements.size()));
             nb::list py_elements;
             for (size_t ei = 0; ei < elements.size(); ++ei) {
-                const auto& e = elements[ei];
+                auto& e = elements[ei];
                 dbg("  elem " + std::to_string(ei)
                     + "  top_outlines=" + std::to_string(e.features.top.size())
                     + "  bot_outlines=" + std::to_string(e.features.bottom.size()));
                 nb::dict ed;
+
+                // Inject original hole polylines into features before lofting.
+                // features[0] = outer boundary (after joint cuts), features[1..] = cut notches from joints.
+                // Append original plate-geometry holes so the loft includes them.
+                if (!elem_hole_bots[ei].empty()) {
+                    if (e.features.bottom.empty()) e.features.bottom.push_back(elem_outer_bots[ei]);
+                    if (e.features.top.empty())    e.features.top.push_back(elem_outer_tops[ei]);
+                    for (const auto& h : elem_hole_bots[ei]) e.features.bottom.push_back(h);
+                    for (const auto& h : elem_hole_tops[ei]) e.features.top.push_back(h);
+                }
 
                 nb::list tops;
                 for (const auto& pl : e.features.top)
@@ -257,8 +300,6 @@ NB_MODULE(_joinery_solver, m) {
 
                 dbg("  elem " + std::to_string(ei) + " loft_mesh start");
                 session_cpp::Mesh lm;
-                // features.top / features.bottom: [0] = outer boundary, [1..] = hole rings.
-                // session_cpp::Mesh::loft handles outer + holes natively.
                 if (!e.features.top.empty() && !e.features.bottom.empty()) {
                     dbg("    top_rings=" + std::to_string(e.features.top.size())
                         + "  bot_rings=" + std::to_string(e.features.bottom.size()));
@@ -278,8 +319,12 @@ NB_MODULE(_joinery_solver, m) {
             return out;
         },
         "plates"_a,
-        "search_type"_a       = 1,
-        "joint_params"_a      = std::vector<double>{},
-        "joint_volume_ext"_a  = std::vector<double>{}
+        "search_type"_a                   = 1,
+        "joint_params"_a                  = std::vector<double>{},
+        "joint_volume_ext"_a              = std::vector<double>{},
+        "per_element_insertion_vectors"_a = std::vector<std::array<double,18>>{},
+        "per_element_joint_types"_a       = std::vector<std::array<int,6>>{},
+        "three_valence"_a                 = std::vector<std::array<int,4>>{},
+        "adjacency"_a                     = std::vector<std::pair<int,int>>{}
     );
 }

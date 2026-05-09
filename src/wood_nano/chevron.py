@@ -4,6 +4,16 @@ from wood_nano._chevron import make_chevron_annen, make_chevron_nurbs, make_defa
 from wood_nano.wood_element import WoodElement, _to_mesh
 
 
+def _chevron_joint_data(ch) -> dict:
+    """Extract joinery metadata dict from a Chevron object."""
+    return {
+        "insertion_vectors": [list(iv) for iv in ch.insertion_vectors],
+        "joints_per_face":   [list(jf) for jf in ch.joints_per_face],
+        "three_valence":     [list(tv) for tv in ch.three_valence],
+        "adjacency":         list(ch.adjacency),
+    }
+
+
 def chevron_elements(
     u_divisions: int = 4,
     v_division_dist: float = 900.0,
@@ -24,7 +34,7 @@ def chevron_elements(
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,
         ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3)
-    return _to_mesh(ch.mesh), [WoodElement(e) for e in ch.elements], [_to_mesh(m) for m in ch.loft_meshes]
+    return _to_mesh(ch.mesh), [WoodElement(e) for e in ch.elements], [_to_mesh(m) for m in ch.loft_meshes], _chevron_joint_data(ch)
 
 
 def chevron_elements_nurbs(
@@ -55,7 +65,7 @@ def chevron_elements_nurbs(
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,
         ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3)
-    return _to_mesh(ch.mesh), [WoodElement(e) for e in ch.elements], [_to_mesh(m) for m in ch.loft_meshes]
+    return _to_mesh(ch.mesh), [WoodElement(e) for e in ch.elements], [_to_mesh(m) for m in ch.loft_meshes], _chevron_joint_data(ch)
 
 
 def chevron_elements_annen(
@@ -81,4 +91,4 @@ def chevron_elements_annen(
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,
         ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3)
-    return _to_mesh(ch.mesh), [WoodElement(e) for e in ch.elements], [_to_mesh(m) for m in ch.loft_meshes]
+    return _to_mesh(ch.mesh), [WoodElement(e) for e in ch.elements], [_to_mesh(m) for m in ch.loft_meshes], _chevron_joint_data(ch)

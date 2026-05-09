@@ -78,6 +78,12 @@ def joinery_solver_elements(
     search_type: int = SEARCH_CROSS_JOINT,
     joint_params: list | None = None,
     joint_volume_ext: list | None = None,
+    per_element_insertion_vectors: list | None = None,
+    per_element_joint_types: list | None = None,
+    three_valence: list | None = None,
+    adjacency: list | None = None,
+    bottom_hole_polylines: list | None = None,
+    top_hole_polylines: list | None = None,
 ) -> tuple[list[JoineryElement], list[JointResult]]:
     """Detect joinery between plate elements defined by bottom/top polyline pairs.
 
@@ -98,6 +104,10 @@ def joinery_solver_elements(
         Optional 21-element flat list overriding the C++ joint family defaults
         (7 families × 3 values: division_length, shift, type_id).
         ``None`` or empty list → use C++ ``reset_defaults()`` values.
+    bottom_hole_polylines : list[list[Polyline]] or None
+        Per-element lists of bottom hole outline polylines. None = no holes.
+    top_hole_polylines : list[list[Polyline]] or None
+        Per-element lists of top hole outline polylines. None = no holes.
 
     Returns
     -------
@@ -122,15 +132,28 @@ def joinery_solver_elements(
         # assume already list of [x,y,z]
         return [(float(p[0]), float(p[1]), float(p[2])) for p in pl]
 
-    plates_data = [
-        [_to_pts(bot), _to_pts(top)]
-        for bot, top in zip(bottom_polylines, top_polylines)
-    ]
+    plates_data = []
+    for i, (bot, top) in enumerate(zip(bottom_polylines, top_polylines)):
+        plate = [_to_pts(bot), _to_pts(top)]
+        if (bottom_hole_polylines and i < len(bottom_hole_polylines) and
+                top_hole_polylines and i < len(top_hole_polylines)):
+            for h_bot, h_top in zip(bottom_hole_polylines[i], top_hole_polylines[i]):
+                plate.append(_to_pts(h_bot))
+                plate.append(_to_pts(h_top))
+        plates_data.append(plate)
 
     raw = _joinery_solver.solve_joinery(
         plates_data, int(search_type),
-        joint_params      if joint_params      else [],
-        joint_volume_ext  if joint_volume_ext  else [],
+        joint_params     if joint_params     else [],
+        joint_volume_ext if joint_volume_ext else [],
+        [tuple(float(x) for x in iv) for iv in per_element_insertion_vectors]
+            if per_element_insertion_vectors else [],
+        [tuple(int(x)   for x in jt) for jt in per_element_joint_types]
+            if per_element_joint_types       else [],
+        [tuple(int(x)   for x in tv) for tv in three_valence]
+            if three_valence                 else [],
+        [(int(a), int(b)) for a, b in adjacency]
+            if adjacency                     else [],
     )
 
     elements = [JoineryElement(d) for d in raw["elements"]]

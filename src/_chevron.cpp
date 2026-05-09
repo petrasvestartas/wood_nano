@@ -53,7 +53,11 @@ NB_MODULE(_chevron, m) {
         .def_prop_ro("insertion_vectors",
             [](const Chevron& c) { return c.insertion_vectors; })
         .def_prop_ro("joints_per_face",
-            [](const Chevron& c) { return c.joints_per_face; });
+            [](const Chevron& c) { return c.joints_per_face; })
+        .def_prop_ro("three_valence",
+            [](const Chevron& c) { return c.three_valence; })
+        .def_prop_ro("adjacency",
+            [](const Chevron& c) { return c.adjacency; });
 
     m.def("make_chevron_annen",
         [](const std::string& json_path, int surface_idx,
