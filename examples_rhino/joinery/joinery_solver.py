@@ -368,6 +368,7 @@ def run():
 
     three_valence_data, adjacency_data = topo.get_chevron_global_joinery()
     has_chevron = (any(jt for jt in per_element_jt)
+                   or any(iv for iv in per_element_iv)
                    or bool(three_valence_data)
                    or bool(adjacency_data))
     if has_chevron:
@@ -377,6 +378,16 @@ def run():
             f"{len(three_valence_data)} three_valence groups, "
             f"{len(adjacency_data)} adjacency pairs."
         )
+        # Pad empty per-element lists so the C++ solver receives complete data.
+        # A plate with no stored data gets zero-filled lists sized to its geometry.
+        # (closed polyline: point_count includes the closing point,
+        #  so n_sides = point_count-1, n_faces = n_sides+2 = point_count+1)
+        for i, bot_pl in enumerate(bottom_pls):
+            n_faces = bot_pl.point_count() + 1
+            if not per_element_iv[i]:
+                per_element_iv[i] = [0.0] * (n_faces * 3)
+            if not per_element_jt[i]:
+                per_element_jt[i] = [0] * n_faces
 
     # ── 4. Dump polyline coords to verify round-trip correctness ──────────
     for i, (bp, tp) in enumerate(zip(bottom_pls, top_pls)):
