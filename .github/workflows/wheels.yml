@@ -23,6 +23,7 @@ jobs:
             cibw_archs: arm64
           - os: macos-15-intel    # x86_64 runner (Intel, macOS 15) — replaces stale macos-13
             cibw_archs: x86_64
+            macos_target: "10.15"  # absl requires 10.13+; 10.15 is safe minimum
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +38,7 @@ jobs:
       - name: Build wheels
         env:
           CIBW_ARCHS_MACOS: ${{ matrix.cibw_archs }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macos_target }}
         run: python -m cibuildwheel --output-dir wheelhouse
 
       - uses: actions/upload-artifact@v4
