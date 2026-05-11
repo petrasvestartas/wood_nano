@@ -2,16 +2,53 @@ name: Build wheels
 
 on:
   push:
-    tags: ["v*"]
     branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
+  bump_version:
+    name: Bump patch version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          python3 - <<'EOF'
+          import re, pathlib, os
+          f = pathlib.Path("src/wood_nano/__init__.py")
+          content = f.read_text()
+          m = re.search(r'__version__ = "(\d+)\.(\d+)\.(\d+)"', content)
+          major, minor, patch = m.groups()
+          new_version = f"{major}.{minor}.{int(patch)+1}"
+          f.write_text(content[:m.start()] + f'__version__ = "{new_version}"' + content[m.end():])
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"new_version={new_version}\n")
+          print(f"Bumped to {new_version}")
+          EOF
+
+      - name: Commit bumped version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/wood_nano/__init__.py
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          git push
+
   build_wheels:
     name: ${{ matrix.os }}
+    needs: [bump_version]
+    if: always() && (needs.bump_version.result == 'success' || needs.bump_version.result == 'skipped')
     runs-on: ${{ matrix.os }}
-    # Allow individual matrix jobs to fail without blocking publish
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -22,12 +59,14 @@ jobs:
           - os: macos-latest      # arm64 runner (Apple Silicon M1, macOS 15)
             cibw_archs: arm64
             macos_target: "11.0"
-          - os: macos-15-intel    # x86_64 runner (Intel, macOS 15) — replaces stale macos-13
+          - os: macos-15-intel    # x86_64 runner (Intel, macOS 15)
             cibw_archs: x86_64
-            macos_target: "10.15"  # absl requires 10.13+; 10.15 is safe minimum
+            macos_target: "10.15"
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # pick up the bumped-version commit
 
       - uses: actions/setup-python@v5
         with:
@@ -51,11 +90,7 @@ jobs:
     name: Publish to PyPI
     needs: build_wheels
     runs-on: ubuntu-latest
-    # Publish even if some matrix jobs failed/timed-out, as long as we have
-    # at least the ubuntu and windows wheels (macos-13 can be slow).
-    if: |
-      startsWith(github.ref, 'refs/tags/v') &&
-      !cancelled()
+    if: github.event_name == 'push' && !cancelled()
     environment:
       name: pypi
       url: https://pypi.org/project/wood_nano/
