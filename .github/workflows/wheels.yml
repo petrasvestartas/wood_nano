@@ -21,6 +21,7 @@ jobs:
           - os: windows-latest
           - os: macos-latest      # arm64 runner (Apple Silicon M1, macOS 15)
             cibw_archs: arm64
+            macos_target: "11.0"
           - os: macos-15-intel    # x86_64 runner (Intel, macOS 15) — replaces stale macos-13
             cibw_archs: x86_64
             macos_target: "10.15"  # absl requires 10.13+; 10.15 is safe minimum
