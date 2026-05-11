@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#222222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Reflex fold cross-section: W-shape where the inner valley angle is
+       reflex (> 180 °). Top peaks + deep valley + side wings. -->
+  <polyline points="2,6 8,18 12,10 16,18 22,6"/>
+  <!-- Short depth lines from valley to suggest the folded plate thickness -->
+  <line x1="8"  y1="18" x2="8"  y2="21"/>
+  <line x1="16" y1="18" x2="16" y2="21"/>
+</svg>

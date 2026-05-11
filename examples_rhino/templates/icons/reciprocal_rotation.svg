@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#222222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 3-fold rotation nexorade: three beams at 120° apart, each offset from
+       centre — creates the characteristic triskelion / windmill pinwheel.
+       Beam centres: shifted 3 px perpendicular to beam direction. -->
+  <!-- Beam 1: horizontal, shifted 3 px upward -->
+  <line x1="3"  y1="9"  x2="21" y2="9"/>
+  <!-- Beam 2: 120° direction (upper-right → lower-left), shifted 3 px SE -->
+  <line x1="14" y1="3"  x2="5"  y2="18"/>
+  <!-- Beam 3: 240° direction (upper-left → lower-right), shifted 3 px SW -->
+  <line x1="10" y1="3"  x2="19" y2="18"/>
+</svg>

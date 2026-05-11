@@ -4,28 +4,41 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "wood_nano"
-description = "Binding for wood project that is compiled into a binding using nanobind and scikit-build"
-readme = "README.md"
+description = "Python bindings for the wood timber joinery C++ library."
 requires-python = ">=3.9"
-authors = [
-    { name = "Petras Vestartas", email = "petrasvestartas@gmail.com" },
-]
-classifiers = [
-    "License :: OSI Approved :: BSD License",
-]
+dependencies = ["numpy>=1.21.0", "session_py"]
+authors = [{ name = "Petras Vestartas", email = "petrasvestartas@gmail.com" }]
 dynamic = ["version"]
 
-[project.urls]
-Homepage = "https://github.com/petrasvestartas/wood_nano"
+[project.optional-dependencies]
+dev = ["scikit-build-core>=0.10", "nanobind>=1.3.2", "pytest>=7.0", "numpy>=1.21.0"]
 
-# ============================================================================
-# scikit-build
-# ============================================================================
+# ── uv environment ────────────────────────────────────────────────────────────
+# Setup (run once):
+#   uv venv
+#   uv pip install nanobind scikit-build-core numpy pytest
+#   uv pip install --no-build-isolation -e .
+#
+# Rebuild after C++ changes:
+#   uv pip install --no-build-isolation -e .
+#
+# Run examples:
+#   uv run python examples/templates/translation_shell.py
+#
+# Note: --no-build-isolation is required so scikit-build-core reuses the
+# already-installed nanobind/cmake instead of fetching them in isolation.
+[dependency-groups]
+dev = [
+    "nanobind>=1.3.2",
+    "scikit-build-core>=0.10",
+    "numpy>=1.21.0",
+    "pytest>=7.0",
+]
 
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
-wheel.py-api = "cp312"
+wheel.py-api = "cp39"
 cmake.version = ">=3.15"
 cmake.build-type = "Release"
 
@@ -36,39 +49,26 @@ input = "src/wood_nano/__init__.py"
 [tool.scikit-build.cmake.define]
 CMAKE_POLICY_DEFAULT_CMP0135 = "NEW"
 
-# ============================================================================
-# cibuildwheel
-# ============================================================================
-
-[tool.cibuildwheel]
-build-verbosity = 3
-test-requires = ["pytest"]
-test-command = "pytest {project}/tests"
-build-frontend = "pip"
-manylinux-x86_64-image = "manylinux_2_28"
-skip = ["*_i686", "*-musllinux_*", "*-win32", "pp*"]
-macos.environment.MACOSX_DEPLOYMENT_TARGET = "11.0"
-
-# ============================================================================
-# pytest
-# ============================================================================
-
 [tool.pytest.ini_options]
-minversion = "6.0"
 testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py", "test.py"]
 
-# ============================================================================
-# bumpversion
-# ============================================================================
+[tool.ruff]
+line-length = 120
 
-[tool.bumpversion]
-current_version = "0.2.0"
-message = "Bump version to {new_version}"
-commit = true
-tag = true
+# ── cibuildwheel ─────────────────────────────────────────────────────────────
+[tool.cibuildwheel]
+build-verbosity = 1
+build = ["cp39-*"]
 
-[[tool.bumpversion.files]]
-filename = "src/wood_nano/__init__.py"
-search = "{current_version}"
-replace = "{new_version}"
+[tool.cibuildwheel.linux]
+# manylinux2014 ships gcc 10 (no C++23); manylinux_2_28 ships gcc 12+
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-build = "pip install ninja"
+
+[tool.cibuildwheel.macos]
+before-build = "pip install ninja"
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.windows]
+before-build = "pip install ninja"
