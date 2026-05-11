@@ -43,6 +43,7 @@ class PlateTopology:
         self._guids = []         # all object GUIDs we have added
         self._group_indices = [] # group indices we have created
         self._hole_cache = None  # {pid_str: {"bot": {n: guid}, "top": {n: guid}}}
+        self._plate_guids = {}   # {plate_id: {"bot": guid, "top": guid, "mesh": guid}}
 
     # ------------------------------------------------------------------
     # Write
@@ -58,6 +59,7 @@ class PlateTopology:
         self._guids.clear()
         self._group_indices.clear()
         self._hole_cache = None
+        self._plate_guids.clear()
 
     def add_plate(self, plate_id, bottom, top, mesh, holes_bot=None, holes_top=None, plate_type="plate"):
         """Add one plate's geometry to the document with topology tags.
@@ -142,6 +144,8 @@ class PlateTopology:
                 added[role] = guid
                 self._guids.append(guid)
 
+        if added:
+            self._plate_guids[plate_id] = added
         if len(added) >= 2:
             gi = doc.Groups.Add(f"{plate_type}_{pid_str}", list(added.values()))
             if gi >= 0:
@@ -342,19 +346,20 @@ class PlateTopology:
         insertion_vector : list[float]
             18 floats — 6 Vec3 insertion directions (x0,y0,z0, …, x5,y5,z5).
         """
-        pid_str = str(int(plate_id))
+        plate_id = int(plate_id)
         jt_str  = json.dumps([int(x)   for x in joint_types])
         iv_str  = json.dumps([float(x) for x in insertion_vector])
-        for obj in sc.doc.Objects.GetObjectList(
-            Rhino.DocObjects.ObjectType.AnyObject
-        ):
-            if obj.Attributes.GetUserString("plate_id") != pid_str:
+        roles = self._plate_guids.get(plate_id, {})
+        for role in ("bot", "top"):
+            guid = roles.get(role)
+            if guid is None:
                 continue
-            role = obj.Attributes.GetUserString("plate_role")
-            if role in ("bot", "top"):
-                obj.Attributes.SetUserString("joint_types",      jt_str)
-                obj.Attributes.SetUserString("insertion_vector", iv_str)
-                obj.CommitChanges()
+            obj = sc.doc.Objects.FindId(guid)
+            if obj is None:
+                continue
+            obj.Attributes.SetUserString("joint_types",      jt_str)
+            obj.Attributes.SetUserString("insertion_vector", iv_str)
+            obj.CommitChanges()
 
     def set_chevron_global_joinery(self, three_valence, adjacency):
         """Store chevron global joinery data in the Rhino document string table.
