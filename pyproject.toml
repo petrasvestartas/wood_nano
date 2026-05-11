@@ -59,6 +59,8 @@ line-length = 120
 [tool.cibuildwheel]
 build-verbosity = 1
 build = ["cp39-*"]
+# Skip 32-bit Windows (no demand) and musl Linux (Alpine — not a target)
+skip = ["*-win32", "*-musllinux*"]
 
 [tool.cibuildwheel.linux]
 # manylinux2014 ships gcc 10 (no C++23); manylinux_2_28 ships gcc 12+
