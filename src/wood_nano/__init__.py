@@ -1,4 +1,4 @@
-__version__ = "1.0.6"
+__version__ = "1.0.7"
 
 from wood_nano.translation_shell import translation_shell_elements
 from wood_nano.reflex_fold import reflex_fold_elements
