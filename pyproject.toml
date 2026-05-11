@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 name = "wood_nano"
 description = "Python bindings for the wood timber joinery C++ library."
 requires-python = ">=3.9"
-dependencies = ["numpy>=1.21.0", "session_py"]
+dependencies = ["numpy>=1.21.0", "session_py", "session-rhino"]
 authors = [{ name = "Petras Vestartas", email = "petrasvestartas@gmail.com" }]
 dynamic = ["version"]
 
