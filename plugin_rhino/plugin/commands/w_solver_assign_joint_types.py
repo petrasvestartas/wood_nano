@@ -21,7 +21,7 @@ Workflow
 
 3. Select the TextDot objects.
 4. Each dot's position is matched to ALL selected-plate edge midpoints within
-   ``_MAX_SNAP_RADIUS`` mm.  Every matched plate/edge pair is updated — so a dot
+   ``snap_radius`` mm.  Every matched plate/edge pair is updated — so a dot
    placed on a shared edge between two plates updates both.
 5. Existing ``insertion_vector`` UserStrings are preserved unchanged.
 6. Run ``w_solver_joinery_solver`` — the stored types feed the C++ solver when combined
@@ -54,8 +54,8 @@ from wood_nano.plate_topology import PlateTopology
 
 
 _log = Rhino.RhinoApp.WriteLine
-_MAX_SNAP_RADIUS = 500.0   # mm — measured as closest distance to the edge segment
-_N_FACES = 6               # C++ fixed array size
+_DEFAULT_SNAP_RADIUS = 0.1  # model units — default snap tolerance (user-editable at run time)
+_N_FACES = 6                # C++ fixed array size
 
 
 def _dist_point_to_segment(pt, a, b):
@@ -70,15 +70,18 @@ def _dist_point_to_segment(pt, a, b):
     return math.sqrt(dx*dx + dy*dy + dz*dz)
 
 
-def _write_plate_userstring(plate_id, key, value_str):
-    """Write one UserString to bot/top objects of a plate without touching others."""
-    pid_str = str(int(plate_id))
-    for obj in sc.doc.Objects.GetObjectList(Rhino.DocObjects.ObjectType.AnyObject):
-        if obj.Attributes.GetUserString("plate_id") != pid_str:
+def _write_plate_userstring(plate_map, plate_id, key, value_str):
+    """Write one UserString to bot/top objects of a plate using selection-scoped GUIDs."""
+    roles = plate_map.get(plate_id, {})
+    for role in ("bot", "top"):
+        guid = roles.get(role)
+        if guid is None:
             continue
-        if obj.Attributes.GetUserString("plate_role") in ("bot", "top"):
-            obj.Attributes.SetUserString(key, value_str)
-            obj.CommitChanges()
+        obj = sc.doc.Objects.FindId(guid)
+        if obj is None:
+            continue
+        obj.Attributes.SetUserString(key, value_str)
+        obj.CommitChanges()
 
 
 def _get_bot_polyline_points(bot_guid):
@@ -95,6 +98,16 @@ def _get_bot_polyline_points(bot_guid):
 
 
 def run():
+    # 0. Ask for snap tolerance
+    snap_radius = rs.GetReal(
+        "Snap tolerance (model units) — TextDot must be within this distance of an edge",
+        number=_DEFAULT_SNAP_RADIUS,
+        minimum=1e-6,
+    )
+    if snap_radius is None:
+        _log("assign_joint_types: cancelled.")
+        return
+
     # 1. Select plate objects
     plate_guids = rs.GetObjects(
         "Select plate objects (bot/top curves or meshes from a template run)",
@@ -181,14 +194,14 @@ def run():
         for pid, segs in plate_edges.items():
             for a, b, edge_idx in segs:
                 d = _dist_point_to_segment(pos, a, b)
-                if d <= _MAX_SNAP_RADIUS:
+                if d <= snap_radius:
                     matched.append((d, pid, edge_idx))
 
         if not matched:
             _log(
                 f"  dot jt={jt_code} at "
                 f"({pos.X:.1f},{pos.Y:.1f},{pos.Z:.1f}): "
-                f"no edge within {_MAX_SNAP_RADIUS}mm — skipped."
+                f"no edge within {snap_radius}mm — skipped."
             )
             continue
 
@@ -229,7 +242,7 @@ def run():
                 _log(f"  plate {pid}: face_slot {face_slot} >= n_faces {n_faces} — skipped.")
 
         jt_str = json.dumps([int(x) for x in jt])
-        _write_plate_userstring(pid, "joint_types", jt_str)
+        _write_plate_userstring(plate_map, pid, "joint_types", jt_str)
         _log(f"  plate {pid}: joint_types = {jt}.")
         n_updated += 1
 
