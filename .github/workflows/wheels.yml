@@ -54,14 +54,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # - os: ubuntu-latest
           - os: windows-latest
           - os: macos-latest      # arm64 runner (Apple Silicon M1, macOS 15)
             cibw_archs: arm64
             macos_target: "11.0"
-          - os: macos-15-intel    # x86_64 runner (Intel, macOS 15)
-            cibw_archs: x86_64
-            macos_target: "10.15"
+          # - os: macos-15-intel    # x86_64 runner (Intel, macOS 15)
+          #   cibw_archs: x86_64
+          #   macos_target: "10.15"
 
     steps:
       - uses: actions/checkout@v4
