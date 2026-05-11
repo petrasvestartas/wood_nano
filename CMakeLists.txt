@@ -185,3 +185,6 @@ install(TARGETS
     _reciprocal_rotation _reciprocal_move
     _diamond_mesh _connectors _joinery_solver
     LIBRARY DESTINATION wood_nano)
+
+install(FILES "${CMAKE_SOURCE_DIR}/src/wood_nano/data/annen_surfaces.json"
+    DESTINATION wood_nano/data)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from session_py.mesh import Mesh
 
 from wood_nano._diamond_mesh import (
@@ -8,6 +10,8 @@ from wood_nano._diamond_mesh import (
     make_diamond_mesh_from_surface,
 )
 from wood_nano.wood_element import WoodElement, _to_mesh
+
+_DATA_DIR = Path(__file__).parent / "data"
 
 
 def diamond_mesh_elements(
@@ -40,7 +44,7 @@ def diamond_mesh_elements(
 
 
 def diamond_mesh_elements_annen(
-    json_path: str,
+    json_path: str | None = None,
     surface_idx: int = 0,
     u_div: int = 8,
     v_div: int = 4,
@@ -52,8 +56,8 @@ def diamond_mesh_elements_annen(
 
     Parameters
     ----------
-    json_path : str
-        Path to the annen_surfaces.json file.
+    json_path : str or None
+        Path to annen_surfaces.json. Defaults to the file bundled with the package.
     surface_idx : int
         Surface index 0..22 in the Annen dataset.
     u_div, v_div : int
@@ -70,7 +74,8 @@ def diamond_mesh_elements_annen(
     tuple[Mesh, list[WoodElement]]
         Shell mesh and one WoodElement per triangular face.
     """
-    dm = make_diamond_mesh_annen(json_path, surface_idx, u_div, v_div,
+    resolved = str(json_path) if json_path is not None else str(_DATA_DIR / "annen_surfaces.json")
+    dm = make_diamond_mesh_annen(resolved, surface_idx, u_div, v_div,
                                   thickness, chamfer, chamfer_angle)
     return _to_mesh(dm.mesh), [WoodElement(e) for e in dm.elements]
 

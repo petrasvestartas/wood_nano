@@ -42,6 +42,7 @@ class PlateTopology:
     def __init__(self):
         self._guids = []         # all object GUIDs we have added
         self._group_indices = [] # group indices we have created
+        self._hole_cache = None  # {pid_str: {"bot": {n: guid}, "top": {n: guid}}}
 
     # ------------------------------------------------------------------
     # Write
@@ -56,6 +57,7 @@ class PlateTopology:
             doc.Groups.Delete(gi)
         self._guids.clear()
         self._group_indices.clear()
+        self._hole_cache = None
 
     def add_plate(self, plate_id, bottom, top, mesh, holes_bot=None, holes_top=None, plate_type="plate"):
         """Add one plate's geometry to the document with topology tags.
@@ -184,6 +186,34 @@ class PlateTopology:
                 found[role] = obj.Id
         return found   # {"bot": guid, "top": guid, "mesh": guid}
 
+    def _build_hole_cache(self):
+        """One-shot full scan to index all hole objects by plate_id.
+
+        Subsequent calls to find_plate_holes() use this cache so that M plates
+        require only 1 document scan instead of M scans.
+        """
+        cache = {}
+        for obj in sc.doc.Objects.GetObjectList(
+            Rhino.DocObjects.ObjectType.AnyObject
+        ):
+            pid_str = obj.Attributes.GetUserString("plate_id")
+            if not pid_str:
+                continue
+            role = obj.Attributes.GetUserString("plate_role") or ""
+            if role.startswith("hole_bot_"):
+                try:
+                    n = int(role[len("hole_bot_"):])
+                    cache.setdefault(pid_str, {"bot": {}, "top": {}})["bot"][n] = obj.Id
+                except ValueError:
+                    pass
+            elif role.startswith("hole_top_"):
+                try:
+                    n = int(role[len("hole_top_"):])
+                    cache.setdefault(pid_str, {"bot": {}, "top": {}})["top"][n] = obj.Id
+                except ValueError:
+                    pass
+        self._hole_cache = cache
+
     def find_plate_holes(self, plate_id):
         """Return parallel GUID lists for the hole polylines of a plate.
 
@@ -198,28 +228,12 @@ class PlateTopology:
             the role is ``hole_bot_N`` / ``hole_top_N``.  Both lists have the
             same length (pairs where either side is missing are skipped).
         """
+        if self._hole_cache is None:
+            self._build_hole_cache()
         pid_str = str(int(plate_id))
-        bot_map = {}  # N -> guid
-        top_map = {}  # N -> guid
-        for obj in sc.doc.Objects.GetObjectList(
-            Rhino.DocObjects.ObjectType.AnyObject
-        ):
-            if obj.Attributes.GetUserString("plate_id") != pid_str:
-                continue
-            role = obj.Attributes.GetUserString("plate_role") or ""
-            if role.startswith("hole_bot_"):
-                try:
-                    n = int(role[len("hole_bot_"):])
-                    bot_map[n] = obj.Id
-                except ValueError:
-                    pass
-            elif role.startswith("hole_top_"):
-                try:
-                    n = int(role[len("hole_top_"):])
-                    top_map[n] = obj.Id
-                except ValueError:
-                    pass
-        # Return only complete pairs, sorted by index.
+        entry = self._hole_cache.get(pid_str, {"bot": {}, "top": {}})
+        bot_map = entry["bot"]
+        top_map = entry["top"]
         indices = sorted(set(bot_map) & set(top_map))
         return [bot_map[n] for n in indices], [top_map[n] for n in indices]
 

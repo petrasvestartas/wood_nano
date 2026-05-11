@@ -1,6 +1,7 @@
 #include "wood_session.h"
 #include "wood_element.h"
 
+#include <unordered_set>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
@@ -250,24 +251,46 @@ NB_MODULE(_joinery_solver, m) {
                     cd.joints_per_face.assign(elements.size(), {});
 
                 // Guard: zero IV + type-10 joint → C++ normalises (0,0,0) → NaN → crash.
-                // For any element where IV is all-zero but joints_per_face contains
-                // type 10, compute the plate face normal from the outer bottom polyline
-                // and use it as a safe fallback insertion vector.
+                //
+                // When two adjacent elements BOTH have type-10 and zero IV, applying the
+                // plate-face-normal fallback to both produces incompatible IV directions →
+                // ss_e_op joint geometry degenerates → joint removed (user sees nothing).
+                // User confirmed: element-a zero IV + element-b face-normal IV → works.
+                // So for each adjacency pair where both need the fallback, skip element a
+                // (leave at zero IV) and only apply fallback to element b.
+                // construct_joint picks max(types[a][face], types[b][face]) = max(10,10)=10.
+
+                auto iv_is_zero = [&](size_t ei) -> bool {
+                    if (ei >= cd.insertion_vectors.size()) return true;
+                    for (double v : cd.insertion_vectors[ei])
+                        if (std::abs(v) > 1e-10) return false;
+                    return true;
+                };
+                auto has_type10 = [&](size_t ei) -> bool {
+                    if (ei >= cd.joints_per_face.size()) return false;
+                    for (int jt : cd.joints_per_face[ei]) if (jt == 10) return true;
+                    return false;
+                };
+
+                // Collect first elements of pairs where both have type-10 + zero IV.
+                std::unordered_set<size_t> skip_iv;
+                for (const auto& [a, b] : cd.adjacency) {
+                    if (a < 0 || b < 0) continue;
+                    size_t sa = static_cast<size_t>(a), sb = static_cast<size_t>(b);
+                    if (sa >= elements.size() || sb >= elements.size()) continue;
+                    if (has_type10(sa) && iv_is_zero(sa) &&
+                        has_type10(sb) && iv_is_zero(sb))
+                        skip_iv.insert(sa);
+                }
+
                 for (size_t ei = 0; ei < elements.size(); ++ei) {
+                    if (skip_iv.count(ei)) continue;  // keep zero IV for this element
                     if (ei >= cd.joints_per_face.size()) break;
-                    bool has_t10 = false;
-                    for (int jt : cd.joints_per_face[ei])
-                        if (jt == 10) { has_t10 = true; break; }
-                    if (!has_t10) continue;
-                    if (ei < cd.insertion_vectors.size()) {
-                        bool nonzero = false;
-                        for (double v : cd.insertion_vectors[ei])
-                            if (std::abs(v) > 1e-10) { nonzero = true; break; }
-                        if (nonzero) continue;
-                    } else {
+                    if (!has_type10(ei)) continue;
+                    if (!iv_is_zero(ei)) continue;
+                    if (ei >= cd.insertion_vectors.size())
                         cd.insertion_vectors.resize(ei + 1);
-                    }
-                    // Compute face normal from outer bottom polyline.
+                    // Compute plate face normal from outer bottom polyline as fallback IV.
                     const auto& bot = elem_outer_bots[ei];
                     if (bot.point_count() < 3) continue;
                     auto p0 = bot[0], p1 = bot[1];

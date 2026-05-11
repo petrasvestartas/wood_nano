@@ -1,7 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from wood_nano._chevron import make_chevron_annen, make_chevron_nurbs, make_default_chevron
 from wood_nano.wood_element import WoodElement, _to_mesh
+
+_DATA_DIR = Path(__file__).parent / "data"
+
+
+def annen_json_path() -> Path:
+    """Return the path to the bundled annen_surfaces.json data file."""
+    return _DATA_DIR / "annen_surfaces.json"
 
 
 def _chevron_joint_data(ch) -> dict:
@@ -69,7 +78,7 @@ def chevron_elements_nurbs(
 
 
 def chevron_elements_annen(
-    json_path: str,
+    json_path: str | None = None,
     surface_idx: int = 0,
     u_div: int = 4,
     v_division_dist: float = 900.0,
@@ -85,8 +94,9 @@ def chevron_elements_annen(
     ortho_edge2: int = 1,
     ortho_edge3: int = 1,
 ) -> tuple:
+    resolved = str(json_path) if json_path is not None else str(annen_json_path())
     ch = make_chevron_annen(
-        json_path, surface_idx,
+        resolved, surface_idx,
         u_div, v_division_dist, shift, scale,
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,

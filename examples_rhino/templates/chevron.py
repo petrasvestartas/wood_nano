@@ -6,14 +6,14 @@ import Rhino
 import Rhino.Geometry as rg
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
-from wood_nano import chevron_elements, chevron_elements_annen, chevron_elements_nurbs
+from wood_nano import annen_json_path, chevron_elements, chevron_elements_annen, chevron_elements_nurbs
 from wood_nano.wood_element import unweld_mesh
 from wood_nano.plate_topology import PlateTopology
 
-# Path to the 23 Annen building NURBS surfaces.
+# Path to the 23 Annen building NURBS surfaces bundled with the package.
 # surface_idx -1 → built-in flat 3000×5000 surface.
 # surface_idx 0..22 → Annen surface from this JSON.
-ANNEN_JSON = r"c:\pc\3_code\code_cpp\wood\data\annen_surfaces.json"
+ANNEN_JSON = str(annen_json_path())
 
 session = Session()
 topo = PlateTopology()     # plate topology: UserStrings + named groups per plate
@@ -80,6 +80,7 @@ def _run(v, _):
         u_div=v["u_div"],
         v_division_dist=v["v_division_dist"],
         box_height=v["box_height"],
+        top_plate_inlet=v["top_plate_inlet"],
         plate_thickness=v["plate_thickness"],
         edge_rotation=v["edge_rotation"],
         edge_offset=v["edge_offset"],
@@ -153,6 +154,7 @@ process_input(
         "u_div":     (4,     int),
         "v_division_dist": (900.0, float),
         "box_height":      (760.0, float),
+        "top_plate_inlet": (120.0,  float),
         "plate_thickness": (40.0,  float),
         "edge_rotation":   (1.0,   float),
         "edge_offset":     (0.5,   float),
