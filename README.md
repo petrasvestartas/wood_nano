@@ -1,6 +1,6 @@
 # wood_nano
 
-Python bindings for the wood C++ timber joinery library.
+Python bindings for the wood C++ joinery library.
 
 ## Install in Rhino (first time)
 
