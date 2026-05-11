@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Required on Linux: session_core OBJECT library is linked into Python .so
+# extensions, so all compilation units must be position-independent.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # FetchContent_Populate is deprecated since CMake 3.30 / 4.0 (policy CMP0169).
 # We rely on it intentionally to separate "download" from "configure" so we can
