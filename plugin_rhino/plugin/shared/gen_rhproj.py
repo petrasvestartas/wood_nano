@@ -20,17 +20,17 @@ RHPROJ    = PLUGIN_DIR / "compas_wood.rhproj"
 
 # Map: command title → (uri, svg_stem)
 COMMANDS = [
-    ("w_install",                    "commands/w_install.py",                    "icon_install"),
-    ("w_template_chevron",           "commands/w_template_chevron.py",           "icon_chevron"),
-    ("w_template_connectors",        "commands/w_template_connectors.py",        "icon_connectors"),
-    ("w_template_diamond_mesh",      "commands/w_template_diamond_mesh.py",      "icon_diamond_mesh"),
-    ("w_template_reciprocal_move",   "commands/w_template_reciprocal_move.py",   "icon_reciprocal_move"),
-    ("w_template_reciprocal_rotation","commands/w_template_reciprocal_rotation.py","icon_reciprocal_rotation"),
-    ("w_template_reflex_fold",       "commands/w_template_reflex_fold.py",       "icon_reflex_fold"),
-    ("w_template_translation_shell", "commands/w_template_translation_shell.py", "icon_translation_shell"),
-    ("w_solver_joinery_solver",      "commands/w_solver_joinery_solver.py",      "icon_solver"),
-    ("w_solver_assign_joint_types",  "commands/w_solver_assign_joint_types.py",  "icon_joint_type"),
+    ("w_install",                           "commands/w_install.py",                           "icon_install"),
+    ("w_template_diamond_mesh",             "commands/w_template_diamond_mesh.py",             "icon_diamond_mesh"),
+    ("w_template_translation_shell",        "commands/w_template_translation_shell.py",        "icon_translation_shell"),
+    ("w_template_reflex_fold",              "commands/w_template_reflex_fold.py",              "icon_reflex_fold"),
+    ("w_template_connectors",              "commands/w_template_connectors.py",               "icon_connectors"),
+    ("w_template_reciprocal_rotation",      "commands/w_template_reciprocal_rotation.py",      "icon_reciprocal_rotation"),
+    ("w_template_reciprocal_move",          "commands/w_template_reciprocal_move.py",          "icon_reciprocal_move"),
+    ("w_template_chevron",                  "commands/w_template_chevron.py",                  "icon_chevron"),
     ("w_solver_assign_insertion_direction", "commands/w_solver_assign_insertion_direction.py", "icon_insertion_direction"),
+    ("w_solver_assign_joint_types",         "commands/w_solver_assign_joint_types.py",         "icon_joint_type"),
+    ("w_solver_joinery_solver",             "commands/w_solver_joinery_solver.py",             "icon_solver"),
 ]
 
 

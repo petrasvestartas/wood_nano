@@ -1,6 +1,7 @@
 #! python3
 # venv: wood_env
 # r: wood-nano
+
 """Joinery solver — plate-topology-aware Rhino interface.
 
 Workflow

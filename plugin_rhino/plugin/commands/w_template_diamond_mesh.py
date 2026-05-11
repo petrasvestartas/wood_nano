@@ -78,6 +78,7 @@ def _run(v, _):
     Rhino.RhinoApp.WriteLine(
         f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}  {label}"
     )
+    doc.Views.Redraw()
 
 
 process_input(

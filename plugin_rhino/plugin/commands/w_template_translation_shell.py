@@ -2,6 +2,7 @@
 # venv: wood_env
 # r: wood-nano
 import Rhino
+import scriptcontext as sc
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import translation_shell_elements
@@ -31,6 +32,7 @@ def _run(v, _):
     topo.clear()
     for i, el in enumerate(elements):
         topo.add_plate(i, el.bottom, el.top, unweld_mesh(el.loft_mesh()))
+    sc.doc.Views.Redraw()
 
 
 process_input(
