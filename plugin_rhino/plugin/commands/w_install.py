@@ -1,6 +1,6 @@
 #! python3
 # venv: wood_env
-# r: wood-nano==1.0.8
+# r: wood-nano==1.0.9
 # r: session-py==0.84.0
 # r: session-rhino==0.37.0
 
