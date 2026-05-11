@@ -144,8 +144,12 @@ def _run(v, _):
         )
 
     doc.Views.Redraw()
+    n_jt = sum(1 for jf in joint_data["joints_per_face"] if any(v > 0 for v in jf)) if joint_data else 0
+    n_tv = len(joint_data["three_valence"]) if joint_data else 0
+    n_adj = len(joint_data["adjacency"]) if joint_data else 0
     Rhino.RhinoApp.WriteLine(
-        f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}  {label}"
+        f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}  {label}  "
+        f"joinery: {n_jt} typed, {n_tv} three_valence, {n_adj} adjacency pairs stored"
     )
 
 
