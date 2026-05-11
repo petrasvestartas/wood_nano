@@ -45,9 +45,10 @@ endif()
 
 # session_cpp's CMakeLists uses CMAKE_SOURCE_DIR to locate generated/ which
 # resolves to wood_nano's root when called as add_subdirectory.
-# Create a symlink so it finds the committed generated files automatically.
+# Symlinks are unreliable in isolated CI wheel builds on macOS; copy instead.
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/generated")
-    file(CREATE_LINK "${SESSION_CPP_DIR}/generated" "${CMAKE_SOURCE_DIR}/generated" SYMBOLIC)
+    message(STATUS "Copying session_cpp generated protobuf files into ${CMAKE_SOURCE_DIR}/generated")
+    file(COPY "${SESSION_CPP_DIR}/generated" DESTINATION "${CMAKE_SOURCE_DIR}")
 endif()
 
 add_subdirectory(${SESSION_CPP_DIR} session_cpp EXCLUDE_FROM_ALL)
