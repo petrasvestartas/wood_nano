@@ -38,11 +38,24 @@ def b64(path: pathlib.Path) -> str:
     return base64.b64encode(path.read_bytes()).decode("ascii")
 
 
+def svg_b64_clean(path: pathlib.Path) -> str:
+    """Base64-encode SVG with the XML declaration stripped.
+
+    Rhino inlines the decoded SVG as raw XML inside the .rui <icons> section.
+    An embedded <?xml?> declaration makes the .rui invalid XML, so strip it.
+    """
+    text = path.read_text(encoding="utf-8")
+    text = text.lstrip()
+    if text.startswith("<?xml"):
+        text = text[text.index("?>") + 2:].lstrip()
+    return base64.b64encode(text.encode("utf-8")).decode("ascii")
+
+
 def build_code_entry(title, uri, svg_stem):
     svg_path = SVG_DIR / f"{svg_stem}.svg"
     png_path = PNG_DIR / f"{svg_stem}.png"
 
-    svg_b64 = b64(svg_path) if svg_path.exists() else ""
+    svg_b64 = svg_b64_clean(svg_path) if svg_path.exists() else ""
     png_b64 = b64(png_path) if png_path.exists() else ""
 
     return {
