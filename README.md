@@ -2,30 +2,41 @@
 
 Python bindings for the wood C++ timber joinery library.
 
-## Install in Rhino (first time or after clearing packages)
+## Install in Rhino (first time)
 
-Run these four commands in order in the Rhino ScriptEditor terminal:
+**1. Install build tools** (terminal, once):
 
+```bash
+"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install scikit-build-core nanobind ninja
 ```
-pip install numpy protobuf grpcio-tools
+
+**2. Install dependencies and wood_nano** (Rhino ScriptEditor terminal):
+
+```bash
+pip install numpy
 pip install -e C:\pc\3_code\code_rust\session\session_py
 pip install -e C:\pc\3_code\code_rust\session\session_rhino
-pip install scikit-build-core nanobind
 pip install --no-build-isolation -e C:\pc\3_code\code_cpp\wood_nano
 ```
 
 ## Rebuild after C++ changes
 
-Run when `.cpp`, `.h`, or `CMakeLists.txt` files change:
-
-```
-uv pip install --no-build-isolation -e C:/pc/3_code/code_cpp/wood_nano
-"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e C:/pc/3_code/code_cpp/wood_nano    
+```bash
+"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e C:/pc/3_code/code_cpp/wood_nano
+copy "C:/Users/Petras/.rhinocode/py39-rh8/lib/site-packages/wood_nano/_translation_shell.cp39-win_amd64.pyd" src/wood_nano/
 ```
 
-Then click **Reset Python Engine** in the ScriptEditor toolbar.
+Then **Reset Python Engine** in the ScriptEditor toolbar.
 
-Python-only changes (`src/wood_nano/*.py`) take effect immediately — no rebuild needed.
+Python-only changes (`src/wood_nano/*.py`) take effect immediately.
+
+## uv dev environment (first time)
+
+```bash
+uv venv
+uv pip install scikit-build-core nanobind numpy pytest ninja
+uv pip install --no-build-isolation -e .
+```
 
 ## Usage
 

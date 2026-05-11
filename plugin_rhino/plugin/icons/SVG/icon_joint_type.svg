@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #dbdbdb;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="5.81" y="5.81" width="12.39" height="12.39" transform="translate(12 -4.97) rotate(45)"/>
+  <circle cx="16.66" cy="7.34" r="2.19"/>
+  <circle cx="7.34" cy="7.34" r="2.19"/>
+  <circle cx="7.34" cy="16.78" r="2.19"/>
+  <circle cx="16.66" cy="16.78" r="2.19"/>
+</svg>
