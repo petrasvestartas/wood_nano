@@ -28,6 +28,8 @@ else()
         GIT_REPOSITORY https://github.com/petrasvestartas/wood.git
         GIT_TAG        main
         GIT_SHALLOW    TRUE
+        GIT_SUBMODULES ""
+        GIT_SUBMODULES_RECURSE FALSE
     )
     FetchContent_GetProperties(wood)
     if(NOT wood_POPULATED)
