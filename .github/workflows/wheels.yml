@@ -19,8 +19,6 @@ jobs:
         include:
           - os: ubuntu-latest
           - os: windows-latest
-          - os: macos-13          # x86_64 runner — known to be slow to acquire
-            cibw_archs: x86_64
           - os: macos-latest      # arm64 runner (Apple Silicon)
             cibw_archs: arm64
 

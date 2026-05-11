@@ -8,6 +8,7 @@ dist/
 generated
 *.3dmbak
 *.rhl
+*.mtl
 *.pb
 serialization/
 mesh_offset_test_dump.json
