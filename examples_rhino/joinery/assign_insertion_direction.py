@@ -5,24 +5,30 @@ Workflow
 --------
 1. Run and select the plate objects (bot/top curves or meshes from a template run).
    Press Enter when done.
-2. Select line objects — one line per plate edge that needs an explicit direction:
-     - **Start point** — placed near the midpoint of the target edge; used to
-       detect which plate and which edge the line belongs to.
-     - **Direction** (start → end) — becomes the insertion Vec3 for that edge's
-       face slot in the joinery solver.
-3. Each line's start point is matched to the nearest edge midpoint of the
-   previously selected plates, within ``_MAX_SNAP_RADIUS`` mm.  The normalised
-   direction is stored in the ``insertion_vector`` UserString at the corresponding
-   face slot (face 0 = bottom cap, face 1 = top cap, faces 2..N+1 = side edges).
+2. Draw a line **along the joint edge** (parallel to the edge, not perpendicular):
+     - **Start or end point** — must be within the snap tolerance of the target
+       edge (on either the bottom or top polyline of the plate).
+     - **Line direction** — draw along the edge/joint the way you want the joint
+       to run.  The script automatically rotates this 90° around the plate normal
+       to produce the insertion vector (cross(plate_normal, line_dir)).  This
+       means you never have to think in insertion-vector terms — just draw along
+       the visible joint line.
+3. Each line's endpoints are matched to ALL selected-plate edges within the snap
+   tolerance.  A line on a shared edge updates both neighbouring plates.
 4. Existing ``joint_types`` UserStrings are preserved unchanged.
-5. Run ``joinery_solver.py`` — it reads the updated vectors and passes them to
-   the C++ solver.
+5. Run ``joinery_solver.py`` — insertion vectors are used in the C++ solver when
+   combined with joint-type data (chevron workflow or full manual assignment).
+
+Sentinel value
+--------------
+Face slots not assigned by a line are stored as ``0.0`` (three zero components).
+Face layout: slot 0 = bottom cap, slot 1 = top cap, slots 2-5 = 4 side edges.
 
 Notes
 -----
-- Two lines hitting the same edge: last one wins.
-- Lines whose start point is farther than ``_MAX_SNAP_RADIUS`` from every selected
-  plate edge midpoint are skipped with a warning.
+- C++ requires exactly 18 floats per plate (``std::array<double,18>``, quad-plate model).
+- Only the first 4 side edges (face slots 2-5) are addressable in the current C++.
+- When two lines hit the same face slot of the same plate, the last one wins.
 - Only linear curves are accepted; non-linear curves are skipped.
 """
 
@@ -38,25 +44,71 @@ from wood_nano.plate_topology import PlateTopology
 
 
 _log = Rhino.RhinoApp.WriteLine
-_MAX_SNAP_RADIUS = 500.0   # mm
+_DEFAULT_SNAP_RADIUS = 0.1  # model units — default snap tolerance (user-editable at run time)
 
 
-def _write_plate_userstring(plate_id, key, value_str):
-    """Write one UserString to bot/top objects of a plate without touching others."""
-    pid_str = str(int(plate_id))
-    for obj in sc.doc.Objects.GetObjectList(Rhino.DocObjects.ObjectType.AnyObject):
-        if obj.Attributes.GetUserString("plate_id") != pid_str:
+def _cross(a, b):
+    return (a[1]*b[2] - a[2]*b[1],
+            a[2]*b[0] - a[0]*b[2],
+            a[0]*b[1] - a[1]*b[0])
+
+
+def _normalize(v):
+    L = math.sqrt(v[0]**2 + v[1]**2 + v[2]**2)
+    return (v[0]/L, v[1]/L, v[2]/L) if L > 1e-12 else v
+
+
+def _face_normal(pts):
+    """Newell normal from a list of rg.Point3d (open or closed ring)."""
+    n = len(pts)
+    nx = ny = nz = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        ax, ay, az = pts[i].X, pts[i].Y, pts[i].Z
+        bx, by, bz = pts[j].X, pts[j].Y, pts[j].Z
+        nx += (ay - by) * (az + bz)
+        ny += (az - bz) * (ax + bx)
+        nz += (ax - bx) * (ay + by)
+    L = math.sqrt(nx*nx + ny*ny + nz*nz)
+    return (nx/L, ny/L, nz/L) if L > 1e-12 else None
+
+
+def _dist_point_to_segment(pt, a, b):
+    """Return minimum distance from pt to segment a–b."""
+    abx = b.X - a.X; aby = b.Y - a.Y; abz = b.Z - a.Z
+    apx = pt.X - a.X; apy = pt.Y - a.Y; apz = pt.Z - a.Z
+    ab2 = abx*abx + aby*aby + abz*abz
+    if ab2 < 1e-20:
+        return math.sqrt(apx*apx + apy*apy + apz*apz)
+    t = max(0.0, min(1.0, (apx*abx + apy*aby + apz*abz) / ab2))
+    dx = apx - t*abx; dy = apy - t*aby; dz = apz - t*abz
+    return math.sqrt(dx*dx + dy*dy + dz*dz)
+
+
+def _write_plate_userstring(plate_map, plate_id, key, value_str):
+    """Write one UserString to bot/top objects of a plate.
+
+    Operates only on the GUIDs collected during selection (plate_map) so that
+    other copies of the same layout with identical plate_id values are not
+    accidentally updated.
+    """
+    roles = plate_map.get(plate_id, {})
+    for role in ("bot", "top"):
+        guid = roles.get(role)
+        if guid is None:
             continue
-        if obj.Attributes.GetUserString("plate_role") in ("bot", "top"):
-            obj.Attributes.SetUserString(key, value_str)
-            obj.CommitChanges()
+        obj = sc.doc.Objects.FindId(guid)
+        if obj is None:
+            continue
+        obj.Attributes.SetUserString(key, value_str)
+        obj.CommitChanges()
 
 
-def _get_bot_polyline_points(bot_guid):
-    """Return list[rg.Point3d] from a bot curve GUID, or None on failure."""
-    if bot_guid is None:
+def _get_polyline_points(guid):
+    """Return list[rg.Point3d] from a curve GUID, or None on failure."""
+    if guid is None:
         return None
-    obj = sc.doc.Objects.FindId(bot_guid)
+    obj = sc.doc.Objects.FindId(guid)
     if obj is None:
         return None
     ok, rh_pl = obj.Geometry.TryGetPolyline()
@@ -66,6 +118,16 @@ def _get_bot_polyline_points(bot_guid):
 
 
 def run():
+    # 0. Ask for snap tolerance
+    snap_radius = rs.GetReal(
+        f"Snap tolerance (model units) — line endpoint must be within this distance of an edge",
+        number=_DEFAULT_SNAP_RADIUS,
+        minimum=1e-6,
+    )
+    if snap_radius is None:
+        _log("assign_insertion_direction: cancelled.")
+        return
+
     # 1. Select plate objects
     plate_guids = rs.GetObjects(
         "Select plate objects (bot/top curves or meshes from a template run)",
@@ -86,37 +148,34 @@ def run():
         return
     _log(f"assign_insertion_direction: {len(plate_map)} plate(s) found.")
 
-    # 2. Build edge-midpoint cache from the selected plates only
-    plate_edges   = {}   # pid -> [(mid_pt: rg.Point3d, edge_idx: int), ...]
-    plate_n_sides = {}   # pid -> int
+    # 2. Build edge-segment cache and face normals for the selected plates.
+    #    Both bot and top polylines are included so a line endpoint placed on
+    #    either face of a plate (top or bottom surface edge) is matched.
+    #    Matching uses closest point on segment so vertex-snapped lines work too.
+    plate_edges   = {}   # pid -> [(a: Point3d, b: Point3d, edge_idx: int), ...]
+    plate_normals = {}   # pid -> (nx, ny, nz)  — from bot polyline
 
     for pid, roles in plate_map.items():
-        pts = _get_bot_polyline_points(roles.get("bot"))
-        if pts is None or len(pts) < 3:
-            continue
-
-        if len(pts) >= 2 and pts[0].DistanceTo(pts[-1]) < 1e-6:
-            n_edges = len(pts) - 1   # closed: last point duplicates first
-        else:
-            n_edges = len(pts)       # open: implicit closing edge
-
-        midpoints = []
-        for i in range(n_edges):
-            j   = (i + 1) % len(pts)
-            mid = rg.Point3d(
-                (pts[i].X + pts[j].X) * 0.5,
-                (pts[i].Y + pts[j].Y) * 0.5,
-                (pts[i].Z + pts[j].Z) * 0.5,
-            )
-            midpoints.append((mid, i))
-
-        plate_edges[pid]   = midpoints
-        plate_n_sides[pid] = n_edges
+        segs = []
+        for role in ("bot", "top"):
+            pts = _get_polyline_points(roles.get(role))
+            if pts is None or len(pts) < 3:
+                continue
+            if role == "bot":
+                n = _face_normal(pts)
+                if n:
+                    plate_normals[pid] = n
+            n_edges = len(pts) - 1 if pts[0].DistanceTo(pts[-1]) < 1e-6 else len(pts)
+            for i in range(n_edges):
+                j = (i + 1) % len(pts)
+                segs.append((pts[i], pts[j], i))
+        if segs:
+            plate_edges[pid] = segs
 
     # 3. Select line objects
     line_guids = rs.GetObjects(
         "Select lines (start point near edge, direction = insertion vector)",
-        filter=4,          # curves
+        filter=4,
         preselect=False,
     )
     if not line_guids:
@@ -131,87 +190,101 @@ def run():
             continue
         crv = obj.Geometry
         if not crv.IsLinear():
-            _log(f"  skipping non-linear curve — only straight lines are accepted.")
+            _log("  skipping non-linear curve — only straight lines are accepted.")
             continue
         start = crv.PointAtStart
         end   = crv.PointAtEnd
-        dx    = end.X - start.X
-        dy    = end.Y - start.Y
-        dz    = end.Z - start.Z
+        dx, dy, dz = end.X - start.X, end.Y - start.Y, end.Z - start.Z
         length = math.sqrt(dx * dx + dy * dy + dz * dz)
         if length < 1e-10:
-            _log(f"  skipping zero-length line.")
+            _log("  skipping zero-length line.")
             continue
-        lines.append((start, (dx / length, dy / length, dz / length)))
+        lines.append((start, end, (dx / length, dy / length, dz / length)))
 
     if not lines:
         _log("assign_insertion_direction: no valid lines parsed.")
         return
     _log(f"assign_insertion_direction: {len(lines)} valid line(s) parsed.")
 
-    # 5. Match each line's start point to the nearest selected-plate edge
+    # 5. Match each line's endpoints (start AND end) to plate edges within snap
+    #    radius.  Both endpoints are checked so a line straddling a shared edge
+    #    (start near one plate's edge, end near the neighbour's edge) can assign
+    #    both in one step.  With a tight tolerance (default 0.1 units) false
+    #    matches are avoided — place endpoints precisely on or very close to the
+    #    target edge.  A match near a shared edge updates every plate that borders it.
     # updates[pid] = {face_slot: (dx, dy, dz)}
     updates = {}
 
-    for start, unit_dir in lines:
-        best_pid  = None
-        best_edge = None
-        best_dist = _MAX_SNAP_RADIUS + 1.0
+    for start, end, unit_dir in lines:
+        matched = {}   # (pid, edge_idx) -> best dist
+        for pid, segs in plate_edges.items():
+            for a, b, edge_idx in segs:
+                d = min(_dist_point_to_segment(start, a, b),
+                        _dist_point_to_segment(end,   a, b))
+                if d <= snap_radius:
+                    key = (pid, edge_idx)
+                    if key not in matched or d < matched[key]:
+                        matched[key] = d
 
-        for pid, midpoints in plate_edges.items():
-            for mid, edge_idx in midpoints:
-                d = start.DistanceTo(mid)
-                if d < best_dist:
-                    best_dist = d
-                    best_pid  = pid
-                    best_edge = edge_idx
-
-        if best_pid is None or best_dist > _MAX_SNAP_RADIUS:
+        if not matched:
             _log(
-                f"  line start ({start.X:.1f},{start.Y:.1f},{start.Z:.1f}): "
-                f"no edge within {_MAX_SNAP_RADIUS}mm — skipped."
+                f"  line ({start.X:.1f},{start.Y:.1f},{start.Z:.1f})"
+                f"→({end.X:.1f},{end.Y:.1f},{end.Z:.1f}): "
+                f"no edge within {snap_radius} units — skipped."
             )
             continue
 
-        face_slot = best_edge + 2   # edge 0 → face 2, edge 1 → face 3, …
-        if best_pid not in updates:
-            updates[best_pid] = {}
-        updates[best_pid][face_slot] = unit_dir
-        _log(
-            f"  line → plate {best_pid}, edge {best_edge} "
-            f"(face slot {face_slot}), dist={best_dist:.1f}mm, "
-            f"dir=({unit_dir[0]:.3f},{unit_dir[1]:.3f},{unit_dir[2]:.3f})."
-        )
+        for (pid, edge_idx), d in matched.items():
+            face_slot = edge_idx + 2
+            # Rotate the drawn direction 90° around the plate normal so the
+            # user can draw along the joint edge (intuitive) and the insertion
+            # vector (perpendicular-in-plane) is computed automatically.
+            normal = plate_normals.get(pid)
+            if normal:
+                iv_dir = _normalize(_cross(normal, unit_dir))
+            else:
+                iv_dir = unit_dir
+            if pid not in updates:
+                updates[pid] = {}
+            updates[pid][face_slot] = iv_dir
+            _log(
+                f"  line → plate {pid}, edge {edge_idx} "
+                f"(face slot {face_slot}), dist={d:.3f}, "
+                f"insertion=({iv_dir[0]:.3f},{iv_dir[1]:.3f},{iv_dir[2]:.3f})."
+            )
 
     if not updates:
         _log("assign_insertion_direction: no lines matched any plate edge.")
         return
 
-    # 6. Write updated insertion_vector for each affected plate
+    # 6. Write updated insertion_vector for each affected plate.
+    #    Always exactly 18 floats (C++ std::array<double,18>).
     n_updated = 0
     for pid, slot_map in updates.items():
         _, existing_iv = topo.get_plate_joinery(pid)
-        n_sides = plate_n_sides.get(pid, 4)
-        n_faces = n_sides + 2
 
-        if existing_iv and len(existing_iv) == n_faces * 3:
+        # Determine face count from the bot polyline of this plate.
+        roles = plate_map.get(pid, {})
+        bot_pts = _get_polyline_points(roles.get("bot"))
+        if bot_pts and len(bot_pts) >= 2:
+            n_edges_plate = len(bot_pts) - 1 if bot_pts[0].DistanceTo(bot_pts[-1]) < 1e-6 else len(bot_pts)
+        else:
+            n_edges_plate = max((s - 2 for s in slot_map), default=3) + 1
+        n_faces_plate = n_edges_plate + 2
+        n_floats = n_faces_plate * 3
+
+        if existing_iv and len(existing_iv) == n_floats:
             iv = list(existing_iv)
         else:
-            iv = [0.0] * (n_faces * 3)
+            iv = [0.0] * n_floats
 
         for face_slot, (dx, dy, dz) in slot_map.items():
-            if face_slot < n_faces:
-                iv[face_slot * 3]     = dx
-                iv[face_slot * 3 + 1] = dy
-                iv[face_slot * 3 + 2] = dz
-            else:
-                _log(
-                    f"  plate {pid}: face_slot {face_slot} >= n_faces {n_faces} "
-                    f"— ignored (plate geometry may have changed)."
-                )
+            iv[face_slot * 3]     = dx
+            iv[face_slot * 3 + 1] = dy
+            iv[face_slot * 3 + 2] = dz
 
         iv_str = json.dumps([float(v) for v in iv])
-        _write_plate_userstring(pid, "insertion_vector", iv_str)
+        _write_plate_userstring(plate_map, pid, "insertion_vector", iv_str)
         _log(f"  plate {pid}: insertion_vector updated for {len(slot_map)} face slot(s).")
         n_updated += 1
 

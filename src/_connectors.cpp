@@ -108,7 +108,7 @@ static std::vector<int> list_to_ints(nb::list lst)
 }
 
 // ── module ────────────────────────────────────────────────────────────────────
-NB_MODULE(_vda_mesh, m) {
+NB_MODULE(_connectors, m) {
     nb::class_<VdaMesh>(m, "VdaMesh")
         .def(nb::init<>())
         .def_prop_ro("f_polylines",
@@ -131,6 +131,7 @@ NB_MODULE(_vda_mesh, m) {
            nb::list face_positions,
            nb::list edge_divisions,
            nb::list edge_division_len,
+           nb::list insertion_lines,
            double   rect_width,
            double   rect_height,
            double   rect_thickness)
@@ -141,7 +142,18 @@ NB_MODULE(_vda_mesh, m) {
             auto edl  = list_to_doubles(edge_division_len);
             if (fp.empty())  fp  = {0.0};
             if (ed.empty())  ed  = {2};
-            return VdaMesh(std::move(mesh), face_thickness, fp, ed, edl, {},
+            // Parse insertion_lines: each item is [[x0,y0,z0],[x1,y1,z1]]
+            std::vector<Line> ils;
+            ils.reserve(insertion_lines.size());
+            for (size_t i = 0; i < insertion_lines.size(); ++i) {
+                auto pair = nb::cast<nb::list>(insertion_lines[i]);
+                auto s    = nb::cast<nb::list>(pair[0]);
+                auto e    = nb::cast<nb::list>(pair[1]);
+                Point ps(nb::cast<double>(s[0]), nb::cast<double>(s[1]), nb::cast<double>(s[2]));
+                Point pe(nb::cast<double>(e[0]), nb::cast<double>(e[1]), nb::cast<double>(e[2]));
+                ils.push_back(Line::from_points(ps, pe));
+            }
+            return VdaMesh(std::move(mesh), face_thickness, fp, ed, edl, ils,
                            rect_width, rect_height, rect_thickness);
         },
         "vertices"_a,
@@ -150,6 +162,7 @@ NB_MODULE(_vda_mesh, m) {
         "face_positions"_a    = nb::list{},
         "edge_divisions"_a    = nb::list{},
         "edge_division_len"_a = nb::list{},
+        "insertion_lines"_a   = nb::list{},
         "rect_width"_a        = 200.0,
         "rect_height"_a       = 200.0,
         "rect_thickness"_a    = 20.0);
@@ -160,6 +173,7 @@ NB_MODULE(_vda_mesh, m) {
            nb::list face_positions,
            nb::list edge_divisions,
            nb::list edge_division_len,
+           nb::list insertion_lines,
            double   rect_width,
            double   rect_height,
            double   rect_thickness)
@@ -169,13 +183,25 @@ NB_MODULE(_vda_mesh, m) {
             auto edl = list_to_doubles(edge_division_len);
             if (fp.empty()) fp = {0.0};
             if (ed.empty()) ed = {2};
-            return VdaMesh(VdaMesh::default_mesh(), face_thickness, fp, ed, edl, {},
+            // Parse insertion_lines: each item is [[x0,y0,z0],[x1,y1,z1]]
+            std::vector<Line> ils;
+            ils.reserve(insertion_lines.size());
+            for (size_t i = 0; i < insertion_lines.size(); ++i) {
+                auto pair = nb::cast<nb::list>(insertion_lines[i]);
+                auto s    = nb::cast<nb::list>(pair[0]);
+                auto e    = nb::cast<nb::list>(pair[1]);
+                Point ps(nb::cast<double>(s[0]), nb::cast<double>(s[1]), nb::cast<double>(s[2]));
+                Point pe(nb::cast<double>(e[0]), nb::cast<double>(e[1]), nb::cast<double>(e[2]));
+                ils.push_back(Line::from_points(ps, pe));
+            }
+            return VdaMesh(VdaMesh::default_mesh(), face_thickness, fp, ed, edl, ils,
                            rect_width, rect_height, rect_thickness);
         },
         "face_thickness"_a    = 20.0,
         "face_positions"_a    = nb::list{},
         "edge_divisions"_a    = nb::list{},
         "edge_division_len"_a = nb::list{},
+        "insertion_lines"_a   = nb::list{},
         "rect_width"_a        = 200.0,
         "rect_height"_a       = 200.0,
         "rect_thickness"_a    = 20.0);

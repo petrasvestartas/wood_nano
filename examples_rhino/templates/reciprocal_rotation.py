@@ -1,6 +1,7 @@
 #! python3
 import Rhino
 import Rhino.Geometry as rg
+import scriptcontext as sc
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import reciprocal_rotation_elements, reciprocal_rotation_elements_from_surface
@@ -38,8 +39,8 @@ def _run(v, _):
         dome, beams, side0, side1 = reciprocal_rotation_elements_from_surface(
             pts, ku, kv, du, dv, nu, nv,
             mesh_type=mesh_type,
-            u_count=v["u_count"],
-            v_count=v["v_count"],
+            u_div=v["u_div"],
+            v_div=v["v_div"],
             angle=v["angle"],
             beam_w=v["beam_w"],
             beam_h=v["beam_h"],
@@ -49,8 +50,8 @@ def _run(v, _):
         source_label = f"[surface / {mesh_type}]"
     else:
         dome, beams, side0, side1 = reciprocal_rotation_elements(
-            nx=v["u_count"],
-            ny=v["v_count"],
+            nx=v["u_div"],
+            ny=v["v_div"],
             W=v["W"],
             D=v["D"],
             h=v["h"],
@@ -70,6 +71,7 @@ def _run(v, _):
     for i, (m, b, t) in enumerate(zip(beams, side0, side1)):
         topo.add_plate(i, b, t, unweld_mesh(m))
 
+    sc.doc.Views.Redraw()
     Rhino.RhinoApp.WriteLine(
         f"dome: {dome.number_of_faces()} faces  beams: {len(beams)}  {source_label}"
     )
@@ -80,8 +82,8 @@ process_input(
         "surface":       ([], list[rg.Surface]),  # optional NURBS surface; empty = parametric dome
         # Subdivision (applies to both surface and default dome)
         "mesh_type":     (["quad", "hex", "diamond"], list[str]),
-        "u_count":       (6,      int),   # mesh resolution (nx for default dome, u_count for surface)
-        "v_count":       (6,      int),
+        "u_div":       (6,      int),   # mesh resolution (nx for default dome, u_div for surface)
+        "v_div":       (6,      int),
         # Default dome size (ignored when a surface is provided)
         "W":             (6000.0, float),
         "D":             (5000.0, float),

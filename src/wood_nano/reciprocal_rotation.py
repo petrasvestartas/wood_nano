@@ -153,8 +153,8 @@ def reciprocal_rotation_elements_from_surface(
     n_u: int,
     n_v: int,
     mesh_type: str = "quad",
-    u_count: int = 12,
-    v_count: int = 10,
+    u_div: int = 12,
+    v_div: int = 10,
     angle: float = 0.35,
     scale: float = 1.4,
     beam_w: float = 100.0,
@@ -178,7 +178,7 @@ def reciprocal_rotation_elements_from_surface(
         Control-point count in each direction.
     mesh_type : str
         Subdivision method: "quad" | "hex" | "diamond".
-    u_count, v_count : int
+    u_div, v_div : int
         Mesh resolution along each surface direction.
     angle, scale, beam_w, beam_h, extend_factor, cut_offset_factor :
         Reciprocal frame parameters. beam_h=0 defaults to beam_w*2.
@@ -195,7 +195,7 @@ def reciprocal_rotation_elements_from_surface(
     rb = make_reciprocal_rotation_from_surface(
         pts, knots_u, knots_v,
         degree_u, degree_v, n_u, n_v,
-        mesh_type, u_count, v_count,
+        mesh_type, u_div, v_div,
         angle, scale, beam_w, beam_h,
         extend_factor, cut_offset_factor)
     return _unpack(rb, beam_offsets=beam_offsets, unweld_beams=unweld_beams)

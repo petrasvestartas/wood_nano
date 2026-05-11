@@ -6,7 +6,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(WOOD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wood")
+# ── wood ─────────────────────────────────────────────────────────────────────
+# Use local checkout if present, otherwise download from GitHub (CI).
+# We only need the source files — do NOT add_subdirectory(wood) because
+# wood's CMakeLists.txt has local-only paths.
+set(WOOD_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/../wood")
+if(EXISTS "${WOOD_LOCAL}/src/joinery_solver/wood_main.cpp")
+    set(WOOD_DIR "${WOOD_LOCAL}")
+else()
+    include(FetchContent)
+    FetchContent_Declare(wood
+        GIT_REPOSITORY https://github.com/petrasvestartas/wood.git
+        GIT_TAG        main
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_GetProperties(wood)
+    if(NOT wood_POPULATED)
+        FetchContent_Populate(wood)
+    endif()
+    set(WOOD_DIR "${wood_SOURCE_DIR}")
+endif()
 
 # ── session_cpp ──────────────────────────────────────────────────────────────
 # Use local checkout if present, otherwise clone from GitHub.
@@ -106,13 +125,13 @@ target_include_directories(_diamond_mesh PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_diamond_mesh PRIVATE session_core)
 LINK_PROTOBUF(_diamond_mesh)
 
-# _vda_mesh — mesh-to-plates-and-connectors (no WoodElement dependency)
-nanobind_add_module(_vda_mesh STABLE_ABI NB_STATIC
-    src/_vda_mesh.cpp
+# _connectors — mesh-to-plates-and-connectors (no WoodElement dependency)
+nanobind_add_module(_connectors STABLE_ABI NB_STATIC
+    src/_connectors.cpp
 )
-target_include_directories(_vda_mesh PRIVATE ${WOOD_INCLUDES})
-target_link_libraries(_vda_mesh PRIVATE session_core)
-LINK_PROTOBUF(_vda_mesh)
+target_include_directories(_connectors PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_connectors PRIVATE session_core)
+LINK_PROTOBUF(_connectors)
 
 # _joinery_solver — cross-joint detection + merge pipeline
 # Compiles the full wood joinery kernel (8 translation units) alongside the
@@ -142,12 +161,12 @@ if(MSVC)
     target_compile_options(_reciprocal_rotation PRIVATE /W3 /utf-8)
     target_compile_options(_reciprocal_move   PRIVATE /W3 /utf-8)
     target_compile_options(_diamond_mesh      PRIVATE /W3 /utf-8)
-    target_compile_options(_vda_mesh          PRIVATE /W3 /utf-8)
+    target_compile_options(_connectors        PRIVATE /W3 /utf-8)
     target_compile_options(_joinery_solver    PRIVATE /W3 /utf-8)
 endif()
 
 install(TARGETS
     _wood_element _translation_shell _reflex_fold _chevron
     _reciprocal_rotation _reciprocal_move
-    _diamond_mesh _vda_mesh _joinery_solver
+    _diamond_mesh _connectors _joinery_solver
     LIBRARY DESTINATION wood_nano)

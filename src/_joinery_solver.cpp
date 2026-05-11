@@ -7,15 +7,6 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
 
-#include <fstream>
-#include <string>
-
-// Debug log — written step by step; the last line before crash shows where it dies.
-static std::ofstream _dbg;
-static void dbg(const std::string& msg) {
-    if (_dbg.is_open()) { _dbg << msg << "\n"; _dbg.flush(); }
-}
-
 namespace nb = nanobind;
 using namespace nb::literals;
 using Pt3 = std::array<double, 3>;
@@ -124,6 +115,26 @@ NB_MODULE(_joinery_solver, m) {
     // Register WoodElement once in nanobind's global type registry.
     nb::module_::import_("wood_nano._wood_element");
 
+    // loft(polylines0, polylines1)
+    //
+    // polylines0 : list of list-of-[x,y,z] — bottom rings; [0]=outer, [1..]=holes
+    // polylines1 : list of list-of-[x,y,z] — top rings;    [0]=outer, [1..]=holes
+    //
+    // Returns a mesh dict with keys: vertices, faces, face_tris, face_holes
+    m.def("loft",
+        [](const std::vector<Pts>& polylines0,
+           const std::vector<Pts>& polylines1) -> nb::dict
+        {
+            std::vector<session_cpp::Polyline> bot, top;
+            bot.reserve(polylines0.size());
+            for (const auto& pts : polylines0) bot.push_back(pts_to_polyline(pts));
+            top.reserve(polylines1.size());
+            for (const auto& pts : polylines1) top.push_back(pts_to_polyline(pts));
+            session_cpp::Mesh lm = session_cpp::Mesh::loft(bot, top);
+            return mesh_to_dict(lm);
+        },
+        "polylines0"_a, "polylines1"_a);
+
     // solve_joinery(plates, search_type=1)
     //
     // plates : list of pairs — plates[i][0] = bottom pts, plates[i][1] = top pts
@@ -140,8 +151,8 @@ NB_MODULE(_joinery_solver, m) {
            int search_type_int,
            std::vector<double> joint_params,
            std::vector<double> joint_volume_ext,
-           std::vector<std::array<double,18>> per_element_insertion_vectors,
-           std::vector<std::array<int,6>>     per_element_joint_types,
+           std::vector<std::vector<double>>   per_element_insertion_vectors,
+           std::vector<std::vector<int>>      per_element_joint_types,
            std::vector<std::array<int,4>>     three_valence,
            std::vector<std::pair<int,int>>    adjacency) -> nb::dict {
             // Initialise all wood globals to their documented defaults.
@@ -163,14 +174,10 @@ NB_MODULE(_joinery_solver, m) {
             // 1e-6 = 0.001 mm is safe for any realistic geometry.
             wood_session::set_cross_joint_distance_squared(1e-6);
 
-            _dbg.open("C:/Users/Petras/Desktop/joinery_debug.txt", std::ios::trunc);
-            dbg("solve_joinery start  plates=" + std::to_string(plates_data.size())
-                + "  search_type=" + std::to_string(search_type_int));
-
             nb::dict empty;
             empty["joints"]   = nb::list();
             empty["elements"] = nb::list();
-            if (plates_data.empty()) { dbg("empty input"); return empty; }
+            if (plates_data.empty()) return empty;
 
             // Build WoodElements from bottom/top polyline pairs.
             std::vector<wood_session::WoodElement> elements;
@@ -179,26 +186,8 @@ NB_MODULE(_joinery_solver, m) {
             elements.reserve(plates_data.size());
             for (size_t i = 0; i < plates_data.size(); ++i) {
                 const auto& pair = plates_data[i];
-                if (pair.size() < 2) { dbg("  pair " + std::to_string(i) + " skipped (size<2)"); continue; }
-                // Dump full coordinates so we can reproduce the test standalone.
-                auto dump_pts = [&](const char* tag, const Pts& pts) {
-                    std::string s = "    "; s += tag; s += "=[";
-                    for (size_t p = 0; p < pts.size(); ++p) {
-                        if (p) s += ", ";
-                        s += "("; s += std::to_string(pts[p][0]);
-                        s += ","; s += std::to_string(pts[p][1]);
-                        s += ","; s += std::to_string(pts[p][2]); s += ")";
-                    }
-                    s += "]"; dbg(s);
-                };
-                dbg("  pair " + std::to_string(i)
-                    + "  bot=" + std::to_string(pair[0].size())
-                    + "  top=" + std::to_string(pair[1].size()));
-                dump_pts("bot", pair[0]);
-                dump_pts("top", pair[1]);
+                if (pair.size() < 2) continue;
                 elements.emplace_back(pts_to_polyline(pair[0]), pts_to_polyline(pair[1]));
-                dbg("    -> WoodElement planes=" + std::to_string(elements.back().planes.size())
-                    + " polylines=" + std::to_string(elements.back().polylines.size()));
                 elem_outer_bots.push_back(pts_to_polyline(pair[0]));
                 elem_outer_tops.push_back(pts_to_polyline(pair[1]));
                 std::vector<session_cpp::Polyline> hbots, htops;
@@ -209,35 +198,99 @@ NB_MODULE(_joinery_solver, m) {
                 elem_hole_bots.push_back(std::move(hbots));
                 elem_hole_tops.push_back(std::move(htops));
             }
-            if (elements.empty()) { dbg("no elements built"); return empty; }
+            if (elements.empty()) return empty;
 
             // Run joint detection + merge pipeline.
             // After the call, each element's features.top/bottom are populated
             // with merged cut outlines.
-            dbg("get_connection_zones start  elements=" + std::to_string(elements.size()));
             SearchType search_type = static_cast<SearchType>(search_type_int);
             std::vector<wood_session::WoodJoint> joints;
-            bool use_chevron = !adjacency.empty()
-                            || !per_element_insertion_vectors.empty()
-                            || !three_valence.empty();
-            if (use_chevron) {
-                dbg("  using ChevronJoineryData overload  adjacency=" +
-                    std::to_string(adjacency.size()) +
-                    "  iv=" + std::to_string(per_element_insertion_vectors.size()) +
-                    "  tv=" + std::to_string(three_valence.size()));
+            // direct path: iv and/or jt assigned by user, no adjacency/three_valence.
+            // Both insertion_vectors and joint_types are set directly on elements;
+            // wood_main.cpp simple overload reads them from element fields (no temp files).
+            bool has_iv = !per_element_insertion_vectors.empty();
+            bool has_jt = !per_element_joint_types.empty();
+            bool direct_path = (has_iv || has_jt) && adjacency.empty() && three_valence.empty();
+            // chevron path: adjacency or three_valence present → ChevronJoineryData (temp files).
+            bool use_chevron = !adjacency.empty() || !three_valence.empty();
+            if (direct_path) {
+                for (size_t ei = 0; ei < elements.size(); ++ei) {
+                    // Insertion vectors — variable-length flat list: n_faces = size/3.
+                    if (ei < per_element_insertion_vectors.size()) {
+                        const auto& ivN = per_element_insertion_vectors[ei];
+                        auto& ivec = elements[ei].insertion_vectors;
+                        ivec.clear();
+                        for (size_t k = 0; k + 2 < ivN.size(); k += 3)
+                            ivec.emplace_back(ivN[k], ivN[k+1], ivN[k+2]);
+                    }
+                    // Joint types — variable length per element (face 0=bot,1=top,2..N=sides).
+                    if (ei < per_element_joint_types.size() && !per_element_joint_types[ei].empty())
+                        elements[ei].joint_types = per_element_joint_types[ei];
+                }
+                joints = get_connection_zones(elements, search_type);
+            } else if (use_chevron) {
+                // ChevronJoineryData requires exactly 18 doubles per element.
+                // Convert variable-length vectors; truncate or zero-pad to 18.
                 wood_session::ChevronJoineryData cd;
-                cd.adjacency        = std::move(adjacency);
-                cd.insertion_vectors= std::move(per_element_insertion_vectors);
-                cd.joints_per_face  = std::move(per_element_joint_types);
-                cd.three_valence    = std::move(three_valence);
+                cd.adjacency = std::move(adjacency);
+                for (const auto& ivN : per_element_insertion_vectors) {
+                    std::array<double,18> iv18 = {};
+                    for (size_t k = 0; k < 18 && k < ivN.size(); ++k) iv18[k] = ivN[k];
+                    cd.insertion_vectors.push_back(iv18);
+                }
+                for (const auto& jtN : per_element_joint_types) {
+                    std::array<int,6> jt6 = {};
+                    for (size_t k = 0; k < 6 && k < jtN.size(); ++k) jt6[k] = jtN[k];
+                    cd.joints_per_face.push_back(jt6);
+                }
+                cd.three_valence = std::move(three_valence);
+
+                // Guard: empty joints_per_face (user deleted all joint-type tags) → out-of-bounds → crash.
+                if (cd.joints_per_face.empty() && !elements.empty())
+                    cd.joints_per_face.assign(elements.size(), {});
+
+                // Guard: zero IV + type-10 joint → C++ normalises (0,0,0) → NaN → crash.
+                // For any element where IV is all-zero but joints_per_face contains
+                // type 10, compute the plate face normal from the outer bottom polyline
+                // and use it as a safe fallback insertion vector.
+                for (size_t ei = 0; ei < elements.size(); ++ei) {
+                    if (ei >= cd.joints_per_face.size()) break;
+                    bool has_t10 = false;
+                    for (int jt : cd.joints_per_face[ei])
+                        if (jt == 10) { has_t10 = true; break; }
+                    if (!has_t10) continue;
+                    if (ei < cd.insertion_vectors.size()) {
+                        bool nonzero = false;
+                        for (double v : cd.insertion_vectors[ei])
+                            if (std::abs(v) > 1e-10) { nonzero = true; break; }
+                        if (nonzero) continue;
+                    } else {
+                        cd.insertion_vectors.resize(ei + 1);
+                    }
+                    // Compute face normal from outer bottom polyline.
+                    const auto& bot = elem_outer_bots[ei];
+                    if (bot.point_count() < 3) continue;
+                    auto p0 = bot[0], p1 = bot[1];
+                    auto p2 = bot[bot.point_count() >= 3 ? bot.point_count() - 2 : 0];
+                    double ax = p1[0]-p0[0], ay = p1[1]-p0[1], az = p1[2]-p0[2];
+                    double bx = p2[0]-p0[0], by = p2[1]-p0[1], bz = p2[2]-p0[2];
+                    double nx = ay*bz - az*by, ny = az*bx - ax*bz, nz = ax*by - ay*bx;
+                    double len = std::sqrt(nx*nx + ny*ny + nz*nz);
+                    if (len < 1e-10) continue;
+                    nx /= len; ny /= len; nz /= len;
+                    for (int s = 0; s < 6; ++s) {
+                        cd.insertion_vectors[ei][s*3+0] = nx;
+                        cd.insertion_vectors[ei][s*3+1] = ny;
+                        cd.insertion_vectors[ei][s*3+2] = nz;
+                    }
+                }
+
                 joints = get_connection_zones(elements, search_type, cd);
             } else {
                 joints = get_connection_zones(elements, search_type);
             }
-            dbg("get_connection_zones done  joints=" + std::to_string(joints.size()));
 
             // ── Convert joints ────────────────────────────────────────────
-            dbg("converting joints");
             nb::list py_joints;
             for (const auto& j : joints) {
                 nb::dict jd;
@@ -269,13 +322,9 @@ NB_MODULE(_joinery_solver, m) {
             }
 
             // ── Convert element features ──────────────────────────────────
-            dbg("converting elements  count=" + std::to_string(elements.size()));
             nb::list py_elements;
             for (size_t ei = 0; ei < elements.size(); ++ei) {
                 auto& e = elements[ei];
-                dbg("  elem " + std::to_string(ei)
-                    + "  top_outlines=" + std::to_string(e.features.top.size())
-                    + "  bot_outlines=" + std::to_string(e.features.bottom.size()));
                 nb::dict ed;
 
                 // Inject original hole polylines into features before lofting.
@@ -298,21 +347,15 @@ NB_MODULE(_joinery_solver, m) {
                     bots.append(polyline_to_list(pl));
                 ed["bottom_outlines"] = bots;
 
-                dbg("  elem " + std::to_string(ei) + " loft_mesh start");
                 session_cpp::Mesh lm;
-                if (!e.features.top.empty() && !e.features.bottom.empty()) {
-                    dbg("    top_rings=" + std::to_string(e.features.top.size())
-                        + "  bot_rings=" + std::to_string(e.features.bottom.size()));
+                if (!e.features.top.empty() && !e.features.bottom.empty())
                     lm = session_cpp::Mesh::loft(e.features.top, e.features.bottom);
-                }
                 if (lm.vertex.empty()) lm = e.loft_mesh();
                 ed["loft_mesh"] = mesh_to_dict(lm);
-                dbg("  elem " + std::to_string(ei) + " loft_mesh done");
 
                 py_elements.append(ed);
             }
 
-            dbg("solve_joinery complete");
             nb::dict out;
             out["joints"]   = py_joints;
             out["elements"] = py_elements;
@@ -322,8 +365,8 @@ NB_MODULE(_joinery_solver, m) {
         "search_type"_a                   = 1,
         "joint_params"_a                  = std::vector<double>{},
         "joint_volume_ext"_a              = std::vector<double>{},
-        "per_element_insertion_vectors"_a = std::vector<std::array<double,18>>{},
-        "per_element_joint_types"_a       = std::vector<std::array<int,6>>{},
+        "per_element_insertion_vectors"_a = std::vector<std::vector<double>>{},
+        "per_element_joint_types"_a       = std::vector<std::vector<int>>{},
         "three_valence"_a                 = std::vector<std::array<int,4>>{},
         "adjacency"_a                     = std::vector<std::pair<int,int>>{}
     );

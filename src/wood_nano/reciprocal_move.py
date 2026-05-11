@@ -155,8 +155,8 @@ def reciprocal_move_elements_from_surface(
     n_u: int,
     n_v: int,
     mesh_type: str = "quad",
-    u_count: int = 12,
-    v_count: int = 10,
+    u_div: int = 12,
+    v_div: int = 10,
     angle: float = 50.0,
     beam_w: float = 100.0,
     beam_h: float = 0.0,
@@ -179,7 +179,7 @@ def reciprocal_move_elements_from_surface(
         Control-point count.
     mesh_type : str
         "quad" | "hex" | "diamond".
-    u_count, v_count : int
+    u_div, v_div : int
         Mesh resolution.
     angle : float
         Translation distance in model units.
@@ -198,7 +198,7 @@ def reciprocal_move_elements_from_surface(
     rm = make_reciprocal_move_from_surface(
         pts, knots_u, knots_v,
         degree_u, degree_v, n_u, n_v,
-        mesh_type, u_count, v_count,
+        mesh_type, u_div, v_div,
         angle, beam_w, beam_h,
         extend_factor, cut_offset_factor)
     return _unpack(rm, beam_offsets=beam_offsets, unweld_beams=unweld_beams)

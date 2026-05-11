@@ -61,7 +61,7 @@ NB_MODULE(_chevron, m) {
 
     m.def("make_chevron_annen",
         [](const std::string& json_path, int surface_idx,
-           int    u_divisions,
+           int    u_div,
            double v_division_dist,
            double shift,
            double scale,
@@ -79,14 +79,14 @@ NB_MODULE(_chevron, m) {
                     "make_chevron_annen: surface_idx " + std::to_string(surface_idx) +
                     " out of range [0.." + std::to_string((int)surfaces.size() - 1) + "]");
             return Chevron(surfaces[surface_idx],
-                           u_divisions, v_division_dist, shift, scale,
+                           u_div, v_division_dist, shift, scale,
                            box_height, top_plate_inlet, plate_thickness,
                            edge_rotation, edge_offset,
                            {ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3});
         },
         "json_path"_a,
         "surface_idx"_a     = 0,
-        "u_divisions"_a     = 4,
+        "u_div"_a     = 4,
         "v_division_dist"_a = 900.0,
         "shift"_a           = 0.5,
         "scale"_a           = 0.05799,
@@ -108,7 +108,7 @@ NB_MODULE(_chevron, m) {
            const std::vector<double>& knots_v,
            int degree_u, int degree_v,
            int n_u, int n_v,
-           int    u_divisions,
+           int    u_div,
            double v_division_dist,
            double shift,
            double scale,
@@ -134,7 +134,7 @@ NB_MODULE(_chevron, m) {
             if (!srf.is_valid())
                 throw std::runtime_error("make_chevron_nurbs: resulting NurbsSurface is invalid");
             return Chevron(srf,
-                           u_divisions, v_division_dist, shift, scale,
+                           u_div, v_division_dist, shift, scale,
                            box_height, top_plate_inlet, plate_thickness,
                            edge_rotation, edge_offset,
                            {ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3});
@@ -146,7 +146,7 @@ NB_MODULE(_chevron, m) {
         "degree_v"_a,
         "n_u"_a,
         "n_v"_a,
-        "u_divisions"_a     = 4,
+        "u_div"_a     = 4,
         "v_division_dist"_a = 900.0,
         "shift"_a           = 0.5,
         "scale"_a           = 0.05799,
@@ -161,7 +161,7 @@ NB_MODULE(_chevron, m) {
         "ortho_edge3"_a     = 1);
 
     m.def("make_default_chevron",
-        [](int    u_divisions,
+        [](int    u_div,
            double v_division_dist,
            double shift,
            double scale,
@@ -172,12 +172,12 @@ NB_MODULE(_chevron, m) {
            double edge_offset,
            int ortho_edge0, int ortho_edge1, int ortho_edge2, int ortho_edge3) {
             return Chevron(Chevron::default_surface(),
-                           u_divisions, v_division_dist, shift, scale,
+                           u_div, v_division_dist, shift, scale,
                            box_height, top_plate_inlet, plate_thickness,
                            edge_rotation, edge_offset,
                            {ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3});
         },
-        "u_divisions"_a     = 4,
+        "u_div"_a     = 4,
         "v_division_dist"_a = 900.0,
         "shift"_a           = 0.5,
         "scale"_a           = 0.05799,

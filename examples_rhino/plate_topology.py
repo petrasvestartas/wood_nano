@@ -69,7 +69,7 @@ class PlateTopology:
             Loft mesh between bottom and top.
         plate_type : str, optional
             Logical type tag stored as UserString ``plate_type`` (default ``"plate"``).
-            Use e.g. ``"face"`` / ``"edge"`` for vda_mesh face/connector plates.
+            Use e.g. ``"face"`` / ``"edge"`` for connectors face/connector plates.
         """
         rh_bot  = _pl_to_rhino(bottom)
         rh_top  = _pl_to_rhino(top)

@@ -54,3 +54,21 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
+
+# ── cibuildwheel ─────────────────────────────────────────────────────────────
+[tool.cibuildwheel]
+build-verbosity = 1
+build = ["cp39-*"]
+
+[tool.cibuildwheel.linux]
+# manylinux2014 ships gcc 10 (no C++23); manylinux_2_28 ships gcc 12+
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-build = "pip install ninja"
+
+[tool.cibuildwheel.macos]
+before-build = "pip install ninja"
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.windows]
+before-build = "pip install ninja"

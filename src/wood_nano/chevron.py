@@ -15,7 +15,7 @@ def _chevron_joint_data(ch) -> dict:
 
 
 def chevron_elements(
-    u_divisions: int = 4,
+    u_div: int = 4,
     v_division_dist: float = 900.0,
     shift: float = 0.5,
     scale: float = 0.05799,
@@ -30,7 +30,7 @@ def chevron_elements(
     ortho_edge3: int = 1,
 ) -> tuple:
     ch = make_default_chevron(
-        u_divisions, v_division_dist, shift, scale,
+        u_div, v_division_dist, shift, scale,
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,
         ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3)
@@ -45,7 +45,7 @@ def chevron_elements_nurbs(
     degree_v: int,
     n_u: int,
     n_v: int,
-    u_divisions: int = 4,
+    u_div: int = 4,
     v_division_dist: float = 900.0,
     shift: float = 0.5,
     scale: float = 0.05799,
@@ -61,7 +61,7 @@ def chevron_elements_nurbs(
 ) -> tuple:
     ch = make_chevron_nurbs(
         pts, knots_u, knots_v, degree_u, degree_v, n_u, n_v,
-        u_divisions, v_division_dist, shift, scale,
+        u_div, v_division_dist, shift, scale,
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,
         ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3)
@@ -71,7 +71,7 @@ def chevron_elements_nurbs(
 def chevron_elements_annen(
     json_path: str,
     surface_idx: int = 0,
-    u_divisions: int = 4,
+    u_div: int = 4,
     v_division_dist: float = 900.0,
     shift: float = 0.5,
     scale: float = 0.05799,
@@ -87,7 +87,7 @@ def chevron_elements_annen(
 ) -> tuple:
     ch = make_chevron_annen(
         json_path, surface_idx,
-        u_divisions, v_division_dist, shift, scale,
+        u_div, v_division_dist, shift, scale,
         box_height, top_plate_inlet, plate_thickness,
         edge_rotation, edge_offset,
         ortho_edge0, ortho_edge1, ortho_edge2, ortho_edge3)

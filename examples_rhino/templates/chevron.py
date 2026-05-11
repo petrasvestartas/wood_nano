@@ -77,7 +77,7 @@ def _run(v, _):
 
     surface_idx = v["surface_idx"]
     kw = dict(
-        u_divisions=v["u_divisions"],
+        u_div=v["u_div"],
         v_division_dist=v["v_division_dist"],
         box_height=v["box_height"],
         plate_thickness=v["plate_thickness"],
@@ -150,7 +150,7 @@ process_input(
     {
         "surface":         ([], list[rg.Surface]),  # overrides surface_idx when set
         "surface_idx":     (-1,    int),   # -1 = built-in flat; 0..22 = Annen surface
-        "u_divisions":     (4,     int),
+        "u_div":     (4,     int),
         "v_division_dist": (900.0, float),
         "box_height":      (760.0, float),
         "plate_thickness": (40.0,  float),

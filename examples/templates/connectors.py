@@ -1,12 +1,12 @@
-"""vda_mesh — standalone Python example (no Rhino required).
+"""connectors — standalone Python example (no Rhino required).
 
 Demonstrates the default two-quad mesh and a custom mesh with multiple
 face layers and edge subdivisions.
 """
-from wood_nano import vda_mesh_elements
+from wood_nano import connectors_elements
 
 # ── default mesh ─────────────────────────────────────────────────────────────
-f_pl, f_planes, f_idx, e_pl, e_planes, e_idx = vda_mesh_elements()
+f_pl, f_planes, f_idx, e_pl, e_planes, e_idx = connectors_elements()
 print("=== default mesh (hex, 15 faces) ===")
 print(f"faces           : {len(f_pl)}")
 print(f"face polylines  : {sum(len(x) for x in f_pl)}  (2 per face = top+bot)")
@@ -41,7 +41,7 @@ faces = [
     [4, 5, 8, 7],
 ]
 
-f_pl2, f_planes2, f_idx2, e_pl2, e_planes2, e_idx2 = vda_mesh_elements(
+f_pl2, f_planes2, f_idx2, e_pl2, e_planes2, e_idx2 = connectors_elements(
     mesh=(verts, faces),
     face_thickness=5.0,
     face_positions=[-10.0, 10.0],  # two layers

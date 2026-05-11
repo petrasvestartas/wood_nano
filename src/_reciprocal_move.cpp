@@ -262,7 +262,7 @@ NB_MODULE(_reciprocal_move, m) {
            int degree_u, int degree_v,
            int n_u, int n_v,
            const std::string& mesh_type,
-           int u_count, int v_count,
+           int u_div, int v_div,
            double angle, double beam_w, double beam_h,
            double extend_factor, double cut_offset_factor) {
             NurbsSurface srf;
@@ -282,19 +282,19 @@ NB_MODULE(_reciprocal_move, m) {
                 throw std::runtime_error("make_reciprocal_move_from_surface: resulting NurbsSurface is invalid");
             srf.transpose();
             if (mesh_type == "hex") {
-                Mesh base_mesh = orient_faces_upward(Primitives::hex_mesh(srf, u_count, v_count));
+                Mesh base_mesh = orient_faces_upward(Primitives::hex_mesh(srf, u_div, v_div));
                 ReciprocalMove rm(std::move(base_mesh), angle, beam_w, beam_h,
                                   extend_factor, cut_offset_factor);
                 rm.dome_mesh = orient_faces_upward(rm.dome_mesh);
                 return rm;
             } else if (mesh_type == "diamond") {
-                Mesh full_mesh = Primitives::diamond_mesh(srf, u_count, v_count);
+                Mesh full_mesh = Primitives::diamond_mesh(srf, u_div, v_div);
                 ReciprocalMove rm(fix_face_starts(full_mesh), angle, beam_w, beam_h,
                                   extend_factor, cut_offset_factor);
                 rm.dome_mesh = std::move(full_mesh);
                 return rm;
             } else {
-                Mesh base_mesh = Primitives::quad_mesh(srf, u_count, v_count);
+                Mesh base_mesh = Primitives::quad_mesh(srf, u_div, v_div);
                 return ReciprocalMove(std::move(base_mesh), angle, beam_w, beam_h,
                                       extend_factor, cut_offset_factor);
             }
@@ -307,8 +307,8 @@ NB_MODULE(_reciprocal_move, m) {
         "n_u"_a,
         "n_v"_a,
         "mesh_type"_a         = "quad",
-        "u_count"_a           = 12,
-        "v_count"_a           = 10,
+        "u_div"_a           = 12,
+        "v_div"_a           = 10,
         "angle"_a             = 50.0,
         "beam_w"_a            = 100.0,
         "beam_h"_a            = 0.0,

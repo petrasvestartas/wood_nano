@@ -40,7 +40,6 @@ import scriptcontext as sc
 import rhinoscriptsyntax as rs
 from session_py.point import Point as PyPoint  # noqa: F401 (used by _guid_to_session_polyline)
 from session_py.polyline import Polyline as PyPolyline
-from session_rhino.rhino_mesh import to_rhino as _mesh_to_rhino
 from wood_nano.plate_topology import PlateTopology
 from wood_nano.joinery_solver import (
     joinery_solver_elements,
@@ -208,6 +207,54 @@ def _show_params_form():
         _log("Joint volume extension: invalid value — keeping previous settings.")
     return result
 
+DRAW_MESHES = True
+
+_draw_meshes = False   # session state, toggled by the "draw_meshes" option
+
+
+def _loft_mesh_to_rhino(mesh):
+    """Fast session_py Mesh → welded Rhino.Geometry.Mesh.
+
+    Side faces: quads/tris added directly (welded, no ngons).
+    Cap faces (CDT-triangulated): triangles added then wrapped in an ngon
+    so Rhino hides the internal triangulation edges visually.
+    """
+    vkeys = sorted(mesh.vertex.keys())
+    vkey_to_idx = {vk: i for i, vk in enumerate(vkeys)}
+    rmesh = rg.Mesh()
+    for vk in vkeys:
+        v = mesh.vertex[vk]
+        rmesh.Vertices.Add(v.x, v.y, v.z)
+    tri = mesh.triangulation or {}
+    holes = mesh.face_holes or {}
+    for fk in sorted(mesh.face.keys()):
+        stored = tri.get(fk)
+        if stored:
+            # CDT cap face: add triangles, then wrap in ngon to hide edges.
+            hole_rings = holes.get(fk, [])
+            all_vks = list(mesh.face[fk]) + [vk for ring in hole_rings for vk in ring]
+            local = {vk: vkey_to_idx[vk] for vk in all_vks if vk in vkey_to_idx}
+            fi_start = rmesh.Faces.Count
+            for t in stored:
+                a, b, c = local.get(t[0]), local.get(t[1]), local.get(t[2])
+                if a is not None and b is not None and c is not None:
+                    rmesh.Faces.AddFace(a, b, c)
+            fi_end = rmesh.Faces.Count
+            outer_idx = [vkey_to_idx[vk] for vk in mesh.face[fk] if vk in vkey_to_idx]
+            if len(outer_idx) >= 3 and fi_end > fi_start:
+                rmesh.Ngons.AddNgon(
+                    rg.MeshNgon.Create(outer_idx, list(range(fi_start, fi_end)))
+                )
+        else:
+            vks = mesh.face[fk]
+            idx = [vkey_to_idx[vk] for vk in vks]
+            if len(idx) == 3:
+                rmesh.Faces.AddFace(idx[0], idx[1], idx[2])
+            elif len(idx) == 4:
+                rmesh.Faces.AddFace(idx[0], idx[1], idx[2], idx[3])
+    rmesh.Normals.ComputeNormals()
+    return rmesh
+
 _log = Rhino.RhinoApp.WriteLine
 
 # ── Layer definitions: (full_path, parent_path, RGB, visible) ────────────────
@@ -218,7 +265,6 @@ _LAYER_DEFS = [
     ("JoinerySolver::JointArea",       "JoinerySolver",   (  0, 200,   0), False),
     ("JoinerySolver::JointVolumes",    "JoinerySolver",   (220,  50,  50), False),
     ("JoinerySolver::JointLines",      "JoinerySolver",   (255, 200,   0), False),
-    ("JoinerySolver::CDTDebug",        "JoinerySolver",   (180,  80, 180), False),
 ]
 
 def _ensure_layer(full_path, parent_path, rgb, visible):
@@ -235,14 +281,19 @@ def _ensure_layer(full_path, parent_path, rgb, visible):
             layer.ParentLayerId = sc.doc.Layers[pidx].Id
     return sc.doc.Layers.Add(layer)
 
-_joinery_guids = []   # persists across script runs in this Rhino session
+_joinery_guids        = []   # persists across script runs in this Rhino session
+_joinery_group_indices = []  # group indices created by this script
 
 def _clear_joinery():
     for g in _joinery_guids:
         sc.doc.Objects.Delete(g, True)
     _joinery_guids[:] = []
+    for gi in _joinery_group_indices:
+        sc.doc.Groups.Delete(gi)
+    _joinery_group_indices[:] = []
 
 def _add(rhino_geometry, layer_idx):
+    """Add geometry to the document; returns the GUID or Guid.Empty."""
     attr = rdo.ObjectAttributes()
     attr.LayerIndex = layer_idx
     if isinstance(rhino_geometry, rg.Mesh):
@@ -250,9 +301,19 @@ def _add(rhino_geometry, layer_idx):
     elif isinstance(rhino_geometry, rg.Polyline):
         g = sc.doc.Objects.AddPolyline(rhino_geometry, attr)
     else:
-        return
+        return System.Guid.Empty
     if g != System.Guid.Empty:
         _joinery_guids.append(g)
+    return g
+
+def _make_group(name, guids):
+    """Create a named Rhino group from a list of GUIDs (skips empties)."""
+    valid = [g for g in guids if g != System.Guid.Empty]
+    if len(valid) < 2:
+        return
+    gi = sc.doc.Groups.Add(name, valid)
+    if gi >= 0:
+        _joinery_group_indices.append(gi)
 
 def _pl_coords_to_pt3d(pl):
     """Convert session_py Polyline to list of Rhino Point3d, closing point stripped."""
@@ -320,6 +381,7 @@ def run():
     top_pls         = []
     bottom_hole_pls = []
     top_hole_pls    = []
+    accepted_pids   = []   # PIDs that pass all filters — used to sync metadata
 
     for pid in sorted(plate_map.keys()):
         roles  = plate_map[pid]
@@ -331,12 +393,9 @@ def run():
             _log(f"  plate {pid}: missing {missing} curve — skipped.")
             continue
 
-        _log(
-            f"  plate {pid}: bot={bot_pl.point_count()} pts  "
-            f"top={top_pl.point_count()} pts"
-        )
         bottom_pls.append(bot_pl)
         top_pls.append(top_pl)
+        accepted_pids.append(pid)
 
         # Read hole polylines for this plate.
         h_bots_guids, h_tops_guids = topo.find_plate_holes(pid)
@@ -355,57 +414,95 @@ def run():
 
     _log(f"Joinery solver: {len(bottom_pls)} complete plate pairs ready.")
 
-    # ── 3b. Read chevron joinery metadata (joint_types, insertion_vectors,
+    # ── 3b. Read explicit joinery metadata (joint_types, insertion_vectors,
     #        three_valence, adjacency) stored as UserStrings / doc strings.
-    #        These are written by the chevron template; absent for other
-    #        templates so the solver falls back to automatic detection.
+    #        Written by the chevron template (auto) or by assign_insertion_direction /
+    #        assign_joint_types (manual).  Absent for untagged templates → solver
+    #        falls back to automatic BVH adjacency detection.
+    #
+    #        C++ constraint: per_element_insertion_vectors uses std::array<double,18>
+    #        and per_element_joint_types uses std::array<int,6> — fixed-size arrays
+    #        designed for 4-sided plates (4 sides + 2 caps = 6 faces, 6×3=18 floats).
+    #        Every non-empty inner sequence MUST be exactly 18 / 6 elements long.
     per_element_iv = []
     per_element_jt = []
-    for pid in sorted(plate_map.keys()):
-        jt, iv = topo.get_plate_joinery(pid)
+    for pid in accepted_pids:   # use accepted_pids — keeps metadata in sync with bottom/top_pls
+        bot_guid = plate_map[pid].get("bot")
+        jt, iv = topo.get_plate_joinery(pid, bot_guid=bot_guid)
         per_element_jt.append(jt)
         per_element_iv.append(iv)
 
     three_valence_data, adjacency_data = topo.get_chevron_global_joinery()
-    has_chevron = (any(jt for jt in per_element_jt)
-                   or any(iv for iv in per_element_iv)
-                   or bool(three_valence_data)
-                   or bool(adjacency_data))
-    if has_chevron:
-        n_tagged = sum(1 for jt in per_element_jt if jt)
+
+    # ── Remap adjacency/three_valence to the accepted plate indices ───────
+    # adjacency and three_valence store original plate_id values (0..N-1 from
+    # the chevron run).  The C++ solver receives element indices 0..M-1 that
+    # correspond to accepted_pids.  If plates were skipped (missing curves or
+    # too small), or if the doc strings are stale, raw indices would be out of
+    # range → crash / memory explosion.
+    pid_to_idx = {pid: idx for idx, pid in enumerate(accepted_pids)}
+    if adjacency_data:
+        adjacency_data = [
+            [pid_to_idx[a], pid_to_idx[b]]
+            for a, b in adjacency_data
+            if a in pid_to_idx and b in pid_to_idx
+        ]
+    if three_valence_data:
+        three_valence_data = [
+            [pid_to_idx[v] for v in tv]
+            for tv in three_valence_data
+            if all(v in pid_to_idx for v in tv)
+        ]
+
+    # has_explicit_jt: at least one plate has a real joint-type assignment (value >= 0).
+    has_explicit_jt = any(any(v >= 0 for v in jt) for jt in per_element_jt if jt)
+    # has_nonzero_iv: at least one plate has a user-assigned insertion direction
+    # (non-zero vector — distinguishes real assignment from stale zeros).
+    has_nonzero_iv = any(iv and any(abs(v) > 1e-6 for v in iv) for iv in per_element_iv)
+    has_explicit_data = (has_explicit_jt
+                         or has_nonzero_iv
+                         or bool(three_valence_data)
+                         or bool(adjacency_data))
+    if has_explicit_data:
+        n_jt = sum(1 for jt in per_element_jt if jt and any(v >= 0 for v in jt))
+        n_iv = sum(1 for iv in per_element_iv if iv and any(abs(v) > 1e-6 for v in iv))
         _log(
-            f"  chevron joinery data: {n_tagged} plates tagged, "
+            f"  explicit joinery data: {n_jt} joint-type sets, "
+            f"{n_iv} insertion vectors, "
             f"{len(three_valence_data)} three_valence groups, "
             f"{len(adjacency_data)} adjacency pairs."
         )
-        # Pad empty per-element lists so the C++ solver receives complete data.
-        # A plate with no stored data gets zero-filled lists sized to its geometry.
-        # (closed polyline: point_count includes the closing point,
-        #  so n_sides = point_count-1, n_faces = n_sides+2 = point_count+1)
-        for i, bot_pl in enumerate(bottom_pls):
-            n_faces = bot_pl.point_count() + 1
-            if not per_element_iv[i]:
-                per_element_iv[i] = [0.0] * (n_faces * 3)
-            if not per_element_jt[i]:
-                per_element_jt[i] = [0] * n_faces
+        # Ensure iv is a valid flat float list (multiple of 3).
+        # Length encodes face count: n_faces = len/3. Empty = all auto.
+        for i in range(len(per_element_iv)):
+            iv_i = per_element_iv[i]
+            if not iv_i or len(iv_i) % 3 != 0:
+                per_element_iv[i] = []
+        # Pad jt ONLY when there are actual jt assignments.
+        # When iv is the only trigger (no TextDots), pass jt=None so the C++
+        # receives empty joints_per_face → no joints_types.txt → auto type detection.
+        # All-zero joints_types.txt would block all joint creation.
+        if has_explicit_jt:
+            for i in range(len(per_element_jt)):
+                jt_i = per_element_jt[i]
+                # Keep the full list for any plate with at least one real assignment.
+                # Plates with no assignment (all -1 or empty) → [] so C++ uses auto detection.
+                if jt_i and any(v >= 0 for v in jt_i):
+                    per_element_jt[i] = [max(0, v) for v in jt_i]
+                else:
+                    per_element_jt[i] = []
+        else:
+            per_element_jt = []  # empty → C++ skips joints_types entirely
 
-    # ── 4. Dump polyline coords to verify round-trip correctness ──────────
-    for i, (bp, tp) in enumerate(zip(bottom_pls, top_pls)):
-        bc, tc = bp.coords, tp.coords
-        b0 = f"({bc[0]:.1f},{bc[1]:.1f},{bc[2]:.1f})" if len(bc) >= 3 else "?"
-        bL = f"({bc[-3]:.1f},{bc[-2]:.1f},{bc[-1]:.1f})" if len(bc) >= 3 else "?"
-        t0 = f"({tc[0]:.1f},{tc[1]:.1f},{tc[2]:.1f})" if len(tc) >= 3 else "?"
-        closed_b = "closed" if (len(bc) >= 6 and bc[:3] == bc[-3:]) else "OPEN"
-        closed_t = "closed" if (len(tc) >= 6 and tc[:3] == tc[-3:]) else "OPEN"
-        _log(f"  pair {i}: bot {bp.point_count()}pts {closed_b} [{b0}..{bL}]  top {tp.point_count()}pts {closed_t} [{t0}...]")
-
-    # ── 5. Pick search type; optional [parameters] opens Eto dialog ──────
+    # ── 4. Pick search type; optional [parameters] opens Eto dialog ──────
+    global _draw_meshes
     _SEARCH_OPTIONS = ["face_to_face", "cross_joint", "both"]
     while True:
+        mesh_toggle = "meshes_on" if _draw_meshes else "meshes_off"
         choice = rs.GetString(
             "Search type",
             defaultString="face_to_face",
-            strings=_SEARCH_OPTIONS + ["parameters"],
+            strings=_SEARCH_OPTIONS + ["parameters", mesh_toggle],
         )
         if choice is None:
             _log("Joinery solver: cancelled.")
@@ -416,6 +513,10 @@ def run():
                 _joint_params[:] = new_params
                 _log("Joint parameters updated.")
             continue   # loop back to search type prompt
+        if choice.lower() in ("meshes_on", "meshes_off"):
+            _draw_meshes = not _draw_meshes
+            _log(f"Joinery solver: draw meshes {'enabled' if _draw_meshes else 'disabled'}.")
+            continue   # loop back to search type prompt
         break
 
     choice = choice.lower()
@@ -424,17 +525,19 @@ def run():
     search_type = _SEARCH_OPTIONS.index(choice)
     _log(f"Joinery solver: running search_type={search_type} ({choice}) ...")
 
-    # ── 6. Run C++ — wrapped so Python exceptions are visible ────────────
+    # ── Run C++ — wrapped so Python exceptions are visible ────────────────
+    import time as _time
     has_holes = any(h for h in bottom_hole_pls)
+    _t0 = _time.time()
     try:
         elements, joints = joinery_solver_elements(
             bottom_pls, top_pls, search_type,
             joint_params=_joint_params if _joint_params else None,
             joint_volume_ext=_joint_volume_ext if _joint_volume_ext else None,
-            per_element_insertion_vectors=per_element_iv  if has_chevron else None,
-            per_element_joint_types      =per_element_jt  if has_chevron else None,
-            three_valence                =three_valence_data if has_chevron else None,
-            adjacency                    =adjacency_data     if has_chevron else None,
+            per_element_insertion_vectors=per_element_iv        if (has_nonzero_iv or bool(adjacency_data) or bool(three_valence_data)) else None,
+            per_element_joint_types      =per_element_jt or None if has_explicit_data else None,
+            three_valence                =three_valence_data if has_explicit_data else None,
+            adjacency                    =adjacency_data     if has_explicit_data else None,
             bottom_hole_polylines=bottom_hole_pls if has_holes else None,
             top_hole_polylines   =top_hole_pls    if has_holes else None,
         )
@@ -443,16 +546,13 @@ def run():
         _log(f"[ERROR] Python exception: {type(exc).__name__}: {exc}")
         _log(_tb.format_exc())
         return
-    _log(f"  C++ returned: {len(elements)} elements, {len(joints)} joints")
-
     _log(
         f"Joinery solver: {len(elements)} elements processed, "
-        f"{len(joints)} joints detected."
+        f"{len(joints)} joints detected. C++ took {_time.time()-_t0:.2f}s"
     )
-    for j in joints:
-        _log(f"  joint type={j.joint_type}  elements={j.element_ids}")
 
-    # ── 6. Build layers and draw results ─────────────────────────────────
+    # ── 7. Build layers and draw results ─────────────────────────────────
+    _t1 = _time.time()
     _clear_joinery()
 
     layers = {}
@@ -467,68 +567,57 @@ def run():
     l_volume  = layers["JoinerySolver::JointVolumes"]
     l_line    = layers["JoinerySolver::JointLines"]
 
-    # ── Solid plate meshes lofted from merged cut outlines (C++ loft) ────
-    n_meshes = 0
-    for el in elements:
-        rh_mesh = _mesh_to_rhino(el.loft_mesh())
-        if rh_mesh and rh_mesh.Vertices.Count > 0:
-            _add(rh_mesh, l_mesh)
-            n_meshes += 1
-
-    # ── CDT debug: draw triangulation wireframe for each lofted mesh ─────
-    l_debug = layers["JoinerySolver::CDTDebug"]
-    for el in elements:
-        tri_data  = el._mesh_data
-        face_tris = tri_data.get("face_tris", [])
-        verts     = tri_data.get("vertices")   # numpy array shape (N, 3)
-        if verts is None:
-            continue
-        for tri_list in face_tris:
-            if tri_list is None:
-                continue
-            for tri in tri_list:
-                if len(tri) == 3 and all(t >= 0 for t in tri):
-                    pts_tri = [
-                        rg.Point3d(float(verts[t][0]), float(verts[t][1]), float(verts[t][2]))
-                        for t in tri
-                    ]
-                    pts_tri.append(pts_tri[0])
-                    _add(rg.Polyline(pts_tri), l_debug)
-
-    # ── Merged cut outlines (top + bottom face with joint notches) ────────
+    # ── Per-element: mesh + cut outlines → one group ──────────────────────
+    n_meshes   = 0
     n_outlines = 0
-    for el in elements:
+    for ei, el in enumerate(elements):
+        elem_guids = []
+
+        # Lofted solid mesh.
+        if _draw_meshes:
+            rh_mesh = _loft_mesh_to_rhino(el.loft_mesh())
+            if rh_mesh and rh_mesh.Vertices.Count > 0:
+                elem_guids.append(_add(rh_mesh, l_mesh))
+                n_meshes += 1
+
+        # Merged cut outlines (top + bottom).
         for pl in el.top_outlines + el.bottom_outlines:
             pts = _pl_coords_to_pt3d(pl)
             if len(pts) >= 2:
-                pts.append(pts[0])   # re-close for display
-                _add(rg.Polyline(pts), l_outline)
+                pts.append(pts[0])
+                elem_guids.append(_add(rg.Polyline(pts), l_outline))
                 n_outlines += 1
 
-    # ── Per-joint geometry ────────────────────────────────────────────────
+        _make_group(f"joinery_elem_{ei}", elem_guids)
+
+    # ── Per-joint: area + volumes + lines → one group ─────────────────────
     n_volumes = 0
     n_lines   = 0
-    for jt in joints:
+    for ji, jt in enumerate(joints):
+        joint_guids = []
+
         # Joint area quad.
         pts = _pl_coords_to_pt3d(jt.area)
         if len(pts) >= 2:
             pts.append(pts[0])
-            _add(rg.Polyline(pts), l_area)
+            joint_guids.append(_add(rg.Polyline(pts), l_area))
 
-        # Joint cut volumes (two bounding quads).
+        # Joint cut volumes.
         for vol in jt.volumes:
             pts = _pl_coords_to_pt3d(vol)
             if len(pts) >= 2:
                 pts.append(pts[0])
-                _add(rg.Polyline(pts), l_volume)
+                joint_guids.append(_add(rg.Polyline(pts), l_volume))
                 n_volumes += 1
 
         # Joint centerlines.
         for ln in jt.lines:
             pts = _pl_coords_to_pt3d(ln)
             if len(pts) >= 2:
-                _add(rg.Polyline(pts), l_line)
+                joint_guids.append(_add(rg.Polyline(pts), l_line))
                 n_lines += 1
+
+        _make_group(f"joinery_joint_{ji}", joint_guids)
 
     sc.doc.Views.Redraw()
 
@@ -537,7 +626,8 @@ def run():
         f"{n_outlines} cut outlines, "
         f"{len(joints)} joint areas, "
         f"{n_volumes} cut volumes, "
-        f"{n_lines} joint lines."
+        f"{n_lines} joint lines. "
+        f"Draw took {_time.time()-_t1:.2f}s"
     )
 
 

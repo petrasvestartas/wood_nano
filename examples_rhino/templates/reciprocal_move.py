@@ -7,6 +7,7 @@ or leave both empty to use the built-in sinusoidal dome.
 """
 import Rhino
 import Rhino.Geometry as rg
+import scriptcontext as sc
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import reciprocal_move_elements, reciprocal_move_elements_from_surface, reciprocal_move_elements_from_mesh
@@ -76,8 +77,8 @@ def _run(v, _):
         dome, beams, side0, side1 = reciprocal_move_elements_from_surface(
             pts, ku, kv, du, dv, nu, nv,
             mesh_type=mesh_type,
-            u_count=v["u_count"],
-            v_count=v["v_count"],
+            u_div=v["u_div"],
+            v_div=v["v_div"],
             angle=v["move"],
             beam_w=v["beam_w"],
             beam_h=v["beam_h"],
@@ -86,8 +87,8 @@ def _run(v, _):
         source_label = f"[surface / {mesh_type}]"
     else:
         dome, beams, side0, side1 = reciprocal_move_elements(
-            nx=v["u_count"],
-            ny=v["v_count"],
+            nx=v["u_div"],
+            ny=v["v_div"],
             mesh_type=mesh_type,
             angle=v["move"],
             beam_w=v["beam_w"],
@@ -103,6 +104,7 @@ def _run(v, _):
     for i, (m, b, t) in enumerate(zip(beams, side0, side1)):
         topo.add_plate(i, b, t, unweld_mesh(m))
 
+    sc.doc.Views.Redraw()
     Rhino.RhinoApp.WriteLine(
         f"dome: {dome.number_of_faces()} faces  beams: {len(beams)}  {source_label}"
     )
@@ -114,8 +116,8 @@ process_input(
         "surface":       ([], list[rg.Surface]), # optional NURBS surface
         # Subdivision (ignored when a mesh is provided)
         "mesh_type":     (["quad", "hex", "diamond"], list[str]),
-        "u_count":       (6,      int),
-        "v_count":       (6,      int),
+        "u_div":       (6,      int),
+        "v_div":       (6,      int),
         # Reciprocal move parameters
         "move":          (200.0,  float),   # translation distance in mm
         "beam_w":        (200.0,  float),

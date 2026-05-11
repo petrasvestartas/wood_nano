@@ -5,7 +5,7 @@ from session_py.point import Point
 from session_py.polyline import Polyline
 from session_py.vector import Vector
 
-from wood_nano._vda_mesh import make_default_vda_mesh, make_vda_mesh
+from wood_nano._connectors import make_default_vda_mesh, make_vda_mesh
 
 
 def _to_polyline(raw: list) -> Polyline:
@@ -25,12 +25,13 @@ def _to_plane(d) -> Plane | None:
     )
 
 
-def vda_mesh_elements(
+def connectors_elements(
     mesh=None,
     face_thickness: float = 20.0,
     face_positions: tuple | list = (0.0,),
     edge_divisions: tuple | list = (2,),
     edge_division_len: tuple | list = (),
+    insertion_lines: tuple | list = (),
     rect_width: float = 200.0,
     rect_height: float = 200.0,
     rect_thickness: float = 20.0,
@@ -51,6 +52,11 @@ def vda_mesh_elements(
         Number of interior connector positions per edge (one value or one per edge).
     edge_division_len : sequence of float
         If non-empty, connector spacing is ``edge_length / division_len`` instead.
+    insertion_lines : sequence of [[x0,y0,z0],[x1,y1,z1]]
+        Lines that override connector orientation at matched edges.  Each line
+        is matched to the nearest mesh edge by endpoint proximity; its direction
+        is projected onto the edge plane to define the connector's x-axis.
+        Pass an empty list (default) to use the automatic orientation.
     rect_width, rect_height : float
         Connector rectangle dimensions in the edge-perpendicular plane.
     rect_thickness : float
@@ -73,16 +79,17 @@ def vda_mesh_elements(
     fp  = list(face_positions)   or [0.0]
     ed  = list(edge_divisions)   or [2]
     edl = list(edge_division_len)
+    ils = list(insertion_lines)
 
     if mesh is None:
         raw = make_default_vda_mesh(
-            face_thickness, fp, ed, edl,
+            face_thickness, fp, ed, edl, ils,
             rect_width, rect_height, rect_thickness)
     else:
         verts, faces = mesh
         raw = make_vda_mesh(
             verts, faces,
-            face_thickness, fp, ed, edl,
+            face_thickness, fp, ed, edl, ils,
             rect_width, rect_height, rect_thickness)
 
     f_polylines = [[_to_polyline(pl) for pl in row] for row in raw.f_polylines]

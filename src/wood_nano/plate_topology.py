@@ -76,7 +76,7 @@ class PlateTopology:
             Per-hole top outline polylines.  Same length as holes_bot.
         plate_type : str, optional
             Logical type tag stored as UserString ``plate_type`` (default ``"plate"``).
-            Use e.g. ``"face"`` / ``"edge"`` for vda_mesh face/connector plates.
+            Use e.g. ``"face"`` / ``"edge"`` for connectors face/connector plates.
         """
         rh_bot  = _pl_to_rhino(bottom)
         rh_top  = _pl_to_rhino(top)
@@ -236,33 +236,68 @@ class PlateTopology:
         dict[int, dict[str, System.Guid]]
             {plate_id: {"bot": guid, "top": guid, "mesh": guid}}
 
-        plate_id values must be globally unique across all plate_type values.
-        Templates that use multiple plate types (e.g. "face" + "edge") must
-        assign non-overlapping integer IDs; see vda_mesh.py for the convention.
+        Expansion is restricted to Rhino objects that share a group with the
+        selected objects.  This prevents picking up objects from other copies of
+        the same plate layout that carry identical plate_id values (UserStrings
+        survive Rhino copy, but each copy gets its own group indices).
         """
-        # Collect (plate_id, plate_type) pairs so find_plate_objects can use
-        # the type filter — prevents mixing objects from different plate types
-        # that might accidentally share the same integer plate_id.
-        keys: dict[int, str] = {}  # pid → first plate_type seen for that pid
-        for guid in selected_guids:
+        selected_set = set(selected_guids)
+
+        # Step 1: collect Rhino group indices from the selected objects.
+        group_indices = set()
+        for guid in selected_set:
             obj = sc.doc.Objects.FindId(guid)
             if obj is None:
                 continue
+            groups = obj.Attributes.GetGroupList()
+            if groups:
+                for gi in groups:
+                    group_indices.add(gi)
+
+        # Step 2: expand to companion objects that share those groups (to pick
+        # up bot/top/mesh when only one of them was selected).
+        expanded_guids = set()
+        if group_indices:
+            for obj in sc.doc.Objects.GetObjectList(
+                Rhino.DocObjects.ObjectType.AnyObject
+            ):
+                if obj.Id in selected_set:
+                    continue
+                groups = obj.Attributes.GetGroupList()
+                if groups and any(g in group_indices for g in groups):
+                    expanded_guids.add(obj.Id)
+
+        # Step 3: build plate map — selected objects take priority over expanded
+        # ones.  This ensures that when the selection mixes objects from different
+        # copies with identical plate_id values, the explicitly selected copy wins
+        # and the expansion only fills in missing roles from the same groups.
+        plate_map: dict[int, dict[str, object]] = {}
+
+        def _register(guid, overwrite):
+            obj = sc.doc.Objects.FindId(guid)
+            if obj is None:
+                return
             val = obj.Attributes.GetUserString("plate_id")
             if not val:
-                continue
+                return
             try:
                 pid = int(val)
             except ValueError:
-                continue
-            if pid not in keys:
-                ptype = obj.Attributes.GetUserString("plate_type") or None
-                keys[pid] = ptype
+                return
+            role = obj.Attributes.GetUserString("plate_role")
+            if not role:
+                return
+            if pid not in plate_map:
+                plate_map[pid] = {}
+            if overwrite or role not in plate_map[pid]:
+                plate_map[pid][role] = obj.Id
 
-        return {
-            pid: self.find_plate_objects(pid, plate_type=ptype)
-            for pid, ptype in sorted(keys.items())
-        }
+        for guid in selected_set:
+            _register(guid, overwrite=True)
+        for guid in expanded_guids:
+            _register(guid, overwrite=False)
+
+        return dict(sorted(plate_map.items()))
 
     def all_plate_ids(self):
         """Return sorted list of all plate_id values currently in the document."""
@@ -336,17 +371,37 @@ class PlateTopology:
         adjacency     = json.loads(adj_str) if adj_str else []
         return three_valence, adjacency
 
-    def get_plate_joinery(self, plate_id):
+    def get_plate_joinery(self, plate_id, bot_guid=None):
         """Read per-plate joinery metadata from the Rhino document.
 
         Reads the ``joint_types`` and ``insertion_vector`` UserStrings from
         the bot curve of the given plate.
+
+        Parameters
+        ----------
+        plate_id : int
+        bot_guid : System.Guid or None
+            When provided, reads directly from this object instead of
+            scanning all document objects.  Always pass this when you have the
+            GUID from a ``collect_plates_from_selection`` result to avoid
+            reading from a different copy that shares the same plate_id.
 
         Returns
         -------
         tuple[list[int], list[float]]
             (joint_types, insertion_vector); each defaults to [] when absent.
         """
+        def _parse(obj):
+            jt_str = obj.Attributes.GetUserString("joint_types")
+            iv_str = obj.Attributes.GetUserString("insertion_vector")
+            return (json.loads(jt_str) if jt_str else [],
+                    json.loads(iv_str) if iv_str else [])
+
+        if bot_guid is not None:
+            obj = sc.doc.Objects.FindId(bot_guid)
+            if obj is not None:
+                return _parse(obj)
+
         pid_str = str(int(plate_id))
         for obj in sc.doc.Objects.GetObjectList(
             Rhino.DocObjects.ObjectType.AnyObject
@@ -355,9 +410,5 @@ class PlateTopology:
                 continue
             if obj.Attributes.GetUserString("plate_role") != "bot":
                 continue
-            jt_str = obj.Attributes.GetUserString("joint_types")
-            iv_str = obj.Attributes.GetUserString("insertion_vector")
-            jt = json.loads(jt_str) if jt_str else []
-            iv = json.loads(iv_str) if iv_str else []
-            return jt, iv
+            return _parse(obj)
         return [], []

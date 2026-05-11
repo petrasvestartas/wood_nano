@@ -6,3 +6,9 @@ __pycache__/
 *.so
 dist/
 generated
+*.3dmbak
+*.rhl
+*.pb
+serialization/
+mesh_offset_test_dump.json
+*.ai

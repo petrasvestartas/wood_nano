@@ -314,7 +314,7 @@ NB_MODULE(_reciprocal_rotation, m) {
            int degree_u, int degree_v,
            int n_u, int n_v,
            const std::string& mesh_type,
-           int u_count, int v_count,
+           int u_div, int v_div,
            double angle, double scale, double beam_w, double beam_h,
            double extend_factor, double cut_offset_factor) {
             NurbsSurface srf;
@@ -335,21 +335,21 @@ NB_MODULE(_reciprocal_rotation, m) {
             srf.transpose();
             Mesh base_mesh;
             if (mesh_type == "hex") {
-                base_mesh = Primitives::hex_mesh(srf, u_count, v_count);
+                base_mesh = Primitives::hex_mesh(srf, u_div, v_div);
                 ReciprocalRotation rb(std::move(base_mesh), angle, scale, beam_w, beam_h,
                                       extend_factor, cut_offset_factor);
                 filter_boundary_beams(rb);
                 rb.dome_mesh = orient_faces_upward(rb.dome_mesh);
                 return rb;
             } else if (mesh_type == "diamond") {
-                Mesh full_mesh = Primitives::diamond_mesh(srf, u_count, v_count);
+                Mesh full_mesh = Primitives::diamond_mesh(srf, u_div, v_div);
                 ReciprocalRotation rb(fix_face_starts(full_mesh), angle, scale, beam_w, beam_h,
                                       extend_factor, cut_offset_factor);
                 filter_boundary_beams(rb);
                 rb.dome_mesh = std::move(full_mesh);
                 return rb;
             } else {
-                base_mesh = Primitives::quad_mesh(srf, u_count, v_count);
+                base_mesh = Primitives::quad_mesh(srf, u_div, v_div);
                 ReciprocalRotation rb(std::move(base_mesh), angle, scale, beam_w, beam_h,
                                       extend_factor, cut_offset_factor);
                 filter_boundary_beams(rb);
@@ -364,8 +364,8 @@ NB_MODULE(_reciprocal_rotation, m) {
         "n_u"_a,
         "n_v"_a,
         "mesh_type"_a         = "quad",
-        "u_count"_a           = 12,
-        "v_count"_a           = 10,
+        "u_div"_a           = 12,
+        "v_div"_a           = 10,
         "angle"_a             = 0.35,
         "scale"_a             = 1.4,
         "beam_w"_a            = 100.0,

@@ -1,5 +1,5 @@
 #! python3
-"""vda_mesh — Rhino interactive example.
+"""connectors — Rhino interactive example.
 
 Generates face plates (top/bottom outlines) and edge connector rectangles
 from any mesh. Supply a Rhino mesh via the ``mesh`` input or leave it empty
@@ -10,7 +10,7 @@ import Rhino.Geometry as rg
 import scriptcontext as sc
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
-from wood_nano import vda_mesh_elements
+from wood_nano import connectors_elements
 from session_rhino.rhino_polyline import to_rhino as _pl_to_rhino
 from wood_nano.plate_topology import PlateTopology
 
@@ -118,6 +118,7 @@ def _run(v, _):
     face_pos      = v["face_positions"]
     edge_div      = v["edge_divisions"]
     edge_div_len  = v["edge_division_len"]
+    rh_lines      = v["insertion_lines"]
     rw            = v["rect_width"]
     rh            = v["rect_height"]
     rt            = v["rect_thickness"]
@@ -129,12 +130,19 @@ def _run(v, _):
         mesh_arg = None
         label    = "[default]"
 
-    f_pl, f_planes, f_idx, e_pl, e_planes, e_idx = vda_mesh_elements(
+    # Convert Rhino Line objects to [[x0,y0,z0],[x1,y1,z1]] pairs
+    ils = [
+        [[ln.From.X, ln.From.Y, ln.From.Z], [ln.To.X, ln.To.Y, ln.To.Z]]
+        for ln in rh_lines
+    ]
+
+    f_pl, f_planes, f_idx, e_pl, e_planes, e_idx = connectors_elements(
         mesh=mesh_arg,
         face_thickness=face_thick,
         face_positions=face_pos,
         edge_divisions=edge_div,
         edge_division_len=edge_div_len,
+        insertion_lines=ils,
         rect_width=rw,
         rect_height=rh,
         rect_thickness=rt,
@@ -187,8 +195,9 @@ process_input(
         "face_positions":   ([0.0], list[float]),  # multiple values = multiple panel layers e.g. [-50.0, 50.0]
         "edge_divisions":   ([2],   list[int]),    # integer connector count per edge (ignored if edge_division_len set)
         "edge_division_len":([], list[float]),     # connector spacing by length; overrides edge_divisions when non-empty
+        "insertion_lines":  ([], list[rg.Line]),   # lines whose direction overrides connector orientation at matched edges
         "rect_width":       (200.0,  float),
-        "rect_height":      (200.0,  float),
+        "rect_height":      (300.0,  float),
         "rect_thickness":   (20.0,   float),
     },
     callback=_run,
