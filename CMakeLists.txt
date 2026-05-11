@@ -6,6 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# FetchContent_Populate is deprecated since CMake 3.30 / 4.0 (policy CMP0169).
+# We rely on it intentionally to separate "download" from "configure" so we can
+# copy generated protobuf files into CMAKE_SOURCE_DIR before add_subdirectory
+# processes session_cpp. Silence the dev warning explicitly.
+cmake_policy(SET CMP0169 OLD)
+include(FetchContent)
+
 # ── wood ─────────────────────────────────────────────────────────────────────
 # Use local checkout if present, otherwise download from GitHub (CI).
 # We only need the source files — do NOT add_subdirectory(wood) because
@@ -14,7 +21,6 @@ set(WOOD_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/../wood")
 if(EXISTS "${WOOD_LOCAL}/src/joinery_solver/wood_main.cpp")
     set(WOOD_DIR "${WOOD_LOCAL}")
 else()
-    include(FetchContent)
     FetchContent_Declare(wood
         GIT_REPOSITORY https://github.com/petrasvestartas/wood.git
         GIT_TAG        main
@@ -28,26 +34,31 @@ else()
 endif()
 
 # ── session_cpp ──────────────────────────────────────────────────────────────
-# Use local checkout if present, otherwise clone from GitHub.
+# Use local checkout if present, otherwise download from GitHub (CI).
+# Use FetchContent_Populate (not _MakeAvailable) so we can copy the generated
+# protobuf files into CMAKE_SOURCE_DIR BEFORE add_subdirectory configures it.
+# _MakeAvailable calls add_subdirectory immediately, before the copy step runs.
 set(SESSION_CPP_LOCAL "C:/pc/3_code/code_rust/session/session_cpp")
 if(EXISTS "${SESSION_CPP_LOCAL}/CMakeLists.txt")
     set(SESSION_CPP_DIR "${SESSION_CPP_LOCAL}")
 else()
-    include(FetchContent)
     FetchContent_Declare(session_cpp
         GIT_REPOSITORY https://github.com/petrasvestartas/session_cpp.git
         GIT_TAG        main
         GIT_SHALLOW    TRUE
     )
-    FetchContent_MakeAvailable(session_cpp)
+    FetchContent_GetProperties(session_cpp)
+    if(NOT session_cpp_POPULATED)
+        FetchContent_Populate(session_cpp)
+    endif()
     set(SESSION_CPP_DIR "${session_cpp_SOURCE_DIR}")
 endif()
 
-# session_cpp's CMakeLists uses CMAKE_SOURCE_DIR to locate generated/ which
-# resolves to wood_nano's root when called as add_subdirectory.
-# Symlinks are unreliable in isolated CI wheel builds on macOS; copy instead.
+# session_cpp's CMakeLists uses CMAKE_SOURCE_DIR to locate generated/.
+# When session_cpp is fetched, CMAKE_SOURCE_DIR = wood_nano root (not session_cpp).
+# Copy the committed generated files there before add_subdirectory runs.
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/generated")
-    message(STATUS "Copying session_cpp generated protobuf files into ${CMAKE_SOURCE_DIR}/generated")
+    message(STATUS "Copying session_cpp/generated into ${CMAKE_SOURCE_DIR}/generated")
     file(COPY "${SESSION_CPP_DIR}/generated" DESTINATION "${CMAKE_SOURCE_DIR}")
 endif()
 
