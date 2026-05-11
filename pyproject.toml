@@ -70,7 +70,7 @@ before-build = "pip install ninja"
 
 [tool.cibuildwheel.macos]
 before-build = "pip install ninja"
-archs = ["x86_64", "arm64"]
+# archs set per-runner in wheels.yml: macos-13=x86_64, macos-latest=arm64
 
 [tool.cibuildwheel.windows]
 before-build = "pip install ninja"
