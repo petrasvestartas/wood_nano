@@ -9,22 +9,10 @@ from session_rhino.session import Session
 from wood_nano import reciprocal_rotation_elements, reciprocal_rotation_elements_from_surface
 from wood_nano.wood_element import unweld_mesh
 from wood_nano.plate_topology import PlateTopology
+from rhino_ui import extract_nurbs_surface
 
 session = Session()
 topo    = PlateTopology()
-
-
-def _extract_surface(rhino_srf):
-    ns = rhino_srf.ToNurbsSurface()
-    n_u, n_v = ns.Points.CountU, ns.Points.CountV
-    pts = []
-    for i in range(n_u):
-        for j in range(n_v):
-            _, p = ns.Points.GetPoint(i, j)
-            pts.append([p.X, p.Y, p.Z])
-    knots_u = [ns.KnotsU[i] for i in range(ns.KnotsU.Count)]
-    knots_v = [ns.KnotsV[j] for j in range(ns.KnotsV.Count)]
-    return pts, knots_u, knots_v, ns.Degree(0), ns.Degree(1), n_u, n_v
 
 
 def _run(v, _):
@@ -37,7 +25,7 @@ def _run(v, _):
     beam_offsets = v["beam_offsets"] or None
 
     if srfs:
-        pts, ku, kv, du, dv, nu, nv = _extract_surface(srfs[0])
+        pts, ku, kv, du, dv, nu, nv = extract_nurbs_surface(srfs[0])
         dome, beams, side0, side1 = reciprocal_rotation_elements_from_surface(
             pts, ku, kv, du, dv, nu, nv,
             mesh_type=mesh_type,

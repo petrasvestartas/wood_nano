@@ -43,6 +43,7 @@ import Rhino.Geometry as rg
 import scriptcontext as sc
 import rhinoscriptsyntax as rs
 from wood_nano.plate_topology import PlateTopology
+from rhino_ui import write_plate_userstring
 
 
 _log = Rhino.RhinoApp.WriteLine
@@ -85,25 +86,6 @@ def _dist_point_to_segment(pt, a, b):
     t = max(0.0, min(1.0, (apx*abx + apy*aby + apz*abz) / ab2))
     dx = apx - t*abx; dy = apy - t*aby; dz = apz - t*abz
     return math.sqrt(dx*dx + dy*dy + dz*dz)
-
-
-def _write_plate_userstring(plate_map, plate_id, key, value_str):
-    """Write one UserString to bot/top objects of a plate.
-
-    Operates only on the GUIDs collected during selection (plate_map) so that
-    other copies of the same layout with identical plate_id values are not
-    accidentally updated.
-    """
-    roles = plate_map.get(plate_id, {})
-    for role in ("bot", "top"):
-        guid = roles.get(role)
-        if guid is None:
-            continue
-        obj = sc.doc.Objects.FindId(guid)
-        if obj is None:
-            continue
-        obj.Attributes.SetUserString(key, value_str)
-        obj.CommitChanges()
 
 
 def _get_polyline_points(guid):

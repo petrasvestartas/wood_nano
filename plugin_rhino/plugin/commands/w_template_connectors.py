@@ -15,34 +15,10 @@ from session_rhino.session import Session
 from wood_nano import connectors_elements
 from session_rhino.rhino_polyline import to_rhino as _pl_to_rhino
 from wood_nano.plate_topology import PlateTopology
+from rhino_ui import extract_mesh
 
 session = Session()
 topo    = PlateTopology()
-
-
-def _extract_mesh(rhino_mesh: rg.Mesh):
-    """Convert a Rhino mesh (including ngons) to ``(vertices, faces)`` lists."""
-    rhino_mesh.Weld(0.01)
-    verts = [[v.X, v.Y, v.Z] for v in rhino_mesh.Vertices]
-
-    ngon_face_indices = set()
-    faces = []
-    if rhino_mesh.Ngons.Count > 0:
-        for i in range(rhino_mesh.Ngons.Count):
-            ngon = rhino_mesh.Ngons[i]
-            for fi in ngon.FaceIndexList():
-                ngon_face_indices.add(fi)
-            faces.append(list(ngon.BoundaryVertexIndexList()))
-
-    for i, f in enumerate(rhino_mesh.Faces):
-        if i in ngon_face_indices:
-            continue
-        if f.IsTriangle:
-            faces.append([f.A, f.B, f.C])
-        else:
-            faces.append([f.A, f.B, f.C, f.D])
-
-    return verts, faces
 
 
 def _pt3d(p):
@@ -126,7 +102,7 @@ def _run(v, _):
     rt            = v["rect_thickness"]
 
     if meshes:
-        mesh_arg = _extract_mesh(meshes[0])
+        mesh_arg = extract_mesh(meshes[0])
         label    = "[user mesh]"
     else:
         mesh_arg = None
