@@ -75,7 +75,11 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          # Host interpreter for cibuildwheel, not a build target. On 3.9 pip
+          # resolves cibuildwheel 2.23.4 (the last release supporting 3.9),
+          # which pins manylinux image tag 2025.04.19-1 - deleted from quay.io,
+          # so every Linux build died with "No such image".
+          python-version: "3.13"
 
       - name: Install cibuildwheel
         run: pip install cibuildwheel

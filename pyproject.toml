@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "wood_nano"
 description = "Python bindings for the wood timber joinery C++ library."
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = ["numpy>=1.21.0", "session_py", "session-rhino"]
 authors = [{ name = "Petras Vestartas", email = "petrasvestartas@gmail.com" }]
 dynamic = ["version"]
@@ -38,12 +38,19 @@ dev = [
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
-# No abi3: nanobind only emits stable-ABI binaries on CPython >= 3.12
-# (nanobind-config.cmake sets STABLE_ABI FALSE below that and says so).
-# Declaring py-api = "cp39" while building on 3.9 therefore produced a wheel
-# TAGGED cp39-abi3 whose binaries link python39.dll - it installs on 3.10+
-# and then fails to import with a DLL load error. Version-specific wheels
-# per interpreter are correct for every version we ship.
+# ONE abi3 wheel per platform, covering CPython 3.12 and every later version.
+#
+# nanobind emits genuinely stable-ABI binaries only on CPython >= 3.12:
+# nanobind-config.cmake sets STABLE_ABI FALSE below that and says so. The old
+# `py-api = "cp39"` built on 3.9 therefore produced a wheel TAGGED cp39-abi3
+# whose binaries link python39.dll - it installed on 3.10+ and then failed to
+# import with a DLL load error. Building ON 3.12 makes the abi3 promise real.
+#
+# 3.12 is also the floor nanobind 3.x requires, and it covers Rhino 9's
+# Python 3.13.3 runtime plus whatever Rhino ships next, with no new wheel.
+# Rhino 8 (Python 3.9) is deliberately not supported: 3.9 went end-of-life at
+# the end of 2025 and nanobind 3.0 dropped it.
+wheel.py-api = "cp312"
 cmake.version = ">=3.15"
 cmake.build-type = "Release"
 
@@ -63,7 +70,9 @@ line-length = 120
 # ── cibuildwheel ─────────────────────────────────────────────────────────────
 [tool.cibuildwheel]
 build-verbosity = 1
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+# One build per platform. py-api = "cp312" makes it an abi3 wheel that
+# installs on 3.12, 3.13, 3.14 and later - no per-version wheels needed.
+build = ["cp312-*"]
 # Skip 32-bit targets (i686 GCC doesn't support C++23) and musl Linux
 skip = ["*-win32", "*-musllinux*", "*-manylinux_i686"]
 
