@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Manual trigger. GitHub stops auto-scheduling workflows in a repository that
+  # has been idle for ~60 days: the workflow still reports `active` and a push
+  # still dispatches other workflows, but this one is never queued. Without a
+  # dispatch trigger there is then no way to build or release at all.
+  workflow_dispatch:
 
 jobs:
   bump_version:
