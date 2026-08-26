@@ -117,7 +117,12 @@ target_include_directories(_chevron PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_chevron PRIVATE session_core)
 LINK_PROTOBUF(_chevron)
 
-# _reciprocal_rotation — rotation-based nexorade; uses session_core Reciprocal + Intersection
+# _reciprocal_rotation — rotation-based nexorade.
+# Reciprocal used to live in session_cpp (src/reciprocal.{h,cpp}) and arrived
+# through session_core. session_cpp deleted it in d53654ad, finishing the move
+# begun in 37f49ed9 ("move ... main_reciprocal to wood project") which had only
+# taken the main. It now lives in wood/src/templates/reciprocal.h, header-only
+# like every other template there, so it needs no source entry.
 nanobind_add_module(_reciprocal_rotation STABLE_ABI NB_STATIC
     src/_reciprocal_rotation.cpp
 )

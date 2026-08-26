@@ -38,7 +38,12 @@ dev = [
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
-wheel.py-api = "cp39"
+# No abi3: nanobind only emits stable-ABI binaries on CPython >= 3.12
+# (nanobind-config.cmake sets STABLE_ABI FALSE below that and says so).
+# Declaring py-api = "cp39" while building on 3.9 therefore produced a wheel
+# TAGGED cp39-abi3 whose binaries link python39.dll - it installs on 3.10+
+# and then fails to import with a DLL load error. Version-specific wheels
+# per interpreter are correct for every version we ship.
 cmake.version = ">=3.15"
 cmake.build-type = "Release"
 
@@ -58,7 +63,7 @@ line-length = 120
 # ── cibuildwheel ─────────────────────────────────────────────────────────────
 [tool.cibuildwheel]
 build-verbosity = 1
-build = ["cp39-*"]
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 # Skip 32-bit targets (i686 GCC doesn't support C++23) and musl Linux
 skip = ["*-win32", "*-musllinux*", "*-manylinux_i686"]
 
