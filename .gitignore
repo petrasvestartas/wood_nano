@@ -13,3 +13,4 @@ generated
 serialization/
 mesh_offset_test_dump.json
 *.ai
+src/wood_nano/_build_info.py

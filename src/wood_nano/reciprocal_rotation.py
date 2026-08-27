@@ -13,7 +13,7 @@ from wood_nano._reciprocal_rotation import (
     make_reciprocal_rotation_from_mesh,
     make_reciprocal_rotation_from_surface,
 )
-from wood_nano.wood_element import _to_mesh, unweld_mesh as _unweld_mesh
+from wood_nano.wood_element import _to_mesh
 
 
 def _pts_to_polyline(pts: list[list[float]]) -> Polyline:
@@ -34,9 +34,10 @@ def _unpack(
     dome  = _to_mesh(rb.dome_mesh)
     side0 = [_pts_to_polyline(p) for p in rb.side0]
     side1 = [_pts_to_polyline(p) for p in rb.side1]
-    beams = [_to_mesh(m) for m in rb.beams]
-    if unweld_beams:
-        beams = [_unweld_mesh(b) for b in beams]
+    # beams_unwelded duplicates vertices per face in C++; the old path
+    # crossed the boundary three times per beam (dict -> Mesh -> lists ->
+    # unweld_mesh_dict -> dict -> Mesh).
+    beams = [_to_mesh(m) for m in (rb.beams_unwelded if unweld_beams else rb.beams)]
     return dome, beams, side0, side1
 
 

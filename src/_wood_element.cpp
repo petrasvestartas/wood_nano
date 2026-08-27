@@ -203,9 +203,19 @@ NB_MODULE(_wood_element, m) {
         .def_prop_ro("bottom",    [](const wood_session::WoodElement& e) { return polyline_to_pts(e.polylines[0]); })
         .def_prop_ro("top",       [](const wood_session::WoodElement& e) { return polyline_to_pts(e.polylines[1]); })
         .def_prop_ro("thickness", [](const wood_session::WoodElement& e) { return e.thickness; })
-        .def("loft_mesh",         [](const wood_session::WoodElement& e) { return mesh_to_dict(e.loft_mesh()); })
+        .def("loft_mesh",         [](const wood_session::WoodElement& e) {
+            auto lm = e.loft_mesh();
+            // Consistent winding + outward normals in C++, so the compas
+            // layer needs no Python-side unify/flip pass.
+            lm.unify_winding();
+            lm.orient_outward();
+            return mesh_to_dict(lm);
+        })
         .def("unweld_loft_mesh",  [](const wood_session::WoodElement& e) {
-            auto [session_pts, faces_sz] = e.loft_mesh().to_vertices_and_faces();
+            auto lm = e.loft_mesh();
+            lm.unify_winding();
+            lm.orient_outward();
+            auto [session_pts, faces_sz] = lm.to_vertices_and_faces();
             // Convert session_cpp::Point → Pt3 and size_t → int
             Pts pts;
             pts.reserve(session_pts.size());

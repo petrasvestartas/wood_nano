@@ -26,17 +26,11 @@ class WoodElementCompas:
         return float(self._el.thickness)
 
     def loft_mesh(self) -> Mesh:
-        mesh = mesh_from_cpp(self._el.loft_mesh())
-        mesh.unify_cycles()
-        bot = self._el.bottom
-        top = self._el.top
-        bc = [sum(p[i] for p in bot) / len(bot) for i in range(3)]
-        tc = [sum(p[i] for p in top) / len(top) for i in range(3)]
-        up = [tc[i] - bc[i] for i in range(3)]
-        n = mesh.normal()
-        if n[0] * up[0] + n[1] * up[1] + n[2] * up[2] < 0:
-            mesh.flip_cycles()
-        return mesh
+        # C++ guarantees unified winding + outward normals (unify_winding +
+        # orient_outward in the binding), so the previous pure-Python
+        # unify_cycles / centroid / flip_cycles pass - three full-mesh Python
+        # traversals of geometry math per element - is gone.
+        return mesh_from_cpp(self._el.loft_mesh())
 
 
 class JoineryElementCompas:
@@ -49,20 +43,21 @@ class JoineryElementCompas:
         self.bottom_outlines: list[Polyline] = [
             polyline_from_cpp(pts) for pts in data["bottom_outlines"]
         ]
+        # None unless solve_joinery ran with include_loft_mesh=True; kept so
+        # an eagerly computed loft is not recomputed on first access.
+        self._mesh_data = data.get("loft_mesh")
+        self._raw_top = data["top_outlines"]
+        self._raw_bottom = data["bottom_outlines"]
 
     def loft_mesh(self) -> Mesh:
-        def _pts(pl): return [[float(p[0]), float(p[1]), float(p[2])] for p in pl.points]
-        bot = [_pts(pl) for pl in self.bottom_outlines]
-        top = [_pts(pl) for pl in self.top_outlines]
-        mesh = mesh_from_cpp(_joinery_solver.loft(bot, top))
-        mesh.unify_cycles()
-        bc = [sum(p[i] for pts in bot for p in pts) / sum(len(pts) for pts in bot) for i in range(3)]
-        tc = [sum(p[i] for pts in top for p in pts) / sum(len(pts) for pts in top) for i in range(3)]
-        up = [tc[i] - bc[i] for i in range(3)]
-        n = mesh.normal()
-        if n[0] * up[0] + n[1] * up[1] + n[2] * up[2] < 0:
-            mesh.flip_cycles()
-        return mesh
+        # Lazy loft in C++ from the raw exported rings (same rings, same
+        # top/bottom order as the solver's eager path). The C++ side
+        # guarantees unified winding + outward normals, so the previous
+        # Python unify_cycles / centroid / flip pass is gone - this method,
+        # like the rest of the layer, only converts formats.
+        if self._mesh_data is None:
+            self._mesh_data = _joinery_solver.loft(self._raw_top, self._raw_bottom)
+        return mesh_from_cpp(self._mesh_data)
 
 
 class JointResultCompas:

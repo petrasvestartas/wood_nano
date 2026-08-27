@@ -135,6 +135,47 @@ before any fix. Two proposed fixes were **rejected by verification** (see
   for X-crossings; center + axis are orientation-agnostic downstream.
   Both sites now carry comments explaining why the "obvious" guard is wrong.
 
+## Fixed in the follow-up wave (2026-08-27, second pass)
+
+- **D1/D2** (session_cpp `Intersection::polyline_plane[_to_line]`): a polyline
+  crossing the plane exactly THROUGH a vertex now emits that vertex once
+  instead of dropping both adjacent segments (false-negative joints on tidy
+  axis-aligned data); >2 crossings now select the extreme pair instead of an
+  arbitrary first-two sub-chord. Verified: session minitests + wood 44-dataset
+  byte parity.
+- **B7**: the solve now releases the GIL for the whole C++ compute, serialized
+  by a mutex over the process-wide wood globals — a long solve no longer
+  blocks every other Python thread in Rhino.
+- **B9/Y6**: `beams_unwelded` computed in C++; the per-beam
+  dict→Mesh→lists→C++→dict round-trip is gone.
+- **Y2/Y3**: `unify_winding()` + `orient_outward()` applied in the bindings;
+  both compas orientation passes (3 full-mesh Python traversals each) deleted.
+- **Y5** (both halves): mesh_to_dict never emits `-1` vertex sentinels
+  (stale triangles are dropped), and the compas converter passes
+  untriangulated ngons through natively instead of fan-triangulating in
+  Python (wrong for concave faces).
+- **B6**: `mesh_to_dict` builds the vertex index once (was twice per mesh on
+  the hot path), reproducing `to_vertices_and_faces` ordering exactly.
+- **J13**: the merge stage's sorted container stores raw point runs — no more
+  flat-coords copy per insert, no heap Polyline per surviving vertex, no
+  out-of-line Point construction per concatenated vertex.
+- **S6 (traceability half)**: wheels now embed the wood + session_cpp git SHAs
+  (`wood_nano.__wood_sha__` / `__session_sha__`), so a wheel can always say
+  which kernel it was built from. Pinning proper remains a policy decision.
+- **Yak release tooling**: `tools/release_yak.ps1` (bump → RhinoCode build →
+  yak push) and `tools/push_and_release.ps1` (git push + Yak in one command).
+  Full CI parity is impossible: the .rhp build requires a licensed Rhino.
+
+Re-triaged in this wave:
+- **I16** (shared rtree): DROPPED — `assign_joint`/`assign_insertion` have no
+  callers in the current tree; adding a sharing overload would be
+  speculative API.
+- **T17** (diamond NURBS memoization): WONTFIX for now — a memo cannot be
+  bit-stable (`u+su*0.5` vs `u0+(2i+1)*su/2` differ in ulps), so the small
+  gain would destabilize template output.
+- **S7 (LTO half)**: still deferred; NOMINSIZE captured the bulk of the win
+  (2.4–4.1× measured). The LTCG recipe stays documented below.
+
 ## Deferred (flagged, not fixed) — with reasons
 
 - **D1/D2** (session_cpp `polyline_plane_to_line`): first-two-crossings chord

@@ -1,6 +1,7 @@
 #include "wood_session.h"
 #include "wood_element.h"
 
+#include <mutex>
 #include <unordered_set>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -36,30 +37,37 @@ static nb::list polyline_to_list(const session_cpp::Polyline& pl)
 
 static nb::dict mesh_to_dict(const session_cpp::Mesh& mesh)
 {
-    auto [pts, faces] = mesh.to_vertices_and_faces();
-    size_t nv = pts.size();
+    // Build the vertex-key -> sequential-index map ONCE. It used to be built
+    // twice per mesh on the hot path: once inside to_vertices_and_faces and
+    // once more for the tris/holes remap below. The ordering contract of
+    // to_vertices_and_faces is reproduced exactly: vertices land at their
+    // vertex_index slot, faces iterate over sorted face keys.
+    auto vidx = mesh.vertex_index();
+    size_t nv = vidx.size();
     auto* vd = new double[nv * 3];
-    for (size_t i = 0; i < nv; ++i) {
-        vd[i*3+0] = pts[i][0];
-        vd[i*3+1] = pts[i][1];
-        vd[i*3+2] = pts[i][2];
+    for (const auto& [vk, vdta] : mesh.vertex) {
+        size_t i = vidx[vk];
+        vd[i*3+0] = vdta.x;
+        vd[i*3+1] = vdta.y;
+        vd[i*3+2] = vdta.z;
     }
     nb::capsule owner(vd, [](void* p) noexcept { delete[] static_cast<double*>(p); });
     size_t shape[2] = {nv, 3};
 
-    nb::list face_list;
-    for (const auto& f : faces) {
-        nb::list fl;
-        for (size_t vi : f) fl.append((int)vi);
-        face_list.append(fl);
-    }
-
-    // Remap helpers: internal vertex/face keys → sequential indices.
-    auto vidx = mesh.vertex_index();
     std::vector<size_t> fkeys;
     fkeys.reserve(mesh.face.size());
     for (const auto& [k, _] : mesh.face) fkeys.push_back(k);
     std::sort(fkeys.begin(), fkeys.end());
+
+    nb::list face_list;
+    for (size_t fk : fkeys) {
+        nb::list fl;
+        for (size_t vk : mesh.face.at(fk)) {
+            auto it = vidx.find(vk);
+            fl.append(it != vidx.end() ? (int)it->second : 0);
+        }
+        face_list.append(fl);
+    }
     std::map<size_t, size_t> fidx;
     for (size_t i = 0; i < fkeys.size(); ++i) fidx[fkeys[i]] = i;
 
@@ -77,11 +85,17 @@ static nb::dict mesh_to_dict(const session_cpp::Mesh& mesh)
             nb::list tlist;
             for (const auto& tri : it->second) {
                 nb::list t;
+                bool ok = true;
                 for (size_t vk : tri) {
                     auto vit = vidx.find(vk);
-                    t.append(vit != vidx.end() ? (int)vit->second : -1);
+                    if (vit == vidx.end()) { ok = false; break; }
+                    t.append((int)vit->second);
                 }
-                tlist.append(t);
+                // A triangle referencing a vertex that no longer exists in
+                // the mesh used to be emitted with a -1 sentinel, which the
+                // Python side passed straight into Mesh construction as a
+                // vertex index. Skip the stale triangle instead.
+                if (ok) tlist.append(t);
             }
             face_tris.append(tlist);
         }
@@ -132,6 +146,12 @@ NB_MODULE(_joinery_solver, m) {
             top.reserve(polylines1.size());
             for (const auto& pts : polylines1) top.push_back(pts_to_polyline(pts));
             session_cpp::Mesh lm = session_cpp::Mesh::loft(bot, top);
+            // Consistent winding + outward normals HERE, so the compas layer
+            // could drop its pure-Python unify_cycles/centroid-flip pass (3
+            // full-mesh Python traversals per element) and the session_py
+            // layer stops shipping mixed-winding lofts to viewers.
+            lm.unify_winding();
+            lm.orient_outward();
             return mesh_to_dict(lm);
         },
         "polylines0"_a, "polylines1"_a);
@@ -157,6 +177,29 @@ NB_MODULE(_joinery_solver, m) {
            std::vector<std::array<int,4>>     three_valence,
            std::vector<std::pair<int,int>>    adjacency,
            bool include_loft_mesh) -> nb::dict {
+            nb::dict empty;
+            empty["joints"]   = nb::list();
+            empty["elements"] = nb::list();
+            if (plates_data.empty()) return empty;
+
+            // ── Compute section: mutex + GIL release ──────────────────────
+            // The wood globals are process-wide, so concurrent solves must
+            // serialize with or without the GIL; holding this mutex makes
+            // that explicit, and with it held the GIL can be RELEASED for
+            // the whole C++ compute - the inputs were already materialized
+            // into C++ vectors by nanobind, so a long solve no longer blocks
+            // every other Python thread in the host (Rhino UI, progress
+            // reporting). The GIL is reacquired automatically when the scope
+            // exits, including on exceptions.
+            std::vector<wood_session::WoodElement> elements;
+            std::vector<session_cpp::Polyline> elem_outer_bots, elem_outer_tops;
+            std::vector<std::vector<session_cpp::Polyline>> elem_hole_bots, elem_hole_tops;
+            std::vector<wood_session::WoodJoint> joints;
+            static std::mutex solve_mutex;
+            {
+            std::lock_guard<std::mutex> solve_lock(solve_mutex);
+            nb::gil_scoped_release gil_release;
+
             // Initialise all wood globals to their documented defaults.
             // Tests do this via reset_defaults(); without it JOINTS_PARAMETERS_AND_TYPES
             // is an empty vector → JPT[row*3] crashes on first cross/lap joint.
@@ -176,15 +219,7 @@ NB_MODULE(_joinery_solver, m) {
             // 1e-6 = 0.001 mm is safe for any realistic geometry.
             wood_session::set_cross_joint_distance_squared(1e-6);
 
-            nb::dict empty;
-            empty["joints"]   = nb::list();
-            empty["elements"] = nb::list();
-            if (plates_data.empty()) return empty;
-
             // Build WoodElements from bottom/top polyline pairs.
-            std::vector<wood_session::WoodElement> elements;
-            std::vector<session_cpp::Polyline> elem_outer_bots, elem_outer_tops;
-            std::vector<std::vector<session_cpp::Polyline>> elem_hole_bots, elem_hole_tops;
             elements.reserve(plates_data.size());
             for (size_t i = 0; i < plates_data.size(); ++i) {
                 const auto& pair = plates_data[i];
@@ -204,13 +239,12 @@ NB_MODULE(_joinery_solver, m) {
                 elem_hole_bots.push_back(std::move(hbots));
                 elem_hole_tops.push_back(std::move(htops));
             }
-            if (elements.empty()) return empty;
+            if (!elements.empty()) {
 
             // Run joint detection + merge pipeline.
             // After the call, each element's features.top/bottom are populated
             // with merged cut outlines.
             SearchType search_type = static_cast<SearchType>(search_type_int);
-            std::vector<wood_session::WoodJoint> joints;
             // direct path: iv and/or jt assigned by user, no adjacency/three_valence.
             // Both insertion_vectors and joint_types are set directly on elements;
             // wood_main.cpp simple overload reads them from element fields (no temp files).
@@ -342,6 +376,9 @@ NB_MODULE(_joinery_solver, m) {
                 joints = get_connection_zones(elements, search_type);
             }
 
+            }  // if (!elements.empty())
+            }  // end mutex + GIL-release scope
+
             // ── Convert joints ────────────────────────────────────────────
             nb::list py_joints;
             for (const auto& j : joints) {
@@ -417,9 +454,14 @@ NB_MODULE(_joinery_solver, m) {
                     if (!e.features.top.empty() && !e.features.bottom.empty())
                         lm = session_cpp::Mesh::loft(e.features.top, e.features.bottom);
                     if (lm.vertex.empty()) lm = e.loft_mesh();
+                    lm.unify_winding();
+                    lm.orient_outward();
                     ed["loft_mesh"] = mesh_to_dict(lm);
                 } else if (e.features.top.empty() || e.features.bottom.empty()) {
-                    ed["loft_mesh"] = mesh_to_dict(e.loft_mesh());
+                    session_cpp::Mesh lm = e.loft_mesh();
+                    lm.unify_winding();
+                    lm.orient_outward();
+                    ed["loft_mesh"] = mesh_to_dict(lm);
                 } else {
                     ed["loft_mesh"] = nb::none();
                 }

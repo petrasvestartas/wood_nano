@@ -28,8 +28,12 @@ def mesh_from_cpp(data: dict) -> Mesh:
             if tris:
                 triangles.extend([int(t[0]), int(t[1]), int(t[2])] for t in tris)
             else:
-                face = list(map(int, face))
-                triangles.extend([face[0], face[j], face[j + 1]] for j in range(1, len(face) - 1))
+                # No CDT entry: pass the face through as-is. The old fan
+                # triangulation was a geometry algorithm in the data-transfer
+                # layer, and produced wrong triangles for concave faces -
+                # compas handles ngon faces natively and triangulates
+                # correctly at render time.
+                triangles.append(list(map(int, face)))
         return Mesh.from_vertices_and_faces(verts, triangles)
 
     return Mesh.from_vertices_and_faces(verts, [list(map(int, f)) for f in faces_raw])

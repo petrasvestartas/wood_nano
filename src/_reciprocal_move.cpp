@@ -163,6 +163,84 @@ static ReciprocalMove build_from_mesh_data(
 }
 
 
+
+/// Unwelded (per-face vertex copies, flat shading) dict of a mesh, computed
+/// in C++. The Python path used to round-trip every beam across the boundary
+/// three times: mesh_to_dict -> Python lists -> unweld_mesh_dict -> dict.
+static nb::dict mesh_to_dict_unwelded(const session_cpp::Mesh& mesh)
+{
+    auto [pts, faces_sz] = mesh.to_vertices_and_faces();
+
+    // Sequential-face-order triangulation, remapped to sequential vertex ids
+    // (mirrors mesh_to_dict).
+    auto vidx = mesh.vertex_index();
+    std::vector<size_t> fkeys;
+    fkeys.reserve(mesh.face.size());
+    for (const auto& [k, _] : mesh.face) fkeys.push_back(k);
+    std::sort(fkeys.begin(), fkeys.end());
+    const auto& tris_map = mesh.get_triangulation();
+
+    std::vector<std::array<double,3>> new_verts;
+    new_verts.reserve(faces_sz.size() * 5);
+    nb::list new_faces;
+    nb::list new_face_tris;
+
+    for (size_t fi = 0; fi < faces_sz.size(); ++fi) {
+        const auto& face = faces_sz[fi];
+        // per-face remap: welded sequential id -> unwelded id (first match,
+        // matching unweld_mesh_dict_impl semantics)
+        std::vector<std::pair<size_t,int>> remap;
+        remap.reserve(face.size());
+        nb::list nf;
+        for (size_t old_vi : face) {
+            int nvi = (int)new_verts.size();
+            new_verts.push_back({pts[old_vi][0], pts[old_vi][1], pts[old_vi][2]});
+            remap.push_back({old_vi, nvi});
+            nf.append(nvi);
+        }
+        new_faces.append(nf);
+
+        auto it = tris_map.find(fkeys[fi]);
+        if (it == tris_map.end() || it->second.empty()) {
+            new_face_tris.append(nb::none());
+        } else {
+            nb::list tlist;
+            for (const auto& tri : it->second) {
+                nb::list t;
+                bool ok = true;
+                for (size_t vk : tri) {
+                    auto vit = vidx.find(vk);
+                    if (vit == vidx.end()) { ok = false; break; }
+                    size_t old_vi = vit->second;
+                    int mapped = -1;
+                    for (const auto& [o, nvi] : remap)
+                        if (o == old_vi) { mapped = nvi; break; }
+                    if (mapped < 0) { ok = false; break; }
+                    t.append(mapped);
+                }
+                if (ok) tlist.append(t);
+            }
+            new_face_tris.append(tlist);
+        }
+    }
+
+    size_t nv = new_verts.size();
+    auto* vd = new double[nv * 3];
+    for (size_t i = 0; i < nv; ++i) {
+        vd[i*3+0] = new_verts[i][0];
+        vd[i*3+1] = new_verts[i][1];
+        vd[i*3+2] = new_verts[i][2];
+    }
+    nb::capsule owner(vd, [](void* q) noexcept { delete[] static_cast<double*>(q); });
+    size_t shape[2] = {nv, 3};
+
+    nb::dict out;
+    out["vertices"]  = nb::ndarray<nb::numpy, double, nb::ndim<2>>(vd, 2, shape, owner);
+    out["faces"]     = new_faces;
+    out["face_tris"] = new_face_tris;
+    return out;
+}
+
 /// Apply per-direction-group vertical offsets to beams and side polylines,
 /// in place. This used to live in the PYTHON wrapper as per-vertex coordinate
 /// arithmetic (a direct violation of the all-computation-in-C++ rule, in four
@@ -215,6 +293,11 @@ NB_MODULE(_reciprocal_move, m) {
         .def(nb::init<>())
         .def_prop_ro("dome_mesh",
             [](const ReciprocalMove& r) { return mesh_to_dict(r.dome_mesh); })
+        .def_prop_ro("beams_unwelded", [](const ReciprocalMove& r) {
+            nb::list result;
+            for (const auto& bm : r.beams) result.append(mesh_to_dict_unwelded(bm));
+            return result;
+        })
         .def_prop_ro("beams", [](const ReciprocalMove& r) {
             nb::list result;
             for (const auto& bm : r.beams)

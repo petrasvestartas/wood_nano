@@ -136,6 +136,39 @@ if(DEFINED Python_EXECUTABLE)
         endif()
     endif()
 endif()
+# ── Provenance stamp ─────────────────────────────────────────────────────────
+# All three repos float on `main` (wood and session_cpp are resolved to a
+# local checkout or FetchContent HEAD), so two wheels built a day apart can
+# embed different kernels with the same wood_nano version. Stamp the resolved
+# SHAs into the package so a wheel can always say what it was built from:
+#   >>> wood_nano.__wood_sha__, wood_nano.__session_sha__
+# The file is generated, gitignored, and falls back to "unknown" at import.
+find_package(Git QUIET)
+set(_wood_sha "unknown")
+set(_session_sha "unknown")
+if(GIT_FOUND)
+    # --dirty matters: a local build against uncommitted kernel changes must
+    # not masquerade as the commit it diverged from.
+    execute_process(COMMAND "${GIT_EXECUTABLE}" -C "${WOOD_DIR}" describe --always --dirty --abbrev=12
+                    OUTPUT_VARIABLE _wood_sha OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    execute_process(COMMAND "${GIT_EXECUTABLE}" -C "${SESSION_CPP_DIR}" describe --always --dirty --abbrev=12
+                    OUTPUT_VARIABLE _session_sha OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    if(NOT _wood_sha)
+        set(_wood_sha "unknown")
+    endif()
+    if(NOT _session_sha)
+        set(_session_sha "unknown")
+    endif()
+endif()
+file(WRITE "${CMAKE_SOURCE_DIR}/src/wood_nano/_build_info.py"
+     "# Generated at configure time - do not edit, do not commit.
+"
+     "WOOD_SHA = \"${_wood_sha}\"
+"
+     "SESSION_SHA = \"${_session_sha}\"
+")
+message(STATUS "Provenance: wood=${_wood_sha} session_cpp=${_session_sha}")
+
 find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
 find_package(nanobind CONFIG REQUIRED)
 

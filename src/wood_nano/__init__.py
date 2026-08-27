@@ -1,5 +1,14 @@
 __version__ = "1.0.28"
 
+# Kernel provenance: the git SHAs of the wood and session_cpp checkouts this
+# build compiled against (all repos track `main`, so the wood_nano version
+# alone does not identify the kernel). "unknown" outside a git build.
+try:
+    from ._build_info import SESSION_SHA as __session_sha__, WOOD_SHA as __wood_sha__
+except ImportError:
+    __wood_sha__ = "unknown"
+    __session_sha__ = "unknown"
+
 # C++ extension modules — imported first so wrapper submodules can use relative imports
 from . import _wood_element
 from . import _translation_shell
