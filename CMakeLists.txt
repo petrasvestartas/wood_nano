@@ -97,10 +97,7 @@ if(DEFINED Python_EXECUTABLE)
     if(_python_base_prefix)
         set(Python_ROOT_DIR  "${_python_base_prefix}" CACHE PATH "" FORCE)
         set(Python3_ROOT_DIR "${_python_base_prefix}" CACHE PATH "" FORCE)
-        # Set include/library paths explicitly so FindPython works for any
-        # virtualenv (uv-managed Python, etc.) without needing system registry.
-        # Also clear stale internal cache entries from previous Python versions.
-        set(Python_INCLUDE_DIR "${_python_base_prefix}/Include" CACHE PATH "" FORCE)
+        # Clear stale internal cache entries from previous Python versions.
         foreach(_v
             Python_LIBRARY        Python_SABI_LIBRARY
             Python3_LIBRARY       Python3_SABI_LIBRARY
@@ -110,16 +107,32 @@ if(DEFINED Python_EXECUTABLE)
         )
             unset(${_v} CACHE)
         endforeach()
-        # Versioned import lib (e.g. python313.lib) — needed for Development.Module
-        file(GLOB _pylib "${_python_base_prefix}/libs/python3[0-9][0-9].lib"
-                         "${_python_base_prefix}/libs/python3[0-9].lib")
-        if(_pylib)
-            list(GET _pylib 0 _pylib)
-            set(Python_LIBRARY "${_pylib}" CACHE PATH "" FORCE)
-        endif()
-        # Stable ABI import lib (python3.lib) — needed for Development.SABIModule
-        if(EXISTS "${_python_base_prefix}/libs/python3.lib")
-            set(Python_SABI_LIBRARY "${_python_base_prefix}/libs/python3.lib" CACHE PATH "" FORCE)
+
+        # Everything below describes the WINDOWS Python layout - "Include" with a
+        # capital I, and import libraries under "libs". Forcing those paths on
+        # every platform is why the Linux and macOS wheels never built: on
+        # manylinux the headers live in include/python3.12, so
+        # Python_INCLUDE_DIR was FORCEd to a directory that does not exist and
+        # find_package stopped with
+        #   Could NOT find Python (missing: Development.Module
+        #   Development.SABIModule) ... Cannot find the directory
+        #   "/opt/python/cp312-cp312/Include"
+        # Python_ROOT_DIR above is enough for FindPython everywhere else; only
+        # Windows needs the explicit hand-holding, because a virtualenv there
+        # has no registry entry for FindPython to fall back on.
+        if(WIN32)
+            set(Python_INCLUDE_DIR "${_python_base_prefix}/Include" CACHE PATH "" FORCE)
+            # Versioned import lib (e.g. python313.lib) — needed for Development.Module
+            file(GLOB _pylib "${_python_base_prefix}/libs/python3[0-9][0-9].lib"
+                             "${_python_base_prefix}/libs/python3[0-9].lib")
+            if(_pylib)
+                list(GET _pylib 0 _pylib)
+                set(Python_LIBRARY "${_pylib}" CACHE PATH "" FORCE)
+            endif()
+            # Stable ABI import lib (python3.lib) — needed for Development.SABIModule
+            if(EXISTS "${_python_base_prefix}/libs/python3.lib")
+                set(Python_SABI_LIBRARY "${_python_base_prefix}/libs/python3.lib" CACHE PATH "" FORCE)
+            endif()
         endif()
     endif()
 endif()
