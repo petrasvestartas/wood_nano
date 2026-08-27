@@ -1,4 +1,4 @@
-__version__ = "1.0.23"
+__version__ = "1.0.24"
 
 # C++ extension modules — imported first so wrapper submodules can use relative imports
 from . import _wood_element
