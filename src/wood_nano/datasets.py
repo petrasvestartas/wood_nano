@@ -6,7 +6,7 @@ from pathlib import Path
 from . import _datasets
 
 # Directory where JSON dataset files live (produced by convert_xml_to_json.py).
-DATASETS_DIR: Path = Path(__file__).parent.parent.parent / "examples_compas_wood" / "datasets"
+DATASETS_DIR: Path = Path(__file__).parent / "data" / "datasets"
 
 
 def load_dataset(name: str) -> tuple[list, list, dict]:

@@ -4,9 +4,9 @@ import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-XML_DIR = Path(__file__).parent.parent / "examples_rhino" / "plugin" / "shared" / "datasets"
-JSON_DIR = Path(__file__).parent / "datasets"
-JSON_DIR.mkdir(exist_ok=True)
+XML_DIR = Path(__file__).parent.parent / "plugin_rhino" / "plugin" / "shared" / "datasets"
+JSON_DIR = Path(__file__).parent.parent / "src" / "wood_nano" / "data" / "datasets"
+JSON_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _p(*family_overrides: tuple) -> list[float]:

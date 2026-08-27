@@ -17,7 +17,7 @@ from wood_nano.joinery_solver import (
 
 _DATASET_DIR: Path = (
     Path(__file__).parent.parent.parent
-    / "examples_rhino" / "plugin" / "shared" / "datasets"
+    / "plugin_rhino" / "plugin" / "shared" / "datasets"
 )
 
 
