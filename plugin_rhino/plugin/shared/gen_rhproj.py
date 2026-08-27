@@ -59,7 +59,11 @@ def build_code_entry(title, uri, svg_stem):
     png_b64 = b64(png_path) if png_path.exists() else ""
 
     return {
-        "id": str(uuid.uuid4()),
+        # Deterministic per-command id: uuid4 regenerated ALL command GUIDs on
+        # every run, churning the rhproj (and user toolbar/macro references)
+        # even when nothing changed. uuid5 keyed on the plugin GUID + command
+        # title is stable across regenerations by construction.
+        "id": str(uuid.uuid5(uuid.UUID("d0647ba8-eee5-4c18-ab3e-03a95f119654"), title)),
         "language": {
             "id": "mcneel.pythonnet.python",
             "version": "3.9.10"

@@ -1,0 +1,127 @@
+name: Publish compas_wood to Yak
+
+# OpenNest-style automatic Yak release on every push (see
+# petrasvestartas/OpenNest publish.yml, the model for this workflow), with one
+# twist OpenNest does not need: compas_wood.rhp is a RhinoCode-compiled Python
+# plugin, and RhinoCode requires a licensed Rhino - which CI does not have. So
+# the .rhp is built LOCALLY (tools/refresh_plugin_build.ps1) and committed in
+# plugin_rhino/plugin/dist/, and this workflow:
+#   1. FAILS if the committed .rhp is stale against the plugin sources
+#      (tools/plugin_source_hash.py --check), instead of shipping it silently;
+#   2. bumps the version starting from whatever is already live on the Yak
+#      server (OpenNest's dedup trick - a failed past run can never cause a
+#      duplicate-version rejection);
+#   3. stages .rhp/.rui/manifest + the shared datasets, packages with the
+#      STANDALONE yak.exe from files.mcneel.com (no Rhino needed), and pushes.
+#
+# Setup (once): run `yak login --ci` locally (Yak.exe ships with Rhino), copy
+# the token into a repo secret named YAK_TOKEN. Without the secret the
+# workflow still builds the .yak and uploads it as a run artifact - it just
+# skips the push.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Rapid pushes queue rather than race on the server-side version bump.
+concurrency:
+  group: publish-yak
+  cancel-in-progress: false
+
+jobs:
+  yak:
+    runs-on: windows-latest
+    env:
+      YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- 0) Refuse to publish a stale plugin ----
+      - name: Verify committed .rhp matches plugin sources
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "plugin_rhino/plugin/dist/compas_wood.rhp")) {
+            throw "plugin_rhino/plugin/dist/ missing - run tools/refresh_plugin_build.ps1 locally and commit it."
+          }
+          python tools/plugin_source_hash.py --check
+
+      # ---- 1) Version: highest of (committed manifest, live Yak server) + patch bump ----
+      - name: Compute version
+        id: ver
+        shell: pwsh
+        run: |
+          $manifest = "plugin_rhino/plugin/dist/manifest.yml"
+          $c = Get-Content $manifest -Raw
+          if ($c -notmatch 'version:\s*([0-9]+)\.([0-9]+)\.([0-9]+)') { throw "version not found in $manifest" }
+          $base = [version]"$($Matches[1]).$($Matches[2]).$($Matches[3])"
+          try {
+            $y = (Invoke-RestMethod -Uri "https://yak.rhino3d.com/packages/compas_wood" -TimeoutSec 20).version
+            if ($y -match '([0-9]+)\.([0-9]+)\.([0-9]+)') {
+              $yv = [version]"$($Matches[1]).$($Matches[2]).$($Matches[3])"
+              if ($yv -gt $base) { $base = $yv }
+            }
+          } catch { Write-Host "Yak version query failed; using manifest version. $_" }
+          $new = "$($base.Major).$($base.Minor).$($base.Build + 1)"
+          "version=$new" | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "Publishing as $new (base was $base)"
+
+      # ---- 2) Stage the package ----
+      - name: Stage package
+        shell: pwsh
+        run: |
+          $stage = "yak_stage"
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item plugin_rhino/plugin/dist/compas_wood.rhp $stage
+          Copy-Item plugin_rhino/plugin/dist/compas_wood.rui $stage
+          # Datasets ship from their tracked source location, matching the
+          # layout the local RhinoCode build produced.
+          Copy-Item plugin_rhino/plugin/shared $stage/shared -Recurse
+          # Manifest with the bumped version.
+          $m = Get-Content plugin_rhino/plugin/dist/manifest.yml -Raw
+          $m = $m -replace 'version:\s*[0-9][^\r\n]*', 'version: ${{ steps.ver.outputs.version }}'
+          Set-Content "$stage/manifest.yml" $m -NoNewline
+          Get-Content "$stage/manifest.yml" | Select-Object -First 6
+
+      # ---- 3) Package with the standalone Yak CLI (no Rhino required) ----
+      - name: Install Yak CLI
+        shell: pwsh
+        run: Invoke-WebRequest -Uri "https://files.mcneel.com/yak/tools/latest/yak.exe" -OutFile "$PWD/yak.exe"
+
+      - name: yak build
+        shell: pwsh
+        run: |
+          Push-Location yak_stage
+          & "$env:GITHUB_WORKSPACE/yak.exe" build
+          Pop-Location
+          # Distribution tag: the local RhinoCode build produced -rh8-any;
+          # force the same by rename if yak inferred differently
+          # (guide-sanctioned, same as OpenNest).
+          Get-ChildItem yak_stage/*.yak | ForEach-Object {
+            $n = $_.Name -replace '-(any|rh[0-9_]+)-(win|mac|any)\.yak$', '-rh8-any.yak'
+            if ($n -ne $_.Name) { Rename-Item $_.FullName $n; Write-Host "Retagged $($_.Name) -> $n" }
+          }
+          Get-ChildItem yak_stage/*.yak | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: compas_wood-yak
+          path: yak_stage/*.yak
+          if-no-files-found: error
+
+      # ---- 4) Push (skipped without the YAK_TOKEN secret) ----
+      - name: yak push
+        if: ${{ env.YAK_TOKEN != '' }}
+        shell: pwsh
+        run: |
+          Get-ChildItem yak_stage/*.yak | ForEach-Object {
+            & "$env:GITHUB_WORKSPACE/yak.exe" push $_.FullName
+          }
+          Write-Host "Published ${{ steps.ver.outputs.version }} to the Yak server."
+
+      - name: Push skipped (no YAK_TOKEN)
+        if: ${{ env.YAK_TOKEN == '' }}
+        run: echo "YAK_TOKEN secret not set - .yak built and uploaded as artifact only. Run 'yak login --ci' locally and add the token as a repo secret to enable publishing."

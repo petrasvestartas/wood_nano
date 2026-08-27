@@ -1,0 +1,10 @@
+---
+name: compas_wood
+version: 3.10.1+31491
+authors:
+- Petras Vestartas
+description: 'Project for Timber Joint Generation. '
+license: MIT
+url: https://github.com/petrasvestartas/compas_wood
+keywords:
+- guid:d0647ba8-eee5-4c18-ab3e-03a95f119654

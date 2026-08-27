@@ -5,6 +5,11 @@ __pycache__/
 *.pyd
 *.so
 dist/
+# ...but the compiled plugin artifacts ARE committed: RhinoCode (licensed
+# Rhino) is the only thing that can build compas_wood.rhp, so CI packages the
+# committed copy into the Yak release (see publish-yak.yml).
+!plugin_rhino/plugin/dist/
+!plugin_rhino/plugin/dist/**
 generated
 *.3dmbak
 *.rhl

@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RhinoUI guid="d0647ba8-eee5-4c18-ab3e-03a95f119654" plug_in_guid="d0647ba8-eee5-4c18-ab3e-03a95f119654" major_ver="5" minor_ver="0" localize="False" default_language_id="1033">
+  <extend_rhino_menus />
+  <menus />
+  <tool_bar_groups>
+    <tool_bar_group guid="d0647ba8-eee5-4c18-ab3e-03a95f119654" dock_bar_guid32="d0647ba8-eee5-4c18-ab3e-03a95f119654" dock_bar_guid64="d0647ba8-eee5-4c18-ab3e-03a95f119654" active_tool_bar_group="d0647ba8-eee5-4c18-ab3e-03a95f119654" single_file="False" hide_single_tab="True">
+      <text><locale_1033>compas_wood</locale_1033></text>
+      <dock_bar_info visible="True"  floating="True" />
+      <tool_bar_group_item guid="d0647ba8-eee5-4c18-ab3e-03a95f119654" major_version="1" minor_version="1">
+        <text><locale_1033>compas_wood</locale_1033></text>
+        <tool_bar_id>d0647ba8-eee5-4c18-ab3e-03a95f119654</tool_bar_id>
+      </tool_bar_group_item>
+    </tool_bar_group>
+  </tool_bar_groups>
+  <tool_bars>
+    <tool_bar guid="d0647ba8-eee5-4c18-ab3e-03a95f119654" bitmap_id="d0647ba8-eee5-4c18-ab3e-03a95f119654" item_display_style="control_only">
+      <text><locale_1033>compas_wood</locale_1033></text>
+        <tool_bar_item guid="6b0a0603-9475-5a41-ba09-35f73185da66"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_install</locale_1033></text>
+            <left_macro_id>6b0a0603-9475-5a41-ba09-35f73185da66</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="c024e4c1-b1d6-5238-9c38-09b8362ade83"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_diamond_mesh</locale_1033></text>
+            <left_macro_id>c024e4c1-b1d6-5238-9c38-09b8362ade83</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="6de27d42-c8b0-5ac2-b744-fdb19957ee24"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_translation_shell</locale_1033></text>
+            <left_macro_id>6de27d42-c8b0-5ac2-b744-fdb19957ee24</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="b0f920c5-a2e0-5866-8a53-7e7e74ccbc39"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_reflex_fold</locale_1033></text>
+            <left_macro_id>b0f920c5-a2e0-5866-8a53-7e7e74ccbc39</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="1f796641-ea20-5330-b24c-d397dec51886"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_connectors</locale_1033></text>
+            <left_macro_id>1f796641-ea20-5330-b24c-d397dec51886</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="86bbb86a-d562-5823-94bb-bb0d516e3bbf"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_reciprocal_rotation</locale_1033></text>
+            <left_macro_id>86bbb86a-d562-5823-94bb-bb0d516e3bbf</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="b1ef5913-5966-5e1d-b749-d7a896186e71"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_reciprocal_move</locale_1033></text>
+            <left_macro_id>b1ef5913-5966-5e1d-b749-d7a896186e71</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="7ae27c11-bceb-590a-8164-fd16e0ea5dd0"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_template_chevron</locale_1033></text>
+            <left_macro_id>7ae27c11-bceb-590a-8164-fd16e0ea5dd0</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="b3a58c53-4ac8-542b-aa90-e8e20ce35b99"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_solver_assign_insertion_direction</locale_1033></text>
+            <left_macro_id>b3a58c53-4ac8-542b-aa90-e8e20ce35b99</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="244f53c4-ad81-590c-96fd-ecaac84e4ef0"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_solver_assign_joint_types</locale_1033></text>
+            <left_macro_id>244f53c4-ad81-590c-96fd-ecaac84e4ef0</left_macro_id>
+        </tool_bar_item>        <tool_bar_item guid="53344f5c-289b-53d7-8a0d-3483b09e9f4f"
+                       button_display_mode="control_only"
+                       button_style="normal">
+            <text><locale_1033>w_solver_joinery_solver</locale_1033></text>
+            <left_macro_id>53344f5c-289b-53d7-8a0d-3483b09e9f4f</left_macro_id>
+        </tool_bar_item>
+    </tool_bar>
+  </tool_bars>
+  <macros>
+      <macro_item guid="6b0a0603-9475-5a41-ba09-35f73185da66" bitmap_id="6b0a0603-9475-5a41-ba09-35f73185da66">
+        <text><locale_1033>Macro.w_install</locale_1033></text>
+        <tooltip><locale_1033>w_install</locale_1033></tooltip>
+        <help_text><locale_1033>w_install</locale_1033></help_text>
+        <button_text><locale_1033>w_install</locale_1033></button_text>
+        <menu_text><locale_1033>w_install</locale_1033></menu_text>
+        <script>! _w_install</script>
+      </macro_item>      <macro_item guid="c024e4c1-b1d6-5238-9c38-09b8362ade83" bitmap_id="c024e4c1-b1d6-5238-9c38-09b8362ade83">
+        <text><locale_1033>Macro.w_template_diamond_mesh</locale_1033></text>
+        <tooltip><locale_1033>w_template_diamond_mesh</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_diamond_mesh</locale_1033></help_text>
+        <button_text><locale_1033>w_template_diamond_mesh</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_diamond_mesh</locale_1033></menu_text>
+        <script>! _w_template_diamond_mesh</script>
+      </macro_item>      <macro_item guid="6de27d42-c8b0-5ac2-b744-fdb19957ee24" bitmap_id="6de27d42-c8b0-5ac2-b744-fdb19957ee24">
+        <text><locale_1033>Macro.w_template_translation_shell</locale_1033></text>
+        <tooltip><locale_1033>w_template_translation_shell</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_translation_shell</locale_1033></help_text>
+        <button_text><locale_1033>w_template_translation_shell</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_translation_shell</locale_1033></menu_text>
+        <script>! _w_template_translation_shell</script>
+      </macro_item>      <macro_item guid="b0f920c5-a2e0-5866-8a53-7e7e74ccbc39" bitmap_id="b0f920c5-a2e0-5866-8a53-7e7e74ccbc39">
+        <text><locale_1033>Macro.w_template_reflex_fold</locale_1033></text>
+        <tooltip><locale_1033>w_template_reflex_fold</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_reflex_fold</locale_1033></help_text>
+        <button_text><locale_1033>w_template_reflex_fold</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_reflex_fold</locale_1033></menu_text>
+        <script>! _w_template_reflex_fold</script>
+      </macro_item>      <macro_item guid="1f796641-ea20-5330-b24c-d397dec51886" bitmap_id="1f796641-ea20-5330-b24c-d397dec51886">
+        <text><locale_1033>Macro.w_template_connectors</locale_1033></text>
+        <tooltip><locale_1033>w_template_connectors</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_connectors</locale_1033></help_text>
+        <button_text><locale_1033>w_template_connectors</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_connectors</locale_1033></menu_text>
+        <script>! _w_template_connectors</script>
+      </macro_item>      <macro_item guid="86bbb86a-d562-5823-94bb-bb0d516e3bbf" bitmap_id="86bbb86a-d562-5823-94bb-bb0d516e3bbf">
+        <text><locale_1033>Macro.w_template_reciprocal_rotation</locale_1033></text>
+        <tooltip><locale_1033>w_template_reciprocal_rotation</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_reciprocal_rotation</locale_1033></help_text>
+        <button_text><locale_1033>w_template_reciprocal_rotation</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_reciprocal_rotation</locale_1033></menu_text>
+        <script>! _w_template_reciprocal_rotation</script>
+      </macro_item>      <macro_item guid="b1ef5913-5966-5e1d-b749-d7a896186e71" bitmap_id="b1ef5913-5966-5e1d-b749-d7a896186e71">
+        <text><locale_1033>Macro.w_template_reciprocal_move</locale_1033></text>
+        <tooltip><locale_1033>w_template_reciprocal_move</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_reciprocal_move</locale_1033></help_text>
+        <button_text><locale_1033>w_template_reciprocal_move</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_reciprocal_move</locale_1033></menu_text>
+        <script>! _w_template_reciprocal_move</script>
+      </macro_item>      <macro_item guid="7ae27c11-bceb-590a-8164-fd16e0ea5dd0" bitmap_id="7ae27c11-bceb-590a-8164-fd16e0ea5dd0">
+        <text><locale_1033>Macro.w_template_chevron</locale_1033></text>
+        <tooltip><locale_1033>w_template_chevron</locale_1033></tooltip>
+        <help_text><locale_1033>w_template_chevron</locale_1033></help_text>
+        <button_text><locale_1033>w_template_chevron</locale_1033></button_text>
+        <menu_text><locale_1033>w_template_chevron</locale_1033></menu_text>
+        <script>! _w_template_chevron</script>
+      </macro_item>      <macro_item guid="b3a58c53-4ac8-542b-aa90-e8e20ce35b99" bitmap_id="b3a58c53-4ac8-542b-aa90-e8e20ce35b99">
+        <text><locale_1033>Macro.w_solver_assign_insertion_direction</locale_1033></text>
+        <tooltip><locale_1033>w_solver_assign_insertion_direction</locale_1033></tooltip>
+        <help_text><locale_1033>w_solver_assign_insertion_direction</locale_1033></help_text>
+        <button_text><locale_1033>w_solver_assign_insertion_direction</locale_1033></button_text>
+        <menu_text><locale_1033>w_solver_assign_insertion_direction</locale_1033></menu_text>
+        <script>! _w_solver_assign_insertion_direction</script>
+      </macro_item>      <macro_item guid="244f53c4-ad81-590c-96fd-ecaac84e4ef0" bitmap_id="244f53c4-ad81-590c-96fd-ecaac84e4ef0">
+        <text><locale_1033>Macro.w_solver_assign_joint_types</locale_1033></text>
+        <tooltip><locale_1033>w_solver_assign_joint_types</locale_1033></tooltip>
+        <help_text><locale_1033>w_solver_assign_joint_types</locale_1033></help_text>
+        <button_text><locale_1033>w_solver_assign_joint_types</locale_1033></button_text>
+        <menu_text><locale_1033>w_solver_assign_joint_types</locale_1033></menu_text>
+        <script>! _w_solver_assign_joint_types</script>
+      </macro_item>      <macro_item guid="53344f5c-289b-53d7-8a0d-3483b09e9f4f" bitmap_id="53344f5c-289b-53d7-8a0d-3483b09e9f4f">
+        <text><locale_1033>Macro.w_solver_joinery_solver</locale_1033></text>
+        <tooltip><locale_1033>w_solver_joinery_solver</locale_1033></tooltip>
+        <help_text><locale_1033>w_solver_joinery_solver</locale_1033></help_text>
+        <button_text><locale_1033>w_solver_joinery_solver</locale_1033></button_text>
+        <menu_text><locale_1033>w_solver_joinery_solver</locale_1033></menu_text>
+        <script>! _w_solver_joinery_solver</script>
+      </macro_item>
+  </macros>
+  <icons>
+      <icon guid="d0647ba8-eee5-4c18-ab3e-03a95f119654">
+        <light><svg width="48" height="48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0pt 0pt 48pt 48pt" fill-dark="#FFF" stroke-dark="none">
+  <svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <defs xmlns="http://www.w3.org/2000/svg">
+      <style>
+      .cls-1 {
+        fill: #000;
+        stroke-width: 0px;
+      }
+    </style>
+    </defs>
+    <polygon class="cls-1" points="0 6.63 6.01 12.73 11.94 6.77 18.01 12.73 24 6.61 24 0 0 0 0 6.63" xmlns="http://www.w3.org/2000/svg" />
+    <polygon class="cls-1" points="0 12.74 6 18.72 12.07 12.78 18 18.71 24 12.73 24 24 0 24 0 12.74" xmlns="http://www.w3.org/2000/svg" />
+  </svg>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="6b0a0603-9475-5a41-ba09-35f73185da66">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <line class="cls-1" x1="12.11" y1="3.4" x2="12.11" y2="17.93"/>
+  <line class="cls-1" x1="7.69" y1="12.08" x2="12.11" y2="17.93"/>
+  <line class="cls-1" x1="16.59" y1="12.08" x2="12.16" y2="17.93"/>
+  <path class="cls-1" d="M21.35,15.71v2.03c0,1.58-1.28,2.85-2.85,2.85H5.5c-1.58,0-2.85-1.28-2.85-2.85v-2.03"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="c024e4c1-b1d6-5238-9c38-09b8362ade83">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9f1c38;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2 {
+        fill: #ee1c4e;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-1" points="11.98 11.88 11.98 11.65 12.06 3.06 22.6 1.06 11.98 11.88"/>
+  <polygon class="cls-2" points="12.07 11.9 12.07 11.68 11.99 3.09 1.45 1.09 12.07 11.9"/>
+  <polygon class="cls-2" points="12.1 12.02 12.09 12.25 11.94 20.84 1.4 22.76 12.1 12.02"/>
+  <polygon class="cls-1" points="12 12 12.01 12.23 12.01 20.81 22.55 22.89 12 12"/>
+  <polygon class="cls-1" points="1.45 1.09 1.4 22.76 11.98 11.88 1.45 1.09 1.45 1.09"/>
+  <polygon class="cls-2" points="22.6 1.06 22.55 22.89 12.1 12.02 12.1 12.02 22.6 1.06"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="6de27d42-c8b0-5ac2-b744-fdb19957ee24">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9f1c38;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2 {
+        fill: #ee1c4e;
+      }
+
+      .cls-3 {
+        fill: #cc1f47;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-3" points="10.91 11.57 2.76 11.09 5.91 2.18 13.9 2.49 10.91 11.57"/>
+  <polygon class="cls-2" points="20.71 13.14 10.91 11.57 13.9 2.49 23.14 4.39 20.71 13.14"/>
+  <polygon class="cls-1" points="9.36 21.21 1.49 19.83 2.76 11.09 10.91 11.35 9.36 21.21"/>
+  <polygon class="cls-2" points="19.32 21.71 9.36 21.21 10.91 11.57 20.71 13.14 19.32 21.71"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="b0f920c5-a2e0-5866-8a53-7e7e74ccbc39">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #b21e3e;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #000;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-4, .cls-3 {
+        fill: none;
+      }
+
+      .cls-2 {
+        fill: #ee1c4e;
+      }
+
+      .cls-3 {
+        stroke: #010101;
+      }
+
+      .cls-5 {
+        clip-path: url(#clippath);
+      }
+    </style>
+    <clipPath id="clippath">
+      <rect class="cls-4" x="-322.13" y="-183.18" width="230.97" height="153.82"/>
+    </clipPath>
+  </defs>
+  <g class="cls-5">
+    <polygon class="cls-3" points="74.21 104.46 75.87 85.09 75.69 81.82 -175.04 -98.65 -175.7 -99.13 -179.22 -98.53 -453.42 219.8 -453.23 223.07 -442.39 235.99 -193.74 414.97 -190.22 414.37 73.93 107.7 74.21 104.46"/>
+    <polyline class="cls-3" points="-175.02 -101.07 133.07 -278.94 136.8 -278.69 388.4 -97.59 388.38 -95.17 372.29 -65.53 77.47 104.68 74.21 104.46"/>
+  </g>
+  <polygon class="cls-1" points="14.38 4.02 8.33 2.06 15.99 16.79 22.5 18.24 14.38 4.02"/>
+  <polygon class="cls-2" points="9.85 21.94 3.19 20.25 8.11 2.06 14.38 4.02 9.85 21.94"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="1f796641-ea20-5330-b24c-d397dec51886">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2 {
+        fill: #ee1c4e;
+      }
+    </style>
+  </defs>
+  <line class="cls-1" x1="2.25" y1="4.52" x2="21" y2="21.86"/>
+  <polygon class="cls-2" points="11.15 16.31 11.72 22.72 18.65 15.06 18.63 7.86 11.15 16.31"/>
+  <polygon class="cls-2" points="4.52 10.76 5.09 17.17 12.36 9.18 12.14 2.13 4.52 10.76"/>
+  <line class="cls-1" x1="20.32" y1="21.23" x2="15.08" y2="15.99"/>
+  <line class="cls-1" x1="11.63" y1="13.19" x2="8.76" y2="10.32"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="86bbb86a-d562-5823-94bb-bb0d516e3bbf">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2 {
+        fill: #ee1c4e;
+      }
+
+      .cls-3 {
+        fill: #c12351;
+      }
+    </style>
+  </defs>
+  <line class="cls-1" x1="3.76" y1="8.41" x2="14.46" y2="15.55"/>
+  <line class="cls-1" x1="1.26" y1="22.93" x2="8.8" y2="12.55"/>
+  <line class="cls-1" x1="5.87" y1="16.93" x2="22.37" y2="14.28"/>
+  <polygon class="cls-3" points="14.52 8.56 14.4 15.65 3.78 8.23 3.75 1.07 14.52 8.56"/>
+  <polygon class="cls-2" points="1.39 15.83 1.26 22.93 9.15 12.41 9.12 5.25 1.39 15.83"/>
+  <polygon class="cls-2" points="22.79 7.29 22.67 14.38 5.51 16.93 5.48 9.77 22.79 7.29"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="b1ef5913-5966-5e1d-b749-d7a896186e71">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #ee1c4e;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-1" points="19.92 3.99 19.96 9.54 2.72 11.86 2.53 6.24 19.92 3.99"/>
+  <polygon class="cls-1" points="18.75 11.91 18.78 19.37 15.14 9.07 14.96 1.56 18.75 11.91"/>
+  <polygon class="cls-1" points="10.65 12.83 10.68 20.28 7.05 9.99 6.86 2.47 10.65 12.83"/>
+  <polygon class="cls-1" points="22.17 14.68 22.2 20.23 4.97 22.55 4.78 16.93 22.17 14.68"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="7ae27c11-bceb-590a-8164-fd16e0ea5dd0">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #ee1c4e;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2 {
+        fill: #cc1f47;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-2" points="10.2 22.24 2.91 17.57 3.99 2.43 11.86 5.01 10.2 22.24"/>
+  <polygon class="cls-1" points="19.48 19.89 10.2 22.24 11.86 5.01 21.09 4.08 19.48 19.89"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="b3a58c53-4ac8-542b-aa90-e8e20ce35b99">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #dbdbdb;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke-width: 2px;
+      }
+    </style>
+  </defs>
+  <line class="cls-2" x1="21.41" y1="8.5" x2="16.42" y2="8.5"/>
+  <line class="cls-2" x1="7.91" y1="17.94" x2="2.91" y2="17.94"/>
+  <rect class="cls-1" x="6.1" y="6.97" width="12.39" height="12.39" transform="translate(12.91 -4.84) rotate(45)"/>
+  <circle cx="15.83" cy="8.5" r="2.19"/>
+  <circle cx="8.3" cy="17.94" r="2.19"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="244f53c4-ad81-590c-96fd-ecaac84e4ef0">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #dbdbdb;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="5.81" y="5.81" width="12.39" height="12.39" transform="translate(12 -4.97) rotate(45)"/>
+  <circle cx="16.66" cy="7.34" r="2.19"/>
+  <circle cx="7.34" cy="7.34" r="2.19"/>
+  <circle cx="7.34" cy="16.78" r="2.19"/>
+  <circle cx="16.66" cy="16.78" r="2.19"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+
+      <icon guid="53344f5c-289b-53d7-8a0d-3483b09e9f4f">
+        <light><svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <polygon points="0 6.63 6.01 12.73 11.94 6.77 18.01 12.73 24 6.61 24 0 0 0 0 6.63"/>
+  <polygon points="0 12.74 6 18.72 12.07 12.78 18 18.71 24 12.73 24 24 0 24 0 12.74"/>
+</svg></light>
+        <dark></dark>
+      </icon>
+  </icons>
+  <bitmaps />
+</RhinoUI>

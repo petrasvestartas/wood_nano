@@ -1,113 +1,88 @@
 <#
 .SYNOPSIS
-    Build the compas_wood Rhino plugin and publish it to the Yak server.
+    Manual fallback: package + publish the compas_wood Yak release locally.
 
 .DESCRIPTION
-    PyPI wheels release automatically on every push to main (wheels.yml), but
-    Yak CANNOT be released from GitHub CI: the .yak contains a compiled
-    compas_wood.rhp, and only RhinoCode with a licensed Rhino installation can
-    produce it - GitHub runners have neither. This script is the local half of
-    the release story: one command builds and publishes the plugin.
+    The normal path is automatic: every push to main runs publish-yak.yml,
+    which packages the committed plugin_rhino/plugin/dist/ artifacts with the
+    standalone yak.exe and pushes to the Yak server (OpenNest-style). Use this
+    script only when CI is unavailable.
 
-    Steps:
-      1. Bump the patch version in compas_wood.rhproj (identity/version),
-         unless -Version is given explicitly or -NoBump is set.
-      2. rhinocode project build -> compas_wood.rhp + manifest.yml + .yak
-         under plugin_rhino/plugin/build/rh8.
-      3. yak push the freshest .yak (skipped with -DryRun).
-
-    First-time setup: run "& 'C:\Program Files\Rhino 8\System\Yak.exe' login"
-    once so the push has a cached token.
+    It stages exactly what CI stages (dist/ artifacts + shared/ datasets),
+    bumps the manifest patch version from whatever is live on the Yak server,
+    builds, and pushes with the locally cached `yak login` token.
 
 .EXAMPLE
-    tools/release_yak.ps1              # bump patch, build, push
-    tools/release_yak.ps1 -DryRun     # bump + build only
-    tools/release_yak.ps1 -Version 3.11.0
+    tools/release_yak.ps1              # refresh if stale, package, push
+    tools/release_yak.ps1 -DryRun     # package only
 #>
 [CmdletBinding()]
 param(
     [Parameter()] [string] $Version,
-    [Parameter()] [switch] $NoBump,
     [Parameter()] [switch] $DryRun
 )
 
 $ErrorActionPreference = 'Stop'
 
-$RhinoCode = 'C:\Program Files\Rhino 8\System\RhinoCode.exe'
-$Yak       = 'C:\Program Files\Rhino 8\System\Yak.exe'
-$Root      = Split-Path $PSScriptRoot -Parent
-$Rhproj    = Join-Path $Root 'plugin_rhino\plugin\compas_wood.rhproj'
-$BuildDir  = Join-Path $Root 'plugin_rhino\plugin\build\rh8'
+$Yak    = 'C:\Program Files\Rhino 8\System\Yak.exe'
+$Root   = Split-Path $PSScriptRoot -Parent
+$Dist   = Join-Path $Root 'plugin_rhino\plugin\dist'
+$Shared = Join-Path $Root 'plugin_rhino\plugin\shared'
+$Stage  = Join-Path $Root 'plugin_rhino\plugin\build\yak_stage'
+$Python = Join-Path $Root '.venv\Scripts\python.exe'
+if (-not (Test-Path $Python)) { $Python = 'python' }
+if (-not (Test-Path $Yak)) { throw "release_yak: $Yak not found - is Rhino 8 installed?" }
 
-foreach ($exe in @($RhinoCode, $Yak)) {
-    if (-not (Test-Path $exe)) { throw "release_yak: $exe not found - is Rhino 8 installed?" }
-}
-if (-not (Test-Path $Rhproj)) { throw "release_yak: $Rhproj not found" }
-
-# ── 1. Version ───────────────────────────────────────────────────────────────
-# Surgical regex bump - NEVER round-trip the rhproj through ConvertTo-Json:
-# it holds base64-encoded command payloads and a full JSON rewrite in
-# PowerShell 5.1 can reformat or mangle them.
-$raw = Get-Content $Rhproj -Raw -Encoding UTF8
-$m = [regex]::Match($raw, '"identity"\s*:\s*\{[^{}]*?"version"\s*:\s*"([^"]+)"',
-                    [Text.RegularExpressions.RegexOptions]::Singleline)
-if (-not $m.Success) { throw 'release_yak: identity/version not found in rhproj' }
-$current = $m.Groups[1].Value
-if ($Version) {
-    $new = $Version
-} elseif ($NoBump) {
-    $new = $current
-} else {
-    $parts = $current.Split('.')
-    if ($parts.Count -lt 3) { $parts = @($parts + @('0', '0'))[0..2] }
-    $parts[2] = [string]([int]$parts[2] + 1)
-    $new = $parts -join '.'
-}
-if ($new -ne $current) {
-    $g = $m.Groups[1]
-    $raw = $raw.Substring(0, $g.Index) + $new + $raw.Substring($g.Index + $g.Length)
-    # Write back byte-faithfully except for the version substring.
-    [IO.File]::WriteAllText($Rhproj, $raw, (New-Object Text.UTF8Encoding($false)))
-    Write-Host "release_yak: version $current -> $new (written to rhproj)"
-} else {
-    Write-Host "release_yak: version $new"
+# Ensure the committed .rhp matches the sources; rebuild if not.
+& $Python (Join-Path $Root 'tools\plugin_source_hash.py') --check
+if ($LASTEXITCODE -ne 0) {
+    & (Join-Path $PSScriptRoot 'refresh_plugin_build.ps1')
 }
 
-# ── 2. Build (needs Rhino license; may briefly start Rhino headless) ─────────
-New-Item -ItemType Directory -Force $BuildDir | Out-Null
-Write-Host "release_yak: building plugin via RhinoCode..."
-& $RhinoCode project build $Rhproj --buildversion $new --buildpath $BuildDir
-if ($LASTEXITCODE -ne 0) { throw "release_yak: rhinocode project build failed ($LASTEXITCODE)" }
-
-# The build drops manifest.yml + compas_wood.rhp; ensure there is a fresh .yak
-$yakFile = Get-ChildItem $BuildDir -Filter '*.yak' |
-           Sort-Object LastWriteTime -Descending | Select-Object -First 1
-$manifest = Join-Path $BuildDir 'manifest.yml'
-if (-not $yakFile -or ((Test-Path $manifest) -and
-        $yakFile.LastWriteTime -lt (Get-Item $manifest).LastWriteTime)) {
-    Write-Host "release_yak: packing .yak..."
-    Push-Location $BuildDir
+# Version: highest of manifest and live Yak server, patch+1 (same as CI).
+$manifest = Get-Content (Join-Path $Dist 'manifest.yml') -Raw
+if ($manifest -notmatch 'version:\s*([0-9]+)\.([0-9]+)\.([0-9]+)') { throw 'version not found in manifest' }
+$base = [version]"$($Matches[1]).$($Matches[2]).$($Matches[3])"
+if (-not $Version) {
     try {
-        & $Yak build
-        if ($LASTEXITCODE -ne 0) { throw "release_yak: yak build failed ($LASTEXITCODE)" }
-    } finally { Pop-Location }
-    $yakFile = Get-ChildItem $BuildDir -Filter '*.yak' |
-               Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $y = (Invoke-RestMethod -Uri 'https://yak.rhino3d.com/packages/compas_wood' -TimeoutSec 20).version
+        if ($y -match '([0-9]+)\.([0-9]+)\.([0-9]+)') {
+            $yv = [version]"$($Matches[1]).$($Matches[2]).$($Matches[3])"
+            if ($yv -gt $base) { $base = $yv }
+        }
+    } catch { Write-Host "release_yak: Yak version query failed; using manifest. $_" }
+    $Version = "$($base.Major).$($base.Minor).$($base.Build + 1)"
 }
-if (-not $yakFile) { throw "release_yak: no .yak produced" }
+Write-Host "release_yak: packaging version $Version"
+
+# Stage exactly like CI.
+if (Test-Path $Stage) { Remove-Item $Stage -Recurse -Force }
+New-Item -ItemType Directory -Force $Stage | Out-Null
+Copy-Item (Join-Path $Dist 'compas_wood.rhp') $Stage
+Copy-Item (Join-Path $Dist 'compas_wood.rui') $Stage
+Copy-Item $Shared (Join-Path $Stage 'shared') -Recurse
+$manifest = $manifest -replace 'version:\s*[0-9][^\r\n]*', "version: $Version"
+Set-Content (Join-Path $Stage 'manifest.yml') $manifest -NoNewline
+
+Push-Location $Stage
+try {
+    & $Yak build
+    if ($LASTEXITCODE -ne 0) { throw "yak build failed ($LASTEXITCODE)" }
+} finally { Pop-Location }
+Get-ChildItem "$Stage/*.yak" | ForEach-Object {
+    $n = $_.Name -replace '-(any|rh[0-9_]+)-(win|mac|any)\.yak$', '-rh8-any.yak'
+    if ($n -ne $_.Name) { Rename-Item $_.FullName $n }
+}
+$yakFile = Get-ChildItem "$Stage/*.yak" | Select-Object -First 1
+if (-not $yakFile) { throw 'release_yak: no .yak produced' }
 Write-Host ("release_yak: built {0}" -f $yakFile.Name)
 
-# ── 3. Push ──────────────────────────────────────────────────────────────────
 if ($DryRun) {
-    Write-Host "release_yak: dry run - NOT pushing. Push manually with:"
-    Write-Host ("  & '{0}' push '{1}'" -f $Yak, $yakFile.FullName)
+    Write-Host "release_yak: dry run - not pushing."
     exit 0
 }
-Write-Host "release_yak: pushing to Yak server..."
 & $Yak push $yakFile.FullName
 if ($LASTEXITCODE -ne 0) {
-    throw ("release_yak: yak push failed ({0}). If you have never logged in on this " +
-           "machine, run: & '{1}' login" -f $LASTEXITCODE, $Yak)
+    throw "release_yak: yak push failed ($LASTEXITCODE). If never logged in here, run: & '$Yak' login"
 }
-Write-Host ("release_yak: published {0} - it appears in Rhino's Package Manager " -f $yakFile.Name) `
-           "after server indexing (usually minutes)."
+Write-Host "release_yak: published $($yakFile.Name)"
