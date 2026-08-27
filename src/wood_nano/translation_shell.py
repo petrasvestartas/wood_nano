@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from session_py import Polyline
+from session_py.mesh import Mesh
 
 from wood_nano._translation_shell import make_translation_shell, make_default_translation_shell
 from wood_nano.wood_element import WoodElement, _to_mesh
@@ -12,7 +13,7 @@ def translation_shell_elements(
     thickness: float = 10.0,
     chamfer: float = 1.0,
     chamfer_angle: float = 180.0,
-) -> tuple:
+) -> tuple[Mesh, list[WoodElement]]:
     """Sweep cross_section along profile → shell mesh + plate elements.
 
     Parameters

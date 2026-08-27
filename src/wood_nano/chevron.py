@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from session_py.mesh import Mesh
+
 from wood_nano._chevron import make_chevron_annen, make_chevron_nurbs, make_default_chevron
 from wood_nano.wood_element import WoodElement, _to_mesh
 
@@ -13,7 +15,7 @@ def annen_json_path() -> Path:
     return _DATA_DIR / "annen_surfaces.json"
 
 
-def _chevron_joint_data(ch) -> dict:
+def _chevron_joint_data(ch) -> dict[str, list]:
     """Extract joinery metadata dict from a Chevron object."""
     return {
         "insertion_vectors": [list(iv) for iv in ch.insertion_vectors],
@@ -37,7 +39,7 @@ def chevron_elements(
     ortho_edge1: int = 1,
     ortho_edge2: int = 1,
     ortho_edge3: int = 1,
-) -> tuple:
+) -> tuple[Mesh, list[WoodElement], list[Mesh], dict[str, list]]:
     ch = make_default_chevron(
         u_div, v_division_dist, shift, scale,
         box_height, top_plate_inlet, plate_thickness,
@@ -47,9 +49,9 @@ def chevron_elements(
 
 
 def chevron_elements_nurbs(
-    pts: list,
-    knots_u: list,
-    knots_v: list,
+    pts: list[list[float]],
+    knots_u: list[float],
+    knots_v: list[float],
     degree_u: int,
     degree_v: int,
     n_u: int,
@@ -67,7 +69,7 @@ def chevron_elements_nurbs(
     ortho_edge1: int = 1,
     ortho_edge2: int = 1,
     ortho_edge3: int = 1,
-) -> tuple:
+) -> tuple[Mesh, list[WoodElement], list[Mesh], dict[str, list]]:
     ch = make_chevron_nurbs(
         pts, knots_u, knots_v, degree_u, degree_v, n_u, n_v,
         u_div, v_division_dist, shift, scale,
@@ -93,7 +95,7 @@ def chevron_elements_annen(
     ortho_edge1: int = 1,
     ortho_edge2: int = 1,
     ortho_edge3: int = 1,
-) -> tuple:
+) -> tuple[Mesh, list[WoodElement], list[Mesh], dict[str, list]]:
     resolved = str(json_path) if json_path is not None else str(annen_json_path())
     ch = make_chevron_annen(
         resolved, surface_idx,

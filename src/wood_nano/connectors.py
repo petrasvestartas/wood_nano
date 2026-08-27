@@ -26,16 +26,23 @@ def _to_plane(d) -> Plane | None:
 
 
 def connectors_elements(
-    mesh=None,
+    mesh: tuple[list[list[float]], list[list[int]]] | None = None,
     face_thickness: float = 20.0,
-    face_positions: tuple | list = (0.0,),
-    edge_divisions: tuple | list = (2,),
-    edge_division_len: tuple | list = (),
-    insertion_lines: tuple | list = (),
+    face_positions: tuple[float, ...] | list[float] = (0.0,),
+    edge_divisions: tuple[int, ...] | list[int] = (2,),
+    edge_division_len: tuple[float, ...] | list[float] = (),
+    insertion_lines: tuple | list[list[list[float]]] = (),
     rect_width: float = 200.0,
     rect_height: float = 200.0,
     rect_thickness: float = 20.0,
-):
+) -> tuple[
+    list[list[Polyline]],
+    list[list[Plane | None]],
+    list[list[str]],
+    list[list[Polyline]],
+    list[list[Plane | None]],
+    list[list[str]],
+]:
     """Mesh-to-plates-and-connectors.
 
     Parameters

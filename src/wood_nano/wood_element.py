@@ -4,7 +4,7 @@ from session_py.mesh import Mesh
 from session_py.point import Point
 from session_py.polyline import Polyline
 
-from wood_nano import _wood_element
+from . import _wood_element
 
 
 def _to_polyline(pts: list) -> Polyline:
@@ -16,29 +16,16 @@ def unweld_mesh(mesh: Mesh) -> Mesh:
 
     Triangulation is remapped so that polygon faces (n>4) remain grouped
     as ngons in Rhino rather than being split into visible triangles/quads.
+    Computation delegated to C++ (_wood_element.unweld_mesh_dict).
     """
-    face_keys = sorted(mesh.face.keys())
-    new_pts, new_faces, vi = [], [], 0
-    vk_remap = {}  # (old_face_key, old_vertex_key) -> new_vertex_key
-    for fk in face_keys:
-        vkeys = mesh.face[fk]
-        face_verts = []
-        for vk in vkeys:
-            p = mesh.vertex[vk]
-            new_pts.append(Point(float(p[0]), float(p[1]), float(p[2])))
-            vk_remap[(fk, vk)] = vi
-            face_verts.append(vi)
-            vi += 1
-        new_faces.append(face_verts)
-    new_mesh = Mesh.from_vertices_and_faces(new_pts, new_faces)
-    new_face_keys = sorted(new_mesh.face.keys())
-    for old_fk, new_fk in zip(face_keys, new_face_keys):
-        tris = mesh.triangulation.get(old_fk)
-        if tris:
-            new_mesh.triangulation[new_fk] = [
-                [vk_remap.get((old_fk, v), v) for v in tri] for tri in tris
-            ]
-    return new_mesh
+    sorted_vkeys = sorted(mesh.vertex.keys())
+    sorted_fkeys = sorted(mesh.face.keys())
+    vk_to_idx = {vk: i for i, vk in enumerate(sorted_vkeys)}
+    verts = [[float(mesh.vertex[vk][0]), float(mesh.vertex[vk][1]), float(mesh.vertex[vk][2])]
+             for vk in sorted_vkeys]
+    faces = [[vk_to_idx[vk] for vk in mesh.face[fk]] for fk in sorted_fkeys]
+    face_tris = [[list(t) for t in mesh.triangulation.get(fk, [])] for fk in sorted_fkeys]
+    return _to_mesh(_wood_element.unweld_mesh_dict(verts, faces, face_tris))
 
 
 def _to_mesh(r: dict) -> Mesh:
@@ -80,3 +67,12 @@ class WoodElement:
 
     def loft_mesh(self) -> Mesh:
         return _to_mesh(self._el.loft_mesh())
+
+    def loft_mesh_unwelded(self) -> dict:
+        """Return loft mesh with per-face vertex copies (flat shading), computed in C++.
+
+        Returns the raw C++ dict (vertices, faces, face_tris) — bypasses session_py.Mesh
+        so PlateTopology.add_plate can convert directly to Rhino.Geometry.Mesh via
+        session_rhino.rhino_mesh.to_rhino_from_dict, skipping one _to_mesh round-trip.
+        """
+        return self._el.unweld_loft_mesh()

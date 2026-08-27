@@ -26,11 +26,15 @@ Usage (in a template script):
     plates = topo.collect_plates_from_selection(selected_guids)
     # → {plate_id: {"bot": guid, "top": guid, "mesh": guid}, ...}
 """
+from __future__ import annotations
 
 import json
 import System
 import Rhino
 import scriptcontext as sc
+
+from session_py.mesh import Mesh
+from session_py.polyline import Polyline
 
 from session_rhino.rhino_polyline import to_rhino as _pl_to_rhino
 from session_rhino.rhino_mesh import to_rhino as _mesh_to_rhino
@@ -39,17 +43,17 @@ from session_rhino.rhino_mesh import to_rhino as _mesh_to_rhino
 class PlateTopology:
     """Tracks plate→object membership inside the active Rhino document."""
 
-    def __init__(self):
-        self._guids = []         # all object GUIDs we have added
-        self._group_indices = [] # group indices we have created
-        self._hole_cache = None  # {pid_str: {"bot": {n: guid}, "top": {n: guid}}}
-        self._plate_guids = {}   # {plate_id: {"bot": guid, "top": guid, "mesh": guid}}
+    def __init__(self) -> None:
+        self._guids: list[System.Guid] = []
+        self._group_indices: list[int] = []
+        self._hole_cache: dict[str, dict[str, dict[int, System.Guid]]] | None = None
+        self._plate_guids: dict[int, dict[str, System.Guid]] = {}
 
     # ------------------------------------------------------------------
     # Write
     # ------------------------------------------------------------------
 
-    def clear(self):
+    def clear(self) -> None:
         """Delete all previously added plate objects and groups from the doc."""
         doc = sc.doc
         for g in self._guids:
@@ -61,7 +65,16 @@ class PlateTopology:
         self._hole_cache = None
         self._plate_guids.clear()
 
-    def add_plate(self, plate_id, bottom, top, mesh, holes_bot=None, holes_top=None, plate_type="plate"):
+    def add_plate(
+        self,
+        plate_id: int,
+        bottom: Polyline,
+        top: Polyline,
+        mesh: Mesh,
+        holes_bot: list[Polyline] | None = None,
+        holes_top: list[Polyline] | None = None,
+        plate_type: str = "plate",
+    ) -> None:
         """Add one plate's geometry to the document with topology tags.
 
         Parameters
@@ -84,7 +97,11 @@ class PlateTopology:
         """
         rh_bot  = _pl_to_rhino(bottom)
         rh_top  = _pl_to_rhino(top)
-        rh_mesh = _mesh_to_rhino(mesh)
+        if isinstance(mesh, dict):
+            from session_rhino.rhino_mesh import to_rhino_from_dict
+            rh_mesh = to_rhino_from_dict(mesh)
+        else:
+            rh_mesh = _mesh_to_rhino(mesh)
         self._add_rh(plate_id, rh_bot, rh_top, rh_mesh, plate_type)
         if holes_bot and holes_top:
             doc     = sc.doc
@@ -107,7 +124,14 @@ class PlateTopology:
                     if guid != System.Guid.Empty:
                         self._guids.append(guid)
 
-    def add_plate_rh(self, plate_id, rh_bottom, rh_top, rh_mesh, plate_type="plate"):
+    def add_plate_rh(
+        self,
+        plate_id: int,
+        rh_bottom: Rhino.Geometry.PolylineCurve | None,
+        rh_top: Rhino.Geometry.PolylineCurve | None,
+        rh_mesh: Rhino.Geometry.Mesh | None,
+        plate_type: str = "plate",
+    ) -> None:
         """Same as add_plate but accepts already-converted RhinoCommon geometry.
 
         Parameters
@@ -120,7 +144,14 @@ class PlateTopology:
         """
         self._add_rh(plate_id, rh_bottom, rh_top, rh_mesh, plate_type)
 
-    def _add_rh(self, plate_id, rh_bot, rh_top, rh_mesh, plate_type):
+    def _add_rh(
+        self,
+        plate_id: int,
+        rh_bot: Rhino.Geometry.PolylineCurve | None,
+        rh_top: Rhino.Geometry.PolylineCurve | None,
+        rh_mesh: Rhino.Geometry.Mesh | None,
+        plate_type: str,
+    ) -> None:
         """Internal: add RhinoCommon geometry with topology tags."""
         doc = sc.doc
         plate_id = int(plate_id)
@@ -155,7 +186,7 @@ class PlateTopology:
     # Query
     # ------------------------------------------------------------------
 
-    def get_plate_id(self, guid):
+    def get_plate_id(self, guid: System.Guid) -> int | None:
         """Return the plate_id (int) for a given object GUID, or None."""
         obj = sc.doc.Objects.FindId(guid)
         if obj is None:
@@ -163,7 +194,7 @@ class PlateTopology:
         val = obj.Attributes.GetUserString("plate_id")
         return int(val) if val else None
 
-    def find_plate_objects(self, plate_id, plate_type=None):
+    def find_plate_objects(self, plate_id: int, plate_type: str | None = None) -> dict[str, System.Guid]:
         """Return {role: guid} dict for the given plate_id.
 
         Parameters
@@ -190,7 +221,7 @@ class PlateTopology:
                 found[role] = obj.Id
         return found   # {"bot": guid, "top": guid, "mesh": guid}
 
-    def _build_hole_cache(self):
+    def _build_hole_cache(self) -> None:
         """One-shot full scan to index all hole objects by plate_id.
 
         Subsequent calls to find_plate_holes() use this cache so that M plates
@@ -218,7 +249,7 @@ class PlateTopology:
                     pass
         self._hole_cache = cache
 
-    def find_plate_holes(self, plate_id):
+    def find_plate_holes(self, plate_id: int) -> tuple[list[System.Guid], list[System.Guid]]:
         """Return parallel GUID lists for the hole polylines of a plate.
 
         Parameters
@@ -241,7 +272,7 @@ class PlateTopology:
         indices = sorted(set(bot_map) & set(top_map))
         return [bot_map[n] for n in indices], [top_map[n] for n in indices]
 
-    def collect_plates_from_selection(self, selected_guids):
+    def collect_plates_from_selection(self, selected_guids: list[System.Guid]) -> dict[int, dict[str, System.Guid]]:
         """Expand a user selection to full plate sets.
 
         Parameters
@@ -317,7 +348,7 @@ class PlateTopology:
 
         return dict(sorted(plate_map.items()))
 
-    def all_plate_ids(self):
+    def all_plate_ids(self) -> list[int]:
         """Return sorted list of all plate_id values currently in the document."""
         ids = set()
         for obj in sc.doc.Objects.GetObjectList(
@@ -335,7 +366,7 @@ class PlateTopology:
     # Chevron joinery metadata
     # ------------------------------------------------------------------
 
-    def tag_plate_joinery(self, plate_id, joint_types, insertion_vector):
+    def tag_plate_joinery(self, plate_id: int, joint_types: list[int], insertion_vector: list[float]) -> None:
         """Store per-plate joinery metadata on the plate's bot and top curves.
 
         Parameters
@@ -361,7 +392,7 @@ class PlateTopology:
             obj.Attributes.SetUserString("insertion_vector", iv_str)
             obj.CommitChanges()
 
-    def set_chevron_global_joinery(self, three_valence, adjacency):
+    def set_chevron_global_joinery(self, three_valence: list[list[int]], adjacency: list[list[int]]) -> None:
         """Store chevron global joinery data in the Rhino document string table.
 
         Parameters
@@ -376,7 +407,7 @@ class PlateTopology:
         sc.doc.Strings.SetString(
             "wood_nano::adjacency",     json.dumps(adjacency))
 
-    def get_chevron_global_joinery(self):
+    def get_chevron_global_joinery(self) -> tuple[list[list[int]], list[list[int]]]:
         """Read chevron global joinery data from the Rhino document string table.
 
         Returns
@@ -390,7 +421,7 @@ class PlateTopology:
         adjacency     = json.loads(adj_str) if adj_str else []
         return three_valence, adjacency
 
-    def get_plate_joinery(self, plate_id, bot_guid=None):
+    def get_plate_joinery(self, plate_id: int, bot_guid: System.Guid | None = None) -> tuple[list[int], list[float]]:
         """Read per-plate joinery metadata from the Rhino document.
 
         Reads the ``joint_types`` and ``insertion_vector`` UserStrings from

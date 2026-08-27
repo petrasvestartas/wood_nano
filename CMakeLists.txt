@@ -70,6 +70,47 @@ endif()
 add_subdirectory(${SESSION_CPP_DIR} session_cpp EXCLUDE_FROM_ALL)
 
 # ── nanobind modules ─────────────────────────────────────────────────────────
+# When building inside a virtualenv (uv-managed Python, etc.) CMake's FindPython
+# does not search the base Python installation by default.  Derive the root from
+# the executing interpreter so it finds Python.h and the import library.
+# Also clear any stale library cache entries so a version switch (e.g. 3.14→3.12)
+# doesn't leave the cache pointing at the wrong Python.
+if(DEFINED Python_EXECUTABLE)
+    execute_process(
+        COMMAND "${Python_EXECUTABLE}" -c "import sys; print(sys.base_prefix)"
+        OUTPUT_VARIABLE _python_base_prefix
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(_python_base_prefix)
+        set(Python_ROOT_DIR  "${_python_base_prefix}" CACHE PATH "" FORCE)
+        set(Python3_ROOT_DIR "${_python_base_prefix}" CACHE PATH "" FORCE)
+        # Set include/library paths explicitly so FindPython works for any
+        # virtualenv (uv-managed Python, etc.) without needing system registry.
+        # Also clear stale internal cache entries from previous Python versions.
+        set(Python_INCLUDE_DIR "${_python_base_prefix}/Include" CACHE PATH "" FORCE)
+        foreach(_v
+            Python_LIBRARY        Python_SABI_LIBRARY
+            Python3_LIBRARY       Python3_SABI_LIBRARY
+            _Python_LIBRARY_RELEASE          _Python_SABI_LIBRARY_RELEASE
+            _Python_RUNTIME_LIBRARY_RELEASE  _Python_RUNTIME_SABI_LIBRARY_RELEASE
+            FIND_PACKAGE_MESSAGE_DETAILS_Python
+        )
+            unset(${_v} CACHE)
+        endforeach()
+        # Versioned import lib (e.g. python313.lib) — needed for Development.Module
+        file(GLOB _pylib "${_python_base_prefix}/libs/python3[0-9][0-9].lib"
+                         "${_python_base_prefix}/libs/python3[0-9].lib")
+        if(_pylib)
+            list(GET _pylib 0 _pylib)
+            set(Python_LIBRARY "${_pylib}" CACHE PATH "" FORCE)
+        endif()
+        # Stable ABI import lib (python3.lib) — needed for Development.SABIModule
+        if(EXISTS "${_python_base_prefix}/libs/python3.lib")
+            set(Python_SABI_LIBRARY "${_python_base_prefix}/libs/python3.lib" CACHE PATH "" FORCE)
+        endif()
+    endif()
+endif()
 find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
 find_package(nanobind CONFIG REQUIRED)
 
@@ -155,6 +196,24 @@ target_include_directories(_connectors PRIVATE ${WOOD_INCLUDES})
 target_link_libraries(_connectors PRIVATE session_core)
 LINK_PROTOBUF(_connectors)
 
+# _assign_vectors — edge matching and insertion-vector computation for the Rhino solvers
+nanobind_add_module(_assign_vectors STABLE_ABI NB_STATIC
+    src/_assign_vectors.cpp
+)
+target_include_directories(_assign_vectors PRIVATE ${WOOD_INCLUDES})
+target_link_libraries(_assign_vectors PRIVATE session_core)
+LINK_PROTOBUF(_assign_vectors)
+
+# _datasets — JSON dataset loader (converts XML-derived flat JSON to bottom/top polyline lists)
+# nlohmann/json is header-only; include its path directly to avoid pulling in session_core.
+nanobind_add_module(_datasets STABLE_ABI NB_STATIC
+    src/_datasets.cpp
+)
+target_include_directories(_datasets PRIVATE
+    ${WOOD_INCLUDES}
+    ${SESSION_CPP_DIR}/src/json/include
+)
+
 # _joinery_solver — cross-joint detection + merge pipeline
 # Compiles the full wood joinery kernel (8 translation units) alongside the
 # nanobind binding.  joint geometry headers (joints/*.h) are header-only.
@@ -184,13 +243,15 @@ if(MSVC)
     target_compile_options(_reciprocal_move   PRIVATE /W3 /utf-8)
     target_compile_options(_diamond_mesh      PRIVATE /W3 /utf-8)
     target_compile_options(_connectors        PRIVATE /W3 /utf-8)
+    target_compile_options(_assign_vectors    PRIVATE /W3 /utf-8)
+    target_compile_options(_datasets          PRIVATE /W3 /utf-8)
     target_compile_options(_joinery_solver    PRIVATE /W3 /utf-8)
 endif()
 
 install(TARGETS
     _wood_element _translation_shell _reflex_fold _chevron
     _reciprocal_rotation _reciprocal_move
-    _diamond_mesh _connectors _joinery_solver
+    _diamond_mesh _connectors _assign_vectors _datasets _joinery_solver
     LIBRARY DESTINATION wood_nano)
 
 install(FILES "${CMAKE_SOURCE_DIR}/src/wood_nano/data/annen_surfaces.json"

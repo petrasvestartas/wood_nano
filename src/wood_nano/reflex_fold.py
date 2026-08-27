@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from session_py import Polyline
+from session_py.mesh import Mesh
 
 from wood_nano._reflex_fold import make_reflex_fold, make_default_reflex_fold
 from wood_nano.wood_element import WoodElement, _to_mesh
@@ -12,7 +13,7 @@ def reflex_fold_elements(
     thickness: float = 10.0,
     chamfer: float = 20.0,
     chamfer_angle: float = 180.0,
-) -> tuple:
+) -> tuple[Mesh, list[WoodElement]]:
     """Fold profile along cross_section → shell mesh + plate elements.
 
     Parameters

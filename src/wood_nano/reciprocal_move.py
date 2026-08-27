@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Any
 
 from session_py.mesh import Mesh
 from session_py.point import Point
@@ -14,7 +15,7 @@ from wood_nano._reciprocal_move import (
 from wood_nano.wood_element import _to_mesh, unweld_mesh as _unweld_mesh
 
 
-def _pts_to_polyline(pts: list) -> Polyline:
+def _pts_to_polyline(pts: list[list[float]]) -> Polyline:
     return Polyline([Point(float(p[0]), float(p[1]), float(p[2])) for p in pts])
 
 
@@ -34,7 +35,14 @@ def _translate_polyline(pl: Polyline, dx: float, dy: float, dz: float) -> Polyli
                      for p in pl.get_points()])
 
 
-def _apply_beam_offsets(beams, side0, side1, beam_dirs, beam_ups, beam_offsets):
+def _apply_beam_offsets(
+    beams: list[Mesh],
+    side0: list[Polyline],
+    side1: list[Polyline],
+    beam_dirs: list[list[float]],
+    beam_ups: list[list[float]],
+    beam_offsets: list[float],
+) -> tuple[list[Mesh], list[Polyline], list[Polyline]]:
     """Translate each beam along its up (face-normal) direction by a per-group offset.
 
     Parameters
@@ -75,7 +83,11 @@ def _apply_beam_offsets(beams, side0, side1, beam_dirs, beam_ups, beam_offsets):
     return new_beams, new_s0, new_s1
 
 
-def _unpack(rm, beam_offsets=None, unweld_beams: bool = True) -> tuple:
+def _unpack(
+    rm: Any,
+    beam_offsets: list[float] | None = None,
+    unweld_beams: bool = True,
+) -> tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]:
     dome      = _to_mesh(rm.dome_mesh)
     side0     = [_pts_to_polyline(p) for p in rm.side0]
     side1     = [_pts_to_polyline(p) for p in rm.side1]
@@ -102,9 +114,9 @@ def reciprocal_move_elements(
     beam_h: float = 0.0,
     extend_factor: float = 5.0,
     cut_offset_factor: float = 1.0,
-    beam_offsets: list | None = None,
+    beam_offsets: list[float] | None = None,
     unweld_beams: bool = True,
-) -> tuple:
+) -> tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]:
     """Translation-based reciprocal frame on a sinusoidal dome.
 
     Each mesh edge is translated in its face plane by a bisector direction,
@@ -147,9 +159,9 @@ def reciprocal_move_elements(
 
 
 def reciprocal_move_elements_from_surface(
-    pts,
-    knots_u,
-    knots_v,
+    pts: list[list[float]],
+    knots_u: list[float],
+    knots_v: list[float],
     degree_u: int,
     degree_v: int,
     n_u: int,
@@ -162,9 +174,9 @@ def reciprocal_move_elements_from_surface(
     beam_h: float = 0.0,
     extend_factor: float = 5.0,
     cut_offset_factor: float = 1.0,
-    beam_offsets: list | None = None,
+    beam_offsets: list[float] | None = None,
     unweld_beams: bool = True,
-) -> tuple:
+) -> tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]:
     """Translation-based reciprocal frame on a NURBS surface.
 
     Parameters
@@ -205,16 +217,16 @@ def reciprocal_move_elements_from_surface(
 
 
 def reciprocal_move_elements_from_mesh(
-    vertices,
-    faces,
+    vertices: list[list[float]],
+    faces: list[list[int]],
     angle: float = 50.0,
     beam_w: float = 100.0,
     beam_h: float = 0.0,
     extend_factor: float = 5.0,
     cut_offset_factor: float = 1.0,
-    beam_offsets: list | None = None,
+    beam_offsets: list[float] | None = None,
     unweld_beams: bool = True,
-) -> tuple:
+) -> tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]:
     """Translation-based reciprocal frame on a user-supplied mesh.
 
     Parameters

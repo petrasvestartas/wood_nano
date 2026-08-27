@@ -17,7 +17,7 @@ geometry, math, or algorithms in Python.
    - Calls the C++ binding
    - Returns `session_py` types
 4. Export the wrapper from `src/wood_nano/__init__.py`.
-5. After rebuilding, copy the new `.pyd` to `src/wood_nano/` for Rhino compatibility.
+5. After rebuilding, copy the new plain `.pyd` files to `src/wood_nano/` (see below).
 
 ## No-prototype rule
 
@@ -28,10 +28,23 @@ writing a Python fallback that will silently produce wrong results.
 ## Rebuild steps (after C++ changes)
 
 ```bash
-# Rhino Python (primary target)
-"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e .
-copy "C:/Users/Petras/.rhinocode/py39-rh8/lib/site-packages/wood_nano/_translation_shell.cp39-win_amd64.pyd" src/wood_nano/
-
-# uv dev environment
+# uv dev environment (Python 3.13)
 uv pip install --no-build-isolation -e .
+
+# Rhino Python (Python 3.9, stable ABI)
+"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e .
 ```
+
+Both commands build all C++ modules and create a scikit-build-core editable install.
+No manual file copying or `.pth` creation is needed.
+
+## uv dev environment (first time + compas examples)
+
+```bash
+uv sync                                    # creates venv, installs all deps
+uv pip install --no-build-isolation -e .   # build C++ + editable install
+uv run python examples_compas_wood/solver/joinery_solver_translation_shell.py
+```
+
+`uv sync` uses Python 3.13 (see `.python-version`).  Python 3.13 is pinned because
+`compas` deadlocks on import under Python 3.14's stricter per-module import locks.

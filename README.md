@@ -2,41 +2,49 @@
 
 Python bindings for the wood C++ joinery library.
 
+## Dev environment setup (uv)
+
+Prerequisites: [uv](https://docs.astral.sh/uv/getting-started/installation/), CMake, and a C++ compiler.
+
+```bash
+# First time (or after a fresh clone): creates venv, installs all deps, builds C++
+uv sync
+
+# Run an example
+uv run python examples_compas_wood/solver/joinery_solver_translation_shell.py
+```
+
+`uv sync` uses Python 3.13 (pinned in `.python-version`).
+
+## Rebuild after C++ changes
+
+```bash
+uv pip install --no-build-isolation -e .
+```
+
+`--no-build-isolation` reuses the nanobind already in the venv (faster than `uv sync` for incremental rebuilds).
+Python-only changes (`src/wood_nano/*.py`) take effect immediately — no rebuild needed.
+
 ## Install in Rhino (first time)
 
-**1. Install build tools** (terminal, once):
+**1. Install build tools** (run once from a regular terminal):
 
 ```bash
 "C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install scikit-build-core nanobind ninja
 ```
 
-**2. Install dependencies and wood_nano** (Rhino ScriptEditor terminal):
+**2. Build and install** (Rhino ScriptEditor terminal or regular terminal):
 
 ```bash
-pip install numpy
-pip install -e C:\pc\3_code\code_rust\session\session_py
-pip install -e C:\pc\3_code\code_rust\session\session_rhino
-pip install --no-build-isolation -e C:\pc\3_code\code_cpp\wood_nano
-```
-
-## Rebuild after C++ changes
-
-```bash
-"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e C:/pc/3_code/code_cpp/wood_nano
-copy "C:/Users/Petras/.rhinocode/py39-rh8/lib/site-packages/wood_nano/_translation_shell.cp39-win_amd64.pyd" src/wood_nano/
+"C:/Users/Petras/.rhinocode/py39-rh8/python.exe" -m pip install --no-build-isolation -e "C:/pc/3_code/code_cpp/wood_nano"
 ```
 
 Then **Reset Python Engine** in the ScriptEditor toolbar.
 
-Python-only changes (`src/wood_nano/*.py`) take effect immediately.
+## System prerequisites
 
-## uv dev environment (first time)
-
-```bash
-uv venv
-uv pip install scikit-build-core nanobind numpy pytest ninja
-uv pip install --no-build-isolation -e .
-```
+- **CMake ≥ 3.15** — `winget install Kitware.CMake` (Windows) or `brew install cmake` (macOS)
+- **C++ compiler** — Visual Studio Build Tools on Windows, Xcode CLT (`xcode-select --install`) on macOS, `sudo apt install build-essential` on Ubuntu
 
 ## Usage
 

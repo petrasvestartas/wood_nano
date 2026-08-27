@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from session_py.mesh import Mesh
 from session_py.polyline import Polyline
 
-from wood_nano import _joinery_solver
-from wood_nano.wood_element import _to_mesh
+from . import _joinery_solver
+from .wood_element import _to_mesh
 
 
-def loft(polylines0: list[Polyline], polylines1: list[Polyline]):
+def loft(polylines0: list[Polyline], polylines1: list[Polyline]) -> Mesh:
     """Loft two sets of polylines (bottom + top) into a closed mesh with hole support.
 
     polylines0 / polylines1 : list of Polyline
