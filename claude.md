@@ -48,3 +48,37 @@ uv run python examples_compas_wood/solver/joinery_solver_translation_shell.py
 
 `uv sync` uses Python 3.13 (see `.python-version`).  Python 3.13 is pinned because
 `compas` deadlocks on import under Python 3.14's stricter per-module import locks.
+
+## Running anything long: use the guard
+
+**Never launch a solver, benchmark, example or dataset sweep directly.** Run it
+through `tools/run_guarded.ps1`, which applies a wall-clock timeout, a
+kernel-enforced memory cap, and a one-at-a-time check:
+
+```powershell
+tools/run_guarded.ps1 -FilePath .venv/Scripts/python.exe `
+    -Arguments 'examples_session_py/solver/joinery_solver_datasets.py' `
+    -TimeoutMinutes 10 -MemoryLimitGB 4
+```
+
+Defaults are 10 minutes and 4 GB. Exit code 124 means the timeout killed it.
+
+Why this exists: on 2026-08-27 three concurrent copies of wood's
+`main_wood_04_all_datasets.exe` reached 51 GB, 45 GB and 18 GB of committed
+memory on a 32 GB machine. Windows logged Resource-Exhaustion-Detector (event
+2004) three times and then took a dirty shutdown (Kernel-Power 41).
+
+Three rules follow from that:
+
+1. **Bound every run.** These algorithms are small; anything that has not
+   finished in ten minutes is wedged, not slow. Kill it and investigate.
+2. **Bound the memory too.** A timeout alone would not have saved that machine —
+   it was thrashing long before any sensible deadline expired. The memory cap is
+   the guard that protects the box, because the kernel refuses the allocation
+   instead of letting it eat the page file.
+3. **One run at a time.** Never start a second copy of a sweep while one is
+   running. Concurrency is what turned a survivable leak into a crash, and the
+   copies also raced on each other's output files.
+
+Never run a build or a sweep with `run_in_background` and then start another
+without checking whether the first is still alive.

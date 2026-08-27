@@ -62,8 +62,20 @@ endif()
 # session_cpp's CMakeLists uses CMAKE_SOURCE_DIR to locate generated/.
 # When session_cpp is fetched, CMAKE_SOURCE_DIR = wood_nano root (not session_cpp).
 # Copy the committed generated files there before add_subdirectory runs.
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/generated")
-    message(STATUS "Copying session_cpp/generated into ${CMAKE_SOURCE_DIR}/generated")
+# Refresh it on every configure rather than copying once. Guarding this with
+# `if(NOT EXISTS ...)` means that once the directory exists it is never updated,
+# so a session_cpp that has regenerated its protobuf sources with a newer protoc
+# leaves a stale snapshot behind and the build eventually dies with
+#   error C1189: "Protobuf C++ gencode is built with an incompatible version"
+# That is exactly what happened to the wood repo. Here the local checkout uses a
+# symlink and so stayed current by luck; CI and any fresh clone copy for real.
+#
+# file(COPY) preserves timestamps and skips files that already match, so this
+# costs nothing when it is already current.
+if(IS_SYMLINK "${CMAKE_SOURCE_DIR}/generated")
+    message(STATUS "generated/ is a symlink, leaving it as is")
+else()
+    message(STATUS "Syncing session_cpp/generated into ${CMAKE_SOURCE_DIR}/generated")
     file(COPY "${SESSION_CPP_DIR}/generated" DESTINATION "${CMAKE_SOURCE_DIR}")
 endif()
 

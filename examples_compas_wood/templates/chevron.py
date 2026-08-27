@@ -1,4 +1,5 @@
 from compas.colors import Color
+from compas.datastructures import Mesh
 from compas_viewer import Viewer
 
 from wood_nano_compas import chevron_elements
