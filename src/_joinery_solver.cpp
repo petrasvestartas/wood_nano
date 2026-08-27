@@ -146,10 +146,11 @@ NB_MODULE(_joinery_solver, m) {
             top.reserve(polylines1.size());
             for (const auto& pts : polylines1) top.push_back(pts_to_polyline(pts));
             session_cpp::Mesh lm = session_cpp::Mesh::loft(bot, top);
-            // Consistent winding + outward normals HERE, so the compas layer
-            // could drop its pure-Python unify_cycles/centroid-flip pass (3
-            // full-mesh Python traversals per element) and the session_py
-            // layer stops shipping mixed-winding lofts to viewers.
+            // Consistent winding + outward normals HERE, so the compas_wood
+            // adapter (separate repo) could drop its pure-Python
+            // unify_cycles/centroid-flip pass (3 full-mesh Python traversals
+            // per element) and the session_py layer stops shipping
+            // mixed-winding lofts to viewers.
             lm.unify_winding();
             lm.orient_outward();
             return mesh_to_dict(lm);
@@ -439,7 +440,8 @@ NB_MODULE(_joinery_solver, m) {
                 // Lofting is 63% of the whole solve on a 145-plate model
                 // (91 ms of 145 ms: Mesh::loft runs CDT cap triangulation per
                 // element, then mesh_to_dict converts it all to Python), and
-                // the compas consumer never reads it. Off by default; the
+                // the compas_wood adapter (separate repo) never reads it.
+                // Off by default; the
                 // Python wrapper reconstructs it lazily from the exported
                 // outlines via the standalone loft() binding, which lofts the
                 // same rings in the same (top, bottom) order.

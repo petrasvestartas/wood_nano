@@ -205,8 +205,8 @@ NB_MODULE(_wood_element, m) {
         .def_prop_ro("thickness", [](const wood_session::WoodElement& e) { return e.thickness; })
         .def("loft_mesh",         [](const wood_session::WoodElement& e) {
             auto lm = e.loft_mesh();
-            // Consistent winding + outward normals in C++, so the compas
-            // layer needs no Python-side unify/flip pass.
+            // Consistent winding + outward normals in C++, so the compas_wood
+            // adapter (separate repo) needs no Python-side unify/flip pass.
             lm.unify_winding();
             lm.orient_outward();
             return mesh_to_dict(lm);

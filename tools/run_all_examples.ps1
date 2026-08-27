@@ -6,13 +6,8 @@
     Sequentially - never in parallel. One example at a time is the whole point of
     the guard; see CLAUDE.md.
 
-    The compas examples all end in viewer.show(), which blocks on a GUI window.
-    tools/headless_example.py stubs that call out so the solver and the scene
-    construction still run, which is the part that can actually be wrong.
-
-    convert_xml_to_json.py is skipped: it regenerates the shipped dataset JSONs
-    rather than demonstrating anything, so it is not an example and running it
-    here would rewrite package data as a side effect of a test run.
+    Examples run through tools/headless_example.py, which stubs out any GUI
+    viewer call so nothing blocks on a window.
 
 .EXAMPLE
     tools/run_all_examples.ps1
@@ -31,9 +26,8 @@ $guard   = Join-Path $PSScriptRoot 'run_guarded.ps1'
 $headless= Join-Path $PSScriptRoot 'headless_example.py'
 
 $examples = @(
-    Get-ChildItem -Path (Join-Path $root 'examples_session_py')   -Filter '*.py' -Recurse
-    Get-ChildItem -Path (Join-Path $root 'examples_compas_wood') -Filter '*.py' -Recurse
-) | Where-Object { $_.Name -ne 'convert_xml_to_json.py' } | Sort-Object FullName
+    Get-ChildItem -Path (Join-Path $root 'examples_session_py') -Filter '*.py' -Recurse
+) | Sort-Object FullName
 
 Write-Host ("Running {0} examples, one at a time, {1} min / {2} GB each.`n" -f $examples.Count, $TimeoutMinutes, $MemoryLimitGB)
 

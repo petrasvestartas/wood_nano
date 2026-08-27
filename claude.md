@@ -38,16 +38,18 @@ uv pip install --no-build-isolation -e .
 Both commands build all C++ modules and create a scikit-build-core editable install.
 No manual file copying or `.pth` creation is needed.
 
-## uv dev environment (first time + compas examples)
+## uv dev environment (first time)
 
 ```bash
 uv sync                                    # creates venv, installs all deps
 uv pip install --no-build-isolation -e .   # build C++ + editable install
-uv run python examples_compas_wood/solver/joinery_solver_translation_shell.py
+uv run python examples_session_py/solver/joinery_solver_translation_shell.py
 ```
 
-`uv sync` uses Python 3.13 (see `.python-version`).  Python 3.13 is pinned because
-`compas` deadlocks on import under Python 3.14's stricter per-module import locks.
+`uv sync` uses Python 3.13 (see `.python-version`). Python 3.13 is pinned to
+match Rhino 9's Python runtime, and because downstream consumers (the
+compas_wood adapter, in its own repo) may share the interpreter with libraries
+that are not yet 3.14-clean.
 
 ## Running anything long: use the guard
 

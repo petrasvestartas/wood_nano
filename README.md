@@ -11,7 +11,7 @@ Prerequisites: [uv](https://docs.astral.sh/uv/getting-started/installation/), CM
 uv sync
 
 # Run an example
-uv run python examples_compas_wood/solver/joinery_solver_translation_shell.py
+uv run python examples_session_py/solver/joinery_solver_translation_shell.py
 ```
 
 `uv sync` uses Python 3.13 (pinned in `.python-version`).

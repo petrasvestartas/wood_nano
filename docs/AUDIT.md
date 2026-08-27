@@ -94,7 +94,7 @@ before any fix. Two proposed fixes were **rejected by verification** (see
 
 - **Lazy loft** (biggest win): `solve_joinery` eagerly lofted + dict-converted
   every element's mesh — 63% of the whole solve on the benchmark note's
-  numbers — while the compas consumer discarded it. `include_loft_mesh=False`
+  numbers — while the compas_wood adapter (separate repo) discarded it. `include_loft_mesh=False`
   default; the session_py wrapper lofts lazily in C++ on first
   `loft_mesh()` call (same rings, same order); featureless elements keep the
   cheap eager prism loft the lazy path can't reconstruct.
@@ -149,9 +149,10 @@ before any fix. Two proposed fixes were **rejected by verification** (see
 - **B9/Y6**: `beams_unwelded` computed in C++; the per-beam
   dict→Mesh→lists→C++→dict round-trip is gone.
 - **Y2/Y3**: `unify_winding()` + `orient_outward()` applied in the bindings;
-  both compas orientation passes (3 full-mesh Python traversals each) deleted.
+  both orientation passes in the compas_wood adapter (separate repo; 3
+  full-mesh Python traversals each) deleted.
 - **Y5** (both halves): mesh_to_dict never emits `-1` vertex sentinels
-  (stale triangles are dropped), and the compas converter passes
+  (stale triangles are dropped), and the compas_wood adapter (separate repo) passes
   untriangulated ngons through natively instead of fan-triangulating in
   Python (wrong for concave faces).
 - **B6**: `mesh_to_dict` builds the vertex index once (was twice per mesh on
@@ -193,7 +194,8 @@ Re-triaged in this wave:
   deliberate re-baselining.
 - **B7**: solve runs holding the GIL; releasing needs a mutex around the
   process-wide wood globals first.
-- **Y2/Y3** (compas re-loft orientation): needs C++-guaranteed winding in
+- **Y2/Y3** (re-loft orientation in the compas_wood adapter, separate repo):
+  needs C++-guaranteed winding in
   `Mesh::loft`/`mesh_to_dict` before the Python flip logic can go.
 - **B9/Y6**: unweld round-trips beams across the boundary 3×; fix is an
   `unweld=true` path in `mesh_to_dict`.

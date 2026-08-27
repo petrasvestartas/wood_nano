@@ -12,9 +12,6 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = ["scikit-build-core>=0.10", "nanobind>=1.3.2", "pytest>=7.0", "numpy>=1.21.0"]
-# wood_nano_compas ships in the wheel but compas is not a runtime dependency
-# of wood_nano itself: pip install "wood_nano[compas]" to use that layer.
-compas = ["compas>=2.0"]
 
 # ── uv environment ────────────────────────────────────────────────────────────
 # Setup (run once):
@@ -36,8 +33,6 @@ dev = [
     "scikit-build-core>=0.10",
     "numpy>=1.21.0",
     "pytest>=7.0",
-    "compas>=2.0",
-    "compas-viewer>=1.0",
 ]
 
 [tool.scikit-build]
@@ -56,9 +51,9 @@ build-dir = "build/{wheel_tag}"
 # Rhino 8 (Python 3.9) is deliberately not supported: 3.9 went end-of-life at
 # the end of 2025 and nanobind 3.0 dropped it.
 wheel.py-api = "cp312"
-# Both packages must be listed explicitly: scikit-build-core auto-detects only
-# src/<project-name>, so wood_nano_compas was silently missing from the wheel.
-wheel.packages = ["src/wood_nano", "src/wood_nano_compas"]
+# The COMPAS adapter lives in the separate compas_wood repo; only wood_nano
+# ships in the wheel.
+wheel.packages = ["src/wood_nano"]
 cmake.version = ">=3.15"
 cmake.build-type = "Release"
 

@@ -1,9 +1,10 @@
 """Run one example headlessly, for tools/run_all_examples.ps1.
 
-Every compas example ends in viewer.show(), which blocks on a GUI window until
-someone closes it. Stubbing show() exercises the part that can actually be
-wrong - the solver call and the scene construction - without opening a window
-per example and without each run hanging until the guard's timeout kills it.
+Stubs viewer.show() (blocks on a GUI window until someone closes it) so the
+part that can actually be wrong - the solver call and the scene construction -
+still runs without opening a window or hanging until the guard's timeout.
+The compas examples now live in the compas_wood repo; the compas_viewer stub
+below is kept as a harmless guard in case an example imports it.
 """
 from __future__ import annotations
 
