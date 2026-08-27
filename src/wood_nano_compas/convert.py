@@ -15,7 +15,9 @@ def mesh_from_cpp(data: dict) -> Mesh:
     those triangles are used directly so the result matches the C++ triangulation.
     Faces without CDT entries are fan-triangulated as a fallback.
     """
-    verts = [[float(v[0]), float(v[1]), float(v[2])] for v in data["vertices"]]
+    vr = data["vertices"]
+    # Bulk tolist() instead of per-row ndarray indexing (~10x on large meshes).
+    verts = vr.tolist() if hasattr(vr, "tolist") else [[float(v[0]), float(v[1]), float(v[2])] for v in vr]
     faces_raw = data["faces"]
     face_tris = data.get("face_tris")
 

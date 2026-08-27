@@ -7,7 +7,12 @@ from wood_nano._chevron import make_chevron_annen, make_chevron_nurbs, make_defa
 from wood_nano_compas.convert import mesh_from_cpp
 from wood_nano_compas.wood_element import WoodElementCompas
 
-_DATA_DIR = Path(__file__).parent.parent / "wood_nano" / "data"
+# Resolve through the installed wood_nano package rather than a sibling
+# directory walk: the two packages need not share an install root
+# (editable vs wheel), and __file__-relative cross-package paths are
+# this project's documented wheel-breaking pattern.
+import wood_nano as _wood_nano
+_DATA_DIR = Path(_wood_nano.__file__).parent / "data"
 
 
 def _joint_data(ch) -> dict[str, list]:

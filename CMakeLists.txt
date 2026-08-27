@@ -139,6 +139,15 @@ endif()
 find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
 find_package(nanobind CONFIG REQUIRED)
 
+# NOMINSIZE on every module: nanobind otherwise applies /Os (favor SIZE) to
+# ALL module sources in Release, and _joinery_solver compiles the entire wood
+# joinery kernel as module sources - the shipped wheels were running the
+# whole detection/merge pipeline optimized for size. NOMINSIZE restores the
+# compiler's normal Release optimization for exactly the code users pay for.
+# (nanobind's LTO flag is deliberately NOT used: session_core is a separate
+# OBJECT library built without /GL, so cross-TU inlining across that boundary
+# needs a session_cpp build change first - tracked as a follow-up.)
+
 set(WOOD_INCLUDES
     ${SESSION_CPP_DIR}
     ${WOOD_DIR}
@@ -148,7 +157,7 @@ set(WOOD_INCLUDES
 )
 
 # _wood_element — registers WoodElement once; imported by all other modules
-nanobind_add_module(_wood_element STABLE_ABI NB_STATIC
+nanobind_add_module(_wood_element STABLE_ABI NB_STATIC NOMINSIZE
     src/_wood_element.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
 )
@@ -157,7 +166,7 @@ target_link_libraries(_wood_element PRIVATE session_core)
 LINK_PROTOBUF(_wood_element)
 
 # _translation_shell — imports _wood_element for the shared WoodElement type
-nanobind_add_module(_translation_shell STABLE_ABI NB_STATIC
+nanobind_add_module(_translation_shell STABLE_ABI NB_STATIC NOMINSIZE
     src/_translation_shell.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
 )
@@ -166,7 +175,7 @@ target_link_libraries(_translation_shell PRIVATE session_core)
 LINK_PROTOBUF(_translation_shell)
 
 # _reflex_fold — imports _wood_element for the shared WoodElement type
-nanobind_add_module(_reflex_fold STABLE_ABI NB_STATIC
+nanobind_add_module(_reflex_fold STABLE_ABI NB_STATIC NOMINSIZE
     src/_reflex_fold.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
 )
@@ -175,7 +184,7 @@ target_link_libraries(_reflex_fold PRIVATE session_core)
 LINK_PROTOBUF(_reflex_fold)
 
 # _chevron — imports _wood_element for the shared WoodElement type
-nanobind_add_module(_chevron STABLE_ABI NB_STATIC
+nanobind_add_module(_chevron STABLE_ABI NB_STATIC NOMINSIZE
     src/_chevron.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
 )
@@ -189,7 +198,7 @@ LINK_PROTOBUF(_chevron)
 # begun in 37f49ed9 ("move ... main_reciprocal to wood project") which had only
 # taken the main. It now lives in wood/src/templates/reciprocal.h, header-only
 # like every other template there, so it needs no source entry.
-nanobind_add_module(_reciprocal_rotation STABLE_ABI NB_STATIC
+nanobind_add_module(_reciprocal_rotation STABLE_ABI NB_STATIC NOMINSIZE
     src/_reciprocal_rotation.cpp
 )
 target_include_directories(_reciprocal_rotation PRIVATE ${WOOD_INCLUDES})
@@ -197,7 +206,7 @@ target_link_libraries(_reciprocal_rotation PRIVATE session_core)
 LINK_PROTOBUF(_reciprocal_rotation)
 
 # _reciprocal_move — translation-based nexorade; uses session_core geometry only
-nanobind_add_module(_reciprocal_move STABLE_ABI NB_STATIC
+nanobind_add_module(_reciprocal_move STABLE_ABI NB_STATIC NOMINSIZE
     src/_reciprocal_move.cpp
 )
 target_include_directories(_reciprocal_move PRIVATE ${WOOD_INCLUDES})
@@ -205,7 +214,7 @@ target_link_libraries(_reciprocal_move PRIVATE session_core)
 LINK_PROTOBUF(_reciprocal_move)
 
 # _diamond_mesh — imports _wood_element for WoodElement plates
-nanobind_add_module(_diamond_mesh STABLE_ABI NB_STATIC
+nanobind_add_module(_diamond_mesh STABLE_ABI NB_STATIC NOMINSIZE
     src/_diamond_mesh.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
 )
@@ -214,7 +223,7 @@ target_link_libraries(_diamond_mesh PRIVATE session_core)
 LINK_PROTOBUF(_diamond_mesh)
 
 # _connectors — mesh-to-plates-and-connectors (no WoodElement dependency)
-nanobind_add_module(_connectors STABLE_ABI NB_STATIC
+nanobind_add_module(_connectors STABLE_ABI NB_STATIC NOMINSIZE
     src/_connectors.cpp
 )
 target_include_directories(_connectors PRIVATE ${WOOD_INCLUDES})
@@ -222,7 +231,7 @@ target_link_libraries(_connectors PRIVATE session_core)
 LINK_PROTOBUF(_connectors)
 
 # _assign_vectors — edge matching and insertion-vector computation for the Rhino solvers
-nanobind_add_module(_assign_vectors STABLE_ABI NB_STATIC
+nanobind_add_module(_assign_vectors STABLE_ABI NB_STATIC NOMINSIZE
     src/_assign_vectors.cpp
 )
 target_include_directories(_assign_vectors PRIVATE ${WOOD_INCLUDES})
@@ -231,7 +240,7 @@ LINK_PROTOBUF(_assign_vectors)
 
 # _datasets — JSON dataset loader (converts XML-derived flat JSON to bottom/top polyline lists)
 # nlohmann/json is header-only; include its path directly to avoid pulling in session_core.
-nanobind_add_module(_datasets STABLE_ABI NB_STATIC
+nanobind_add_module(_datasets STABLE_ABI NB_STATIC NOMINSIZE
     src/_datasets.cpp
 )
 target_include_directories(_datasets PRIVATE
@@ -242,7 +251,7 @@ target_include_directories(_datasets PRIVATE
 # _joinery_solver — cross-joint detection + merge pipeline
 # Compiles the full wood joinery kernel (8 translation units) alongside the
 # nanobind binding.  joint geometry headers (joints/*.h) are header-only.
-nanobind_add_module(_joinery_solver STABLE_ABI NB_STATIC
+nanobind_add_module(_joinery_solver STABLE_ABI NB_STATIC NOMINSIZE
     src/_joinery_solver.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_main.cpp

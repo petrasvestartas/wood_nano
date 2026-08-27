@@ -155,7 +155,8 @@ NB_MODULE(_joinery_solver, m) {
            std::vector<std::vector<double>>   per_element_insertion_vectors,
            std::vector<std::vector<int>>      per_element_joint_types,
            std::vector<std::array<int,4>>     three_valence,
-           std::vector<std::pair<int,int>>    adjacency) -> nb::dict {
+           std::vector<std::pair<int,int>>    adjacency,
+           bool include_loft_mesh) -> nb::dict {
             // Initialise all wood globals to their documented defaults.
             // Tests do this via reset_defaults(); without it JOINTS_PARAMETERS_AND_TYPES
             // is an empty vector → JPT[row*3] crashes on first cross/lap joint.
@@ -188,9 +189,13 @@ NB_MODULE(_joinery_solver, m) {
             for (size_t i = 0; i < plates_data.size(); ++i) {
                 const auto& pair = plates_data[i];
                 if (pair.size() < 2) continue;
-                elements.emplace_back(pts_to_polyline(pair[0]), pts_to_polyline(pair[1]));
-                elem_outer_bots.push_back(pts_to_polyline(pair[0]));
-                elem_outer_tops.push_back(pts_to_polyline(pair[1]));
+                // Convert each outline once: the WoodElement ctor copies its
+                // arguments, so the locals stay valid to move into the kept lists.
+                auto bot_pl = pts_to_polyline(pair[0]);
+                auto top_pl = pts_to_polyline(pair[1]);
+                elements.emplace_back(bot_pl, top_pl);
+                elem_outer_bots.push_back(std::move(bot_pl));
+                elem_outer_tops.push_back(std::move(top_pl));
                 std::vector<session_cpp::Polyline> hbots, htops;
                 for (size_t hi = 2; hi + 1 < pair.size(); hi += 2) {
                     hbots.push_back(pts_to_polyline(pair[hi]));
@@ -230,18 +235,38 @@ NB_MODULE(_joinery_solver, m) {
                 }
                 joints = get_connection_zones(elements, search_type);
             } else if (use_chevron) {
-                // ChevronJoineryData requires exactly 18 doubles per element.
-                // Convert variable-length vectors; truncate or zero-pad to 18.
+                // ChevronJoineryData requires exactly 18 doubles per element
+                // (6 faces x 3) and 6 joint types. Zero-pad shorter vectors,
+                // but REFUSE longer ones: silently truncating meant a hex
+                // plate with >4 side faces lost the insertion vectors and
+                // joint types of faces 6+ with no warning — wrong joints that
+                // looked like a modelling mistake instead of a data loss.
                 wood_session::ChevronJoineryData cd;
                 cd.adjacency = std::move(adjacency);
-                for (const auto& ivN : per_element_insertion_vectors) {
+                for (size_t ei = 0; ei < per_element_insertion_vectors.size(); ++ei) {
+                    const auto& ivN = per_element_insertion_vectors[ei];
+                    if (ivN.size() > 18)
+                        throw std::invalid_argument(
+                            "element " + std::to_string(ei) + " has " +
+                            std::to_string(ivN.size()) + " insertion-vector values, but the "
+                            "adjacency/three_valence path supports at most 18 (6 faces x 3). "
+                            "Pass fewer faces, or drop adjacency/three_valence to use the "
+                            "variable-length path.");
                     std::array<double,18> iv18 = {};
-                    for (size_t k = 0; k < 18 && k < ivN.size(); ++k) iv18[k] = ivN[k];
+                    for (size_t k = 0; k < ivN.size(); ++k) iv18[k] = ivN[k];
                     cd.insertion_vectors.push_back(iv18);
                 }
-                for (const auto& jtN : per_element_joint_types) {
+                for (size_t ei = 0; ei < per_element_joint_types.size(); ++ei) {
+                    const auto& jtN = per_element_joint_types[ei];
+                    if (jtN.size() > 6)
+                        throw std::invalid_argument(
+                            "element " + std::to_string(ei) + " has " +
+                            std::to_string(jtN.size()) + " joint types, but the "
+                            "adjacency/three_valence path supports at most 6 faces. "
+                            "Pass fewer faces, or drop adjacency/three_valence to use the "
+                            "variable-length path.");
                     std::array<int,6> jt6 = {};
-                    for (size_t k = 0; k < 6 && k < jtN.size(); ++k) jt6[k] = jtN[k];
+                    for (size_t k = 0; k < jtN.size(); ++k) jt6[k] = jtN[k];
                     cd.joints_per_face.push_back(jt6);
                 }
                 cd.three_valence = std::move(three_valence);
@@ -293,11 +318,15 @@ NB_MODULE(_joinery_solver, m) {
                     // Compute plate face normal from outer bottom polyline as fallback IV.
                     const auto& bot = elem_outer_bots[ei];
                     if (bot.point_count() < 3) continue;
-                    auto p0 = bot[0], p1 = bot[1];
-                    auto p2 = bot[bot.point_count() >= 3 ? bot.point_count() - 2 : 0];
-                    double ax = p1[0]-p0[0], ay = p1[1]-p0[1], az = p1[2]-p0[2];
-                    double bx = p2[0]-p0[0], by = p2[1]-p0[1], bz = p2[2]-p0[2];
-                    double nx = ay*bz - az*by, ny = az*bx - ax*bz, nz = ax*by - ay*bx;
+                    // Newell's method over the whole ring. The previous
+                    // 3-point normal (bot[0], bot[1], bot[n-2]) degenerated
+                    // exactly when those points were collinear — an outline
+                    // whose start vertex sits mid-edge, or an open triangle
+                    // where bot[n-2] == bot[1] — leaving the element with the
+                    // zero insertion vector this fallback exists to prevent.
+                    session_cpp::Vector n =
+                        session_cpp::Vector::average_normal(bot.get_points());
+                    double nx = n[0], ny = n[1], nz = n[2];
                     double len = std::sqrt(nx*nx + ny*ny + nz*nz);
                     if (len < 1e-10) continue;
                     nx /= len; ny /= len; nz /= len;
@@ -370,11 +399,30 @@ NB_MODULE(_joinery_solver, m) {
                     bots.append(polyline_to_list(pl));
                 ed["bottom_outlines"] = bots;
 
-                session_cpp::Mesh lm;
-                if (!e.features.top.empty() && !e.features.bottom.empty())
-                    lm = session_cpp::Mesh::loft(e.features.top, e.features.bottom);
-                if (lm.vertex.empty()) lm = e.loft_mesh();
-                ed["loft_mesh"] = mesh_to_dict(lm);
+                // Lofting is 63% of the whole solve on a 145-plate model
+                // (91 ms of 145 ms: Mesh::loft runs CDT cap triangulation per
+                // element, then mesh_to_dict converts it all to Python), and
+                // the compas consumer never reads it. Off by default; the
+                // Python wrapper reconstructs it lazily from the exported
+                // outlines via the standalone loft() binding, which lofts the
+                // same rings in the same (top, bottom) order.
+                //
+                // Featureless elements (no joints, no holes) are the one case
+                // the lazy path cannot reproduce: their outlines lists are
+                // empty and the eager fallback was WoodElement::loft_mesh(),
+                // a hand-rolled prism loft of the base plates. That one is
+                // cheap (no CDT), so keep computing it eagerly.
+                if (include_loft_mesh) {
+                    session_cpp::Mesh lm;
+                    if (!e.features.top.empty() && !e.features.bottom.empty())
+                        lm = session_cpp::Mesh::loft(e.features.top, e.features.bottom);
+                    if (lm.vertex.empty()) lm = e.loft_mesh();
+                    ed["loft_mesh"] = mesh_to_dict(lm);
+                } else if (e.features.top.empty() || e.features.bottom.empty()) {
+                    ed["loft_mesh"] = mesh_to_dict(e.loft_mesh());
+                } else {
+                    ed["loft_mesh"] = nb::none();
+                }
 
                 py_elements.append(ed);
             }
@@ -391,6 +439,9 @@ NB_MODULE(_joinery_solver, m) {
         "per_element_insertion_vectors"_a = std::vector<std::vector<double>>{},
         "per_element_joint_types"_a       = std::vector<std::vector<int>>{},
         "three_valence"_a                 = std::vector<std::array<int,4>>{},
-        "adjacency"_a                     = std::vector<std::pair<int,int>>{}
+        "adjacency"_a                     = std::vector<std::pair<int,int>>{},
+        // Off by default: the loft is 63% of the solve and both Python
+        // wrappers reconstruct it lazily from the exported outlines.
+        "include_loft_mesh"_a             = false
     );
 }

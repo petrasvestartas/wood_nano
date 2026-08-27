@@ -9,7 +9,12 @@ from wood_nano.wood_element import _to_mesh, _to_polyline
 
 
 def _pts_to_polyline(pts: list) -> Polyline:
-    return Polyline([Point(float(p[0]), float(p[1]), float(p[2])) for p in pts])
+    # Bypass the Point round-trip: Polyline.__init__ flattens its Points into
+    # a coords list, so building N throwaway Point objects per outline doubled
+    # conversion cost on the hottest path.
+    pl = Polyline([])
+    pl.coords = [float(c) for p in pts for c in (p[0], p[1], p[2])]
+    return pl
 
 
 class JoineryElement:
@@ -30,10 +35,24 @@ class JoineryElement:
         self.bottom_outlines: list[Polyline] = [
             _pts_to_polyline(pts) for pts in data["bottom_outlines"]
         ]
+        # None unless solve_joinery ran with include_loft_mesh=True (or the
+        # element had no features, where C++ still lofts eagerly because the
+        # outlines needed to reconstruct it are not exported).
         self._mesh_data = data["loft_mesh"]
+        # Raw ring data kept for the lazy loft: same lists C++ handed over,
+        # so retaining them costs references, not copies.
+        self._raw_top = data["top_outlines"]
+        self._raw_bottom = data["bottom_outlines"]
 
     def loft_mesh(self) -> Mesh:
-        """Lofted solid mesh of the plate (bottom cap + top cap + side faces)."""
+        """Lofted solid mesh of the plate (bottom cap + top cap + side faces).
+
+        Computed lazily in C++ on first call: eager lofting during the solve
+        was 63% of the whole solve_joinery call, and not every caller wants
+        the mesh. Same rings, same (top, bottom) order as the eager path.
+        """
+        if self._mesh_data is None:
+            self._mesh_data = _joinery_solver.loft(self._raw_top, self._raw_bottom)
         return _to_mesh(self._mesh_data)
 
 
@@ -137,11 +156,23 @@ def joinery_solver_elements(
         plate = [_to_pts(bot), _to_pts(top)]
         if (bottom_hole_polylines and i < len(bottom_hole_polylines) and
                 top_hole_polylines and i < len(top_hole_polylines)):
+            if len(bottom_hole_polylines[i]) != len(top_hole_polylines[i]):
+                raise ValueError(
+                    f"plate {i}: {len(bottom_hole_polylines[i])} bottom holes vs "
+                    f"{len(top_hole_polylines[i])} top holes - each hole needs both "
+                    "rings; zip() would silently drop the extras."
+                )
             for h_bot, h_top in zip(bottom_hole_polylines[i], top_hole_polylines[i]):
                 plate.append(_to_pts(h_bot))
                 plate.append(_to_pts(h_top))
         plates_data.append(plate)
 
+    if joint_params and len(joint_params) != 21:
+        raise ValueError(
+            f"joint_params has {len(joint_params)} values; expected exactly 21 "
+            "(7 joint families x [division_length, shift, type]). C++ silently "
+            "falls back to defaults for any other length."
+        )
     raw = _joinery_solver.solve_joinery(
         plates_data, int(search_type),
         joint_params     if joint_params     else [],

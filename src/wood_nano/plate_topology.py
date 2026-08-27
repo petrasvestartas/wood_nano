@@ -104,6 +104,15 @@ class PlateTopology:
             rh_mesh = _mesh_to_rhino(mesh)
         self._add_rh(plate_id, rh_bot, rh_top, rh_mesh, plate_type)
         if holes_bot and holes_top:
+            if len(holes_bot) != len(holes_top):
+                raise ValueError(
+                    f"plate {plate_id}: {len(holes_bot)} bottom holes vs "
+                    f"{len(holes_top)} top holes - zip() would silently drop the extras."
+                )
+            # New hole objects invalidate the lazily built hole cache; without
+            # this, find_plate_holes called before AND after add_plate served
+            # the stale index and silently omitted the new holes.
+            self._hole_cache = None
             doc     = sc.doc
             pid_str = str(int(plate_id))
             for hi, (hb, ht) in enumerate(zip(holes_bot, holes_top)):

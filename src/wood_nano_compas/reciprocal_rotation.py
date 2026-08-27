@@ -1,9 +1,9 @@
 
-import math
 
 from compas.datastructures import Mesh
 from compas.geometry import Polyline
 
+from wood_nano import _reciprocal_rotation
 from wood_nano._reciprocal_rotation import (
     make_default_reciprocal_rotation_typed,
     make_reciprocal_rotation_from_mesh,
@@ -12,68 +12,17 @@ from wood_nano._reciprocal_rotation import (
 from wood_nano_compas.convert import mesh_from_cpp, polyline_from_cpp
 
 
-def _translate_pts(pts: list, dx: float, dy: float, dz: float) -> list:
-    return [[p[0] + dx, p[1] + dy, p[2] + dz] for p in pts]
-
-
-def _translate_mesh_dict(d: dict, dx: float, dy: float, dz: float) -> dict:
-    return {**d, "vertices": _translate_pts(list(d["vertices"]), dx, dy, dz)}
-
-
-def _apply_beam_offsets_raw(
-    beam_dicts: list,
-    side0_raw: list,
-    side1_raw: list,
-    beam_dirs: list,
-    beam_ups: list,
-    beam_offsets: list[float],
-) -> tuple[list, list, list]:
-    if not beam_offsets or all(o == 0.0 for o in beam_offsets):
-        return beam_dicts, side0_raw, side1_raw
-
-    n_dirs = len(beam_offsets)
-    bin_width = math.pi / n_dirs
-    new_beams = list(beam_dicts)
-    new_s0 = list(side0_raw)
-    new_s1 = list(side1_raw)
-
-    for i, bm in enumerate(beam_dicts):
-        if i >= len(beam_dirs) or i >= len(beam_ups):
-            continue
-        bdx, bdy = beam_dirs[i][0], beam_dirs[i][1]
-        angle = math.atan2(bdy, bdx) % math.pi
-        dir_idx = int((angle + bin_width * 0.5) / bin_width) % n_dirs
-        offset = beam_offsets[dir_idx]
-        if offset == 0.0:
-            continue
-        ux, uy, uz = beam_ups[i][0], beam_ups[i][1], beam_ups[i][2]
-        if uz < 0.0:
-            ux, uy, uz = -ux, -uy, -uz
-        dx, dy, dz = ux * offset, uy * offset, uz * offset
-        new_beams[i] = _translate_mesh_dict(bm, dx, dy, dz)
-        if i < len(side0_raw):
-            new_s0[i] = _translate_pts(list(side0_raw[i]), dx, dy, dz)
-        if i < len(side1_raw):
-            new_s1[i] = _translate_pts(list(side1_raw[i]), dx, dy, dz)
-
-    return new_beams, new_s0, new_s1
-
-
 def _unpack(rb, beam_offsets: list[float] | None):
-    beam_dicts = list(rb.beams)
-    side0_raw  = [list(p) for p in rb.side0]
-    side1_raw  = [list(p) for p in rb.side1]
-    beam_dirs  = list(rb.beam_dirs)
-    beam_ups   = list(rb.beam_ups)
-
+    # Offsets applied by C++ on the still-C++ meshes (was per-point Python
+    # arithmetic over numpy rows, in the fourth diverging copy of this
+    # logic; it also dropped face_tris/face_holes from offset beams).
     if beam_offsets:
-        beam_dicts, side0_raw, side1_raw = _apply_beam_offsets_raw(
-            beam_dicts, side0_raw, side1_raw, beam_dirs, beam_ups, beam_offsets)
+        _reciprocal_rotation.apply_beam_offsets(rb, [float(o) for o in beam_offsets])
 
     dome  = mesh_from_cpp(rb.dome_mesh)
-    beams = [mesh_from_cpp(m) for m in beam_dicts]
-    side0 = [polyline_from_cpp(p) for p in side0_raw]
-    side1 = [polyline_from_cpp(p) for p in side1_raw]
+    beams = [mesh_from_cpp(m) for m in rb.beams]
+    side0 = [polyline_from_cpp(p) for p in rb.side0]
+    side1 = [polyline_from_cpp(p) for p in rb.side1]
     return dome, beams, side0, side1
 
 

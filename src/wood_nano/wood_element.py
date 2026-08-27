@@ -29,7 +29,11 @@ def unweld_mesh(mesh: Mesh) -> Mesh:
 
 
 def _to_mesh(r: dict) -> Mesh:
-    pts = [Point(float(v[0]), float(v[1]), float(v[2])) for v in r["vertices"]]
+    vr = r["vertices"]
+    # ndarray rows indexed one scalar at a time are ~10x slower than a single
+    # bulk tolist(); unweld_mesh_dict returns plain lists, hence the guard.
+    rows = vr.tolist() if hasattr(vr, "tolist") else vr
+    pts = [Point(float(x), float(y), float(z)) for x, y, z in rows]
     fcs = [list(map(int, f)) for f in r["faces"]]
     mesh = Mesh.from_vertices_and_faces(pts, fcs)
     # Populate triangulation for n>3 faces so to_rhino uses the welded-with-Ngons

@@ -27,7 +27,12 @@ from .assign_vectors import assign_insertion_vectors, match_points_to_plate_edge
 from .datasets import load_dataset, DATASETS_DIR
 try:
     from .plate_topology import PlateTopology
-except ImportError:
+except ImportError as _e:
+    # Only the "not running inside Rhino" case is expected; a genuinely broken
+    # install used to be swallowed here too, surfacing later as an opaque
+    # "'NoneType' object is not callable".
+    if _e.name not in ("Rhino", "System", "scriptcontext", "rhinoscriptsyntax", "session_rhino"):
+        raise
     PlateTopology = None  # not available outside Rhino
 from .wood_element import WoodElement
 

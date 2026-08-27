@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import math
 from typing import Any
 
 from session_py.mesh import Mesh
 from session_py.point import Point
 from session_py.polyline import Polyline
 
+from wood_nano import _reciprocal_rotation
 from wood_nano._reciprocal_rotation import (
     make_default_reciprocal_rotation,
     make_default_reciprocal_rotation_typed,
@@ -20,88 +20,21 @@ def _pts_to_polyline(pts: list[list[float]]) -> Polyline:
     return Polyline([Point(float(p[0]), float(p[1]), float(p[2])) for p in pts])
 
 
-def _translate_mesh(mesh: Mesh, dx: float, dy: float, dz: float) -> Mesh:
-    v_keys = sorted(mesh.vertex.keys())
-    key_to_idx = {k: idx for idx, k in enumerate(v_keys)}
-    new_pts = [Point(float(mesh.vertex[k][0]) + dx,
-                     float(mesh.vertex[k][1]) + dy,
-                     float(mesh.vertex[k][2]) + dz) for k in v_keys]
-    f_keys = sorted(mesh.face.keys())
-    new_faces = [[key_to_idx[vk] for vk in mesh.face[fk]] for fk in f_keys]
-    return Mesh.from_vertices_and_faces(new_pts, new_faces)
-
-
-def _translate_polyline(pl: Polyline, dx: float, dy: float, dz: float) -> Polyline:
-    return Polyline([Point(float(p[0]) + dx, float(p[1]) + dy, float(p[2]) + dz)
-                     for p in pl.get_points()])
-
-
-def _apply_beam_offsets(
-    beams: list[Mesh],
-    side0: list[Polyline],
-    side1: list[Polyline],
-    beam_dirs: list[list[float]],
-    beam_ups: list[list[float]],
-    beam_offsets: list[float],
-) -> tuple[list[Mesh], list[Polyline], list[Polyline]]:
-    """Translate each beam and its polylines along the beam's up direction.
-
-    Direction group is determined by the XY angle of beam_dirs[i] (the exact
-    construction axis, straight from C++).  Offset distance is beam_ups[i]
-    scaled by the per-group scalar from beam_offsets.
-
-    Parameters
-    ----------
-    beam_dirs : list of [dx, dy, dz]   — unit axis direction per beam (from C++)
-    beam_ups  : list of [ux, uy, uz]   — unit up/thickness direction per beam (from C++)
-    beam_offsets : list[float]         — scalar per direction group
-    """
-    if not beam_offsets or all(o == 0.0 for o in beam_offsets):
-        return beams, side0, side1
-
-    n_dirs = len(beam_offsets)
-    bin_width = math.pi / n_dirs
-
-    new_beams = list(beams)
-    new_s0    = list(side0)
-    new_s1    = list(side1)
-
-    for i, bm in enumerate(beams):
-        if i >= len(beam_dirs) or i >= len(beam_ups):
-            continue
-        bdx, bdy = beam_dirs[i][0], beam_dirs[i][1]
-        angle = math.atan2(bdy, bdx) % math.pi
-        dir_idx = int((angle + bin_width * 0.5) / bin_width) % n_dirs
-        offset = beam_offsets[dir_idx]
-        if offset == 0.0:
-            continue
-        ux, uy, uz = beam_ups[i][0], beam_ups[i][1], beam_ups[i][2]
-        if uz < 0.0:
-            ux, uy, uz = -ux, -uy, -uz
-        dx, dy, dz = ux * offset, uy * offset, uz * offset
-        new_beams[i] = _translate_mesh(bm, dx, dy, dz)
-        if i < len(side0):
-            new_s0[i] = _translate_polyline(side0[i], dx, dy, dz)
-        if i < len(side1):
-            new_s1[i] = _translate_polyline(side1[i], dx, dy, dz)
-
-    return new_beams, new_s0, new_s1
-
-
 def _unpack(
     rb: Any,
     beam_offsets: list[float] | None = None,
     unweld_beams: bool = True,
 ) -> tuple[Mesh, list[Mesh], list[Polyline], list[Polyline]]:
-    dome      = _to_mesh(rb.dome_mesh)
-    side0     = [_pts_to_polyline(p) for p in rb.side0]
-    side1     = [_pts_to_polyline(p) for p in rb.side1]
-    beams     = [_to_mesh(m) for m in rb.beams]
-    beam_dirs = list(rb.beam_dirs)
-    beam_ups  = list(rb.beam_ups)
+    # Offsets are applied by C++ on the still-C++ meshes, so the CDT
+    # triangulation and face_holes of offset beams survive (the old Python
+    # rebuild dropped both), and the geometry rule holds: this layer only
+    # converts formats.
     if beam_offsets:
-        beams, side0, side1 = _apply_beam_offsets(
-            beams, side0, side1, beam_dirs, beam_ups, beam_offsets)
+        _reciprocal_rotation.apply_beam_offsets(rb, [float(o) for o in beam_offsets])
+    dome  = _to_mesh(rb.dome_mesh)
+    side0 = [_pts_to_polyline(p) for p in rb.side0]
+    side1 = [_pts_to_polyline(p) for p in rb.side1]
+    beams = [_to_mesh(m) for m in rb.beams]
     if unweld_beams:
         beams = [_unweld_mesh(b) for b in beams]
     return dome, beams, side0, side1

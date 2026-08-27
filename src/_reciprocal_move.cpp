@@ -162,7 +162,54 @@ static ReciprocalMove build_from_mesh_data(
                           extend_factor, cut_offset_factor);
 }
 
+
+/// Apply per-direction-group vertical offsets to beams and side polylines,
+/// in place. This used to live in the PYTHON wrapper as per-vertex coordinate
+/// arithmetic (a direct violation of the all-computation-in-C++ rule, in four
+/// diverging copies), and because it rebuilt the Mesh from vertices+faces it
+/// silently dropped the CDT triangulation and face_holes of offset beams.
+/// Translating the session Mesh here keeps all of that intact.
+static void apply_beam_offsets_impl(ReciprocalMove& rb,
+                                    const std::vector<double>& beam_offsets)
+{
+    if (beam_offsets.empty()) return;
+    bool all_zero = true;
+    for (double o : beam_offsets) if (o != 0.0) { all_zero = false; break; }
+    if (all_zero) return;
+
+    const int n_dirs = (int)beam_offsets.size();
+    const double bin_width = 3.14159265358979323846 / n_dirs;
+
+    for (size_t i = 0; i < rb.beams.size(); ++i) {
+        if (i >= rb.beam_dirs.size() || i >= rb.beam_ups.size()) continue;
+        const double bdx = rb.beam_dirs[i][0], bdy = rb.beam_dirs[i][1];
+        double angle = std::atan2(bdy, bdx);
+        angle = std::fmod(angle, 3.14159265358979323846);
+        if (angle < 0.0) angle += 3.14159265358979323846;   // match Python % semantics
+        int dir_idx = (int)((angle + bin_width * 0.5) / bin_width) % n_dirs;
+        const double offset = beam_offsets[dir_idx];
+        if (offset == 0.0) continue;
+
+        double ux = rb.beam_ups[i][0], uy = rb.beam_ups[i][1], uz = rb.beam_ups[i][2];
+        if (uz < 0.0) { ux = -ux; uy = -uy; uz = -uz; }
+        const double dx = ux * offset, dy = uy * offset, dz = uz * offset;
+
+        for (auto& [vk, vd] : rb.beams[i].vertex) {
+            vd.x += dx; vd.y += dy; vd.z += dz;
+        }
+        Vector t(dx, dy, dz);
+        if (i < rb.side0.size()) rb.side0[i].translate(t);
+        if (i < rb.side1.size()) rb.side1[i].translate(t);
+    }
+}
+
 NB_MODULE(_reciprocal_move, m) {
+    m.def("apply_beam_offsets", &apply_beam_offsets_impl,
+          "rb"_a, "beam_offsets"_a,
+          "Translate beams + side polylines along their up axis by the\n"
+          "per-direction-group scalar. In C++ so the meshes keep their\n"
+          "CDT triangulation and face_holes.");
+
 
     nb::class_<ReciprocalMove>(m, "ReciprocalMove")
         .def(nb::init<>())

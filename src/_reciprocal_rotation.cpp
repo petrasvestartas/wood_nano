@@ -122,9 +122,26 @@ static void filter_boundary_beams(ReciprocalRotation& rb)
     side0_ok.reserve(rb.side0.size());
     side1_ok.reserve(rb.side1.size());
 
+    // Count faces per undirected edge in ONE pass over the faces.
+    // edge_faces() scans every face on every call, so calling it per edge was
+    // O(E*F) - session_cpp's own naked_edges comment warns against exactly
+    // that. At the 100x100 divisions the surface constructor accepts, the old
+    // loop did ~8e8 comparisons; this map is O(E).
+    std::map<std::pair<size_t,size_t>, int> edge_face_count;
+    for (const auto& [fkey, fverts] : rb.dome_mesh.face) {
+        size_t n = fverts.size();
+        for (size_t k = 0; k < n; ++k) {
+            size_t a = fverts[k], b = fverts[(k + 1) % n];
+            if (a > b) std::swap(a, b);
+            edge_face_count[{a, b}]++;
+        }
+    }
+
     for (int i = 0; i < (int)ekeys.size(); i++) {
-        auto adj = rb.dome_mesh.edge_faces(ekeys[i].first, ekeys[i].second);
-        if (adj && adj->size() == 2) {
+        size_t a = ekeys[i].first, b = ekeys[i].second;
+        if (a > b) std::swap(a, b);
+        auto it = edge_face_count.find({a, b});
+        if (it != edge_face_count.end() && it->second == 2) {
             beams_ok.push_back(std::move(rb.beams[i]));
             side0_ok.push_back(std::move(rb.side0[i]));
             side1_ok.push_back(std::move(rb.side1[i]));
@@ -190,7 +207,54 @@ static ReciprocalRotation build_from_mesh_data(
                               extend_factor, cut_offset_factor);
 }
 
+
+/// Apply per-direction-group vertical offsets to beams and side polylines,
+/// in place. This used to live in the PYTHON wrapper as per-vertex coordinate
+/// arithmetic (a direct violation of the all-computation-in-C++ rule, in four
+/// diverging copies), and because it rebuilt the Mesh from vertices+faces it
+/// silently dropped the CDT triangulation and face_holes of offset beams.
+/// Translating the session Mesh here keeps all of that intact.
+static void apply_beam_offsets_impl(ReciprocalRotation& rb,
+                                    const std::vector<double>& beam_offsets)
+{
+    if (beam_offsets.empty()) return;
+    bool all_zero = true;
+    for (double o : beam_offsets) if (o != 0.0) { all_zero = false; break; }
+    if (all_zero) return;
+
+    const int n_dirs = (int)beam_offsets.size();
+    const double bin_width = 3.14159265358979323846 / n_dirs;
+
+    for (size_t i = 0; i < rb.beams.size(); ++i) {
+        if (i >= rb.beam_dirs.size() || i >= rb.beam_ups.size()) continue;
+        const double bdx = rb.beam_dirs[i][0], bdy = rb.beam_dirs[i][1];
+        double angle = std::atan2(bdy, bdx);
+        angle = std::fmod(angle, 3.14159265358979323846);
+        if (angle < 0.0) angle += 3.14159265358979323846;   // match Python % semantics
+        int dir_idx = (int)((angle + bin_width * 0.5) / bin_width) % n_dirs;
+        const double offset = beam_offsets[dir_idx];
+        if (offset == 0.0) continue;
+
+        double ux = rb.beam_ups[i][0], uy = rb.beam_ups[i][1], uz = rb.beam_ups[i][2];
+        if (uz < 0.0) { ux = -ux; uy = -uy; uz = -uz; }
+        const double dx = ux * offset, dy = uy * offset, dz = uz * offset;
+
+        for (auto& [vk, vd] : rb.beams[i].vertex) {
+            vd.x += dx; vd.y += dy; vd.z += dz;
+        }
+        Vector t(dx, dy, dz);
+        if (i < rb.side0.size()) rb.side0[i].translate(t);
+        if (i < rb.side1.size()) rb.side1[i].translate(t);
+    }
+}
+
 NB_MODULE(_reciprocal_rotation, m) {
+    m.def("apply_beam_offsets", &apply_beam_offsets_impl,
+          "rb"_a, "beam_offsets"_a,
+          "Translate beams + side polylines along their up axis by the\n"
+          "per-direction-group scalar. In C++ so the meshes keep their\n"
+          "CDT triangulation and face_holes.");
+
 
     nb::class_<ReciprocalRotation>(m, "ReciprocalRotation")
         .def(nb::init<>())
