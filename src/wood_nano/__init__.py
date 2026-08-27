@@ -1,4 +1,4 @@
-__version__ = "1.0.28"
+__version__ = "1.0.29"
 
 # Kernel provenance: the git SHAs of the wood and session_cpp checkouts this
 # build compiled against (all repos track `main`, so the wood_nano version
