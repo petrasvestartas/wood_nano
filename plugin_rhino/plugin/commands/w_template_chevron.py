@@ -1,31 +1,37 @@
 #! python3
 # venv: wood_env
 # r: wood-nano
+from typing import Any, Optional
 
 import json
 import System
-import scriptcontext as sc
+
 import Rhino
-import Rhino.Geometry as rg
 from session_rhino.rhino_command import process_input
 from session_rhino.session import Session
 from wood_nano import annen_json_path, chevron_elements, chevron_elements_annen, chevron_elements_nurbs
 from wood_nano.wood_element import unweld_mesh
 from wood_nano.plate_topology import PlateTopology
-from rhino_ui import expand_knots, extract_nurbs_surface
+from session_rhino.rhino_ui import expand_knots, extract_nurbs_surface
+
+EXPLODE: bool = False  # True = each face separate; False = welded solid mesh
 
 # Path to the 23 Annen building NURBS surfaces bundled with the package.
 # surface_idx -1 → built-in flat 3000×5000 surface.
 # surface_idx 0..22 → Annen surface from this JSON.
-ANNEN_JSON = str(annen_json_path())
+ANNEN_JSON: str = str(annen_json_path())
 
-session = Session()
-topo = PlateTopology()     # plate topology: UserStrings + named groups per plate
-_srf_guids = []            # GUIDs of the displayed NURBS surface (managed separately)
-_annen_data = None         # cached JSON data
+session: Session                    = Session()
+topo: PlateTopology                 = PlateTopology()
+_srf_guids: list[System.Guid]       = []
+_annen_data: Optional[list[dict]]   = None
 
 
-def _load_annen():
+# =============================================================================
+# RHINO UI HELPERS — Annen JSON loader and Rhino surface preview builder
+# =============================================================================
+
+def _load_annen() -> Optional[list[dict]]:
     global _annen_data
     if _annen_data is None:
         try:
@@ -36,8 +42,8 @@ def _load_annen():
     return _annen_data
 
 
-def _build_rhino_surface(s):
-    rsrf = rg.NurbsSurface.Create(
+def _build_rhino_surface(s: dict) -> Optional[Rhino.Geometry.NurbsSurface]:
+    rsrf = Rhino.Geometry.NurbsSurface.Create(
         3, False, s["degree_u"] + 1, s["degree_v"] + 1, s["n_u"], s["n_v"]
     )
     for i, k in enumerate(expand_knots(s["u_mults"], s["u_nurbsknots"])):
@@ -46,21 +52,23 @@ def _build_rhino_surface(s):
         rsrf.KnotsV[i] = k
     for i in range(s["n_u"]):
         for j in range(s["n_v"]):
-            rsrf.Points.SetPoint(i, j, rg.Point3d(*s["points"][i][j]))
+            rsrf.Points.SetPoint(i, j, Rhino.Geometry.Point3d(*s["points"][i][j]))
     return rsrf
 
 
-def _run(v, _):
+def _run(v: dict[str, Any], _: Any) -> None:
     global _srf_guids
 
-    # Delete previous NURBS surface display
-    doc = sc.doc
+    # =========================================================================
+    # RHINO UI — clear previous preview surface; extract input geometry
+    # =========================================================================
+    doc = Rhino.RhinoDoc.ActiveDoc
     for g in _srf_guids:
         doc.Objects.Delete(g, True)
     _srf_guids.clear()
 
-    surface_idx = v["surface_idx"]
-    kw = dict(
+    surface_idx: int = v["surface_idx"]
+    kw: dict[str, Any] = dict(
         u_div=v["u_div"],
         v_division_dist=v["v_division_dist"],
         box_height=v["box_height"],
@@ -73,14 +81,13 @@ def _run(v, _):
         ortho_edge2=v["ortho_edge2"],
         ortho_edge3=v["ortho_edge3"],
     )
+    label: str
 
     if v["surface"]:
         pts, ku, kv, du, dv, nu, nv = extract_nurbs_surface(v["surface"][0])
-        shell, elements, loft_meshes, joint_data = chevron_elements_nurbs(
-            pts, ku, kv, du, dv, nu, nv, **kw)
         label = "[user surface]"
     elif surface_idx >= 0:
-        data = _load_annen()
+        data: Optional[list[dict]] = _load_annen()
         if data is None:
             return
         if surface_idx >= len(data):
@@ -88,29 +95,36 @@ def _run(v, _):
                 f"surface_idx must be 0..{len(data) - 1}  (got {surface_idx})"
             )
             return
-
-        # Display the original NURBS surface alongside the chevron mesh
         rsrf = _build_rhino_surface(data[surface_idx])
         if rsrf and rsrf.IsValid:
-            g = doc.Objects.AddSurface(rsrf)
+            g: System.Guid = doc.Objects.AddSurface(rsrf)
             if g != System.Guid.Empty:
                 _srf_guids.append(g)
-
-        shell, elements, loft_meshes, joint_data = chevron_elements_annen(
-            ANNEN_JSON, surface_idx, **kw)
         label = f"[Annen #{surface_idx}]"
     else:
-        shell, elements, loft_meshes, joint_data = chevron_elements(**kw)
         label = "[default]"
 
-    # Draw shell mesh via Session (no topology needed for the shell)
+    # =========================================================================
+    # WOOD-NANO — compute chevron elements and joint data
+    # =========================================================================
+    if v["surface"]:
+        shell, elements, loft_meshes, joint_data = chevron_elements_nurbs(
+            pts, ku, kv, du, dv, nu, nv, **kw)
+    elif surface_idx >= 0:
+        shell, elements, loft_meshes, joint_data = chevron_elements_annen(
+            ANNEN_JSON, surface_idx, **kw)
+    else:
+        shell, elements, loft_meshes, joint_data = chevron_elements(**kw)
+
+    # =========================================================================
+    # RHINO UI — draw results and store joinery metadata on plate objects
+    # =========================================================================
     session.add(shell)
     session.draw()
 
-    # Add plate geometry with persistent topology tagging (UserStrings + groups)
     topo.clear()
     for i, (el, m) in enumerate(zip(elements, loft_meshes)):
-        topo.add_plate(i, el.bottom, el.top, unweld_mesh(m))
+        topo.add_plate(i, el.bottom, el.top, unweld_mesh(m) if EXPLODE else m)
         if joint_data and i < len(joint_data["joints_per_face"]):
             topo.tag_plate_joinery(
                 i,
@@ -118,7 +132,6 @@ def _run(v, _):
                 joint_data["insertion_vectors"][i],
             )
 
-    # Store global chevron joinery data (three_valence + adjacency) in doc strings
     if joint_data:
         topo.set_chevron_global_joinery(
             joint_data["three_valence"],
@@ -126,9 +139,9 @@ def _run(v, _):
         )
 
     doc.Views.Redraw()
-    n_jt = sum(1 for jf in joint_data["joints_per_face"] if any(v > 0 for v in jf)) if joint_data else 0
-    n_tv = len(joint_data["three_valence"]) if joint_data else 0
-    n_adj = len(joint_data["adjacency"]) if joint_data else 0
+    n_jt: int = sum(1 for jf in joint_data["joints_per_face"] if any(x > 0 for x in jf)) if joint_data else 0
+    n_tv: int = len(joint_data["three_valence"]) if joint_data else 0
+    n_adj: int = len(joint_data["adjacency"]) if joint_data else 0
     Rhino.RhinoApp.WriteLine(
         f"shell: {shell.number_of_faces()} faces  plates: {len(elements)}  {label}  "
         f"joinery: {n_jt} typed, {n_tv} three_valence, {n_adj} adjacency pairs stored"
@@ -137,7 +150,7 @@ def _run(v, _):
 
 process_input(
     {
-        "surface":         ([], list[rg.Surface]),  # overrides surface_idx when set
+        "surface":         ([], list[Rhino.Geometry.Surface]),  # overrides surface_idx when set
         "surface_idx":     (-1,    int),   # -1 = built-in flat; 0..22 = Annen surface
         "u_div":     (4,     int),
         "v_division_dist": (900.0, float),

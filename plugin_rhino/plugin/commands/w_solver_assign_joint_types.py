@@ -1,240 +1,128 @@
 #! python3
 # venv: wood_env
 # r: wood-nano
-"""Assign joint types to plate edges using Rhino TextDot objects.
-
-Workflow
---------
-1. Run and select the plate objects (bot/top curves or meshes from a template run).
-   Press Enter when done.
-2. Place TextDot objects in the Rhino viewport near the midpoints of plate edges.
-   Each TextDot's text must be a joint type integer, e.g. ``15`` for
-   SIDE-TO-SIDE OUT-OF-PLANE.  Common type codes:
-
-     3   SIDE-TO-SIDE IN-PLANE       (family 0, types 1-9)
-    15   SIDE-TO-SIDE OUT-OF-PLANE   (family 1, types 10-19)
-    20   TOP-TO-SIDE                 (family 2, types 20-29)
-    30   CROSS-JOINT IN-PLANE        (family 3, types 30-39)
-    40   TOP-TO-TOP                  (family 4, types 40-49)
-    58   SIDE-TO-SIDE ROTATED        (family 5, types 50-59)
-    60   BOUNDARY                    (family 6, types 60-69)
-
-3. Select the TextDot objects.
-4. Each dot's position is matched to ALL selected-plate edge midpoints within
-   ``snap_radius`` mm.  Every matched plate/edge pair is updated — so a dot
-   placed on a shared edge between two plates updates both.
-5. Existing ``insertion_vector`` UserStrings are preserved unchanged.
-6. Run ``w_solver_joinery_solver`` — the stored types feed the C++ solver when combined
-   with insertion-vector data (chevron workflow or full manual assignment).
-
-Sentinel value
---------------
-Unassigned face slots are stored as ``-1``, meaning "use global defaults".
-The joinery solver converts -1 → 0 before passing to C++ (0 = no explicit type).
-Face layout: slot 0 = bottom cap, slot 1 = top cap, slots 2..N+1 = N side edges.
-
-Notes
------
-- nanobind transfers joint type data in-memory directly to C++ (no temp files).
-- C++ binding uses ``std::array<int,6>`` per element; joinery_solver.py pads/truncates
-  to 6 ints before passing. All side edges (not just first 4) are addressable.
-- When two dots fall on the same face slot of the same plate, the last one wins.
-- TextDots whose text is not a valid integer are skipped with a warning.
-"""
+# Joint type codes: 3=ss_ip  15=ss_op  20=top-to-side  30=cr_ip  40=tt  58=ss_r  60=boundary
+from typing import Any, Optional
 
 import json
-import math
 
 import Rhino
-import Rhino.DocObjects
-import Rhino.Geometry as rg
-import scriptcontext as sc
-import rhinoscriptsyntax as rs
 from wood_nano.plate_topology import PlateTopology
-from rhino_ui import write_plate_userstring
+from wood_nano.assign_vectors import match_points_to_plate_edges
+from session_rhino.rhino_ui import write_plate_userstring, get_polyline_points
 
 
-_log = Rhino.RhinoApp.WriteLine
-_DEFAULT_SNAP_RADIUS = 0.1  # model units — default snap tolerance (user-editable at run time)
-_N_FACES = 6                # C++ fixed array size
+_DEFAULT_SNAP_RADIUS: float = 0.1
 
 
-def _dist_point_to_segment(pt, a, b):
-    """Return minimum distance from pt to segment a–b."""
-    abx = b.X - a.X; aby = b.Y - a.Y; abz = b.Z - a.Z
-    apx = pt.X - a.X; apy = pt.Y - a.Y; apz = pt.Z - a.Z
-    ab2 = abx*abx + aby*aby + abz*abz
-    if ab2 < 1e-20:
-        return math.sqrt(apx*apx + apy*apy + apz*apz)
-    t = max(0.0, min(1.0, (apx*abx + apy*aby + apz*abz) / ab2))
-    dx = apx - t*abx; dy = apy - t*aby; dz = apz - t*abz
-    return math.sqrt(dx*dx + dy*dy + dz*dz)
-
-
-def _get_bot_polyline_points(bot_guid):
-    """Return list[rg.Point3d] from a bot curve GUID, or None on failure."""
-    if bot_guid is None:
-        return None
-    obj = sc.doc.Objects.FindId(bot_guid)
-    if obj is None:
-        return None
-    ok, rh_pl = obj.Geometry.TryGetPolyline()
-    if not ok or rh_pl is None:
-        return None
-    return list(rh_pl)
-
-
-def run():
-    # 0. Ask for snap tolerance
-    snap_radius = rs.GetReal(
-        "Snap tolerance (model units) — TextDot must be within this distance of an edge",
-        number=_DEFAULT_SNAP_RADIUS,
-        minimum=1e-6,
-    )
-    if snap_radius is None:
-        _log("assign_joint_types: cancelled.")
+def run() -> None:
+    # =========================================================================
+    # RHINO UI — collect snap radius, select plate objects and TextDots
+    # =========================================================================
+    gn = Rhino.Input.Custom.GetNumber()
+    gn.SetCommandPrompt("Snap tolerance (model units) — TextDot must be within this distance of an edge")
+    gn.SetDefaultNumber(_DEFAULT_SNAP_RADIUS)
+    gn.SetLowerLimit(1e-6, False)
+    if gn.Get() != Rhino.Input.GetResult.Number:
+        Rhino.RhinoApp.WriteLine("assign_joint_types: cancelled.")
         return
+    snap_radius: float = gn.Number()
 
-    # 1. Select plate objects
-    plate_guids = rs.GetObjects(
-        "Select plate objects (bot/top curves or meshes from a template run)",
-        filter=0,
-        preselect=True,
-    )
+    go = Rhino.Input.Custom.GetObject()
+    go.SetCommandPrompt("Select plate objects (bot/top curves or meshes from a template run)")
+    go.GeometryFilter = Rhino.DocObjects.ObjectType.AnyObject
+    go.EnablePreSelect(True, True)
+    go.GetMultiple(1, 0)
+    plate_guids: Optional[list] = [go.Object(i).ObjectId for i in range(go.ObjectCount)] if go.CommandResult() == Rhino.Commands.Result.Success else None
     if not plate_guids:
-        _log("assign_joint_types: cancelled — no plate objects selected.")
+        Rhino.RhinoApp.WriteLine("assign_joint_types: cancelled — no plate objects selected.")
         return
 
     topo = PlateTopology()
-    plate_map = topo.collect_plates_from_selection(plate_guids)
+    plate_map: dict[int, dict[str, Any]] = topo.collect_plates_from_selection(plate_guids)
     if not plate_map:
-        _log(
-            "assign_joint_types: no tagged plate objects in selection. "
-            "Run a template script first to generate tagged plates."
-        )
+        Rhino.RhinoApp.WriteLine("assign_joint_types: no tagged plate objects in selection.")
         return
-    _log(f"assign_joint_types: {len(plate_map)} plate(s) found.")
+    Rhino.RhinoApp.WriteLine(f"assign_joint_types: {len(plate_map)} plate(s) found.")
 
-    # 2. Build edge-segment cache for the selected plates only.
-    #    Matching uses closest point on segment so vertex-placed dots work too.
-    plate_edges  = {}   # pid -> [(a: Point3d, b: Point3d, edge_idx: int), ...]
-    plate_nedges = {}   # pid -> int  (number of side edges)
-
-    for pid, roles in plate_map.items():
-        pts = _get_bot_polyline_points(roles.get("bot"))
-        if pts is None or len(pts) < 3:
-            continue
-
-        if len(pts) >= 2 and pts[0].DistanceTo(pts[-1]) < 1e-6:
-            n_edges = len(pts) - 1
+    plate_ids: list[int]              = sorted(plate_map.keys())
+    bot_polylines: list[list[list[float]]] = []
+    plate_nedges: list[int]           = []
+    for pid in plate_ids:
+        pts = get_polyline_points(plate_map[pid].get("bot"))
+        if pts and len(pts) >= 3:
+            n_edges: int = len(pts) - 1 if pts[0].DistanceTo(pts[-1]) < 1e-6 else len(pts)
+            bot_polylines.append([[p.X, p.Y, p.Z] for p in pts])
         else:
-            n_edges = len(pts)
+            n_edges = 4
+            bot_polylines.append([])
+        plate_nedges.append(n_edges)
 
-        segs = []
-        for i in range(n_edges):
-            j = (i + 1) % len(pts)
-            segs.append((pts[i], pts[j], i))
-
-        plate_edges[pid]  = segs
-        plate_nedges[pid] = n_edges
-
-    # 3. Select TextDot objects (filter 8192)
-    dot_guids = rs.GetObjects(
-        "Select TextDot objects (text = joint type integer)",
-        filter=8192,
-        preselect=False,
-    )
+    go2 = Rhino.Input.Custom.GetObject()
+    go2.SetCommandPrompt("Select TextDot objects (text = joint type integer)")
+    go2.GeometryFilter = Rhino.DocObjects.ObjectType.TextDot
+    go2.EnablePreSelect(False, True)
+    go2.GetMultiple(1, 0)
+    dot_guids: Optional[list] = [go2.Object(i).ObjectId for i in range(go2.ObjectCount)] if go2.CommandResult() == Rhino.Commands.Result.Success else None
     if not dot_guids:
-        _log("assign_joint_types: cancelled — no TextDots selected.")
+        Rhino.RhinoApp.WriteLine("assign_joint_types: cancelled — no TextDots selected.")
         return
 
-    # 4. Parse TextDots → (jt_code, position) pairs
-    dots = []
+    dots: list[tuple[int, list[float]]] = []
     for guid in dot_guids:
-        obj = sc.doc.Objects.FindId(guid)
+        obj = Rhino.RhinoDoc.ActiveDoc.Objects.FindId(guid)
         if obj is None:
             continue
         geom = obj.Geometry
-        if not isinstance(geom, rg.TextDot):
-            _log("  skipping non-TextDot object.")
+        if not isinstance(geom, Rhino.Geometry.TextDot):
             continue
-        text = geom.Text.strip()
         try:
-            jt_code = int(text)
+            jt_code: int = int(geom.Text.strip())
         except ValueError:
-            _log(f"  TextDot text '{text}' is not an integer — skipped.")
+            Rhino.RhinoApp.WriteLine(f"  TextDot text '{geom.Text.strip()}' is not an integer — skipped.")
             continue
-        dots.append((jt_code, geom.Point))
+        p = geom.Point
+        dots.append((jt_code, [p.X, p.Y, p.Z]))
 
     if not dots:
-        _log("assign_joint_types: no valid TextDots parsed.")
+        Rhino.RhinoApp.WriteLine("assign_joint_types: no valid TextDots parsed.")
         return
-    _log(f"assign_joint_types: {len(dots)} valid dot(s) parsed.")
+    Rhino.RhinoApp.WriteLine(f"assign_joint_types: {len(dots)} valid dot(s) parsed.")
 
-    # 5. Match each dot to ALL plate edges within snap radius.
-    #    A dot on a shared edge updates every plate that borders it.
-    # updates[pid] = {face_slot: jt_code}
-    updates = {}
+    # =========================================================================
+    # WOOD-NANO — match TextDot positions to plate edges
+    # =========================================================================
+    matches: list[tuple[int, int, int]] = match_points_to_plate_edges(
+        bot_polylines, [d[1] for d in dots], snap_radius
+    )
 
-    for jt_code, pos in dots:
-        matched = []
-        for pid, segs in plate_edges.items():
-            for a, b, edge_idx in segs:
-                d = _dist_point_to_segment(pos, a, b)
-                if d <= snap_radius:
-                    matched.append((d, pid, edge_idx))
-
-        if not matched:
-            _log(
-                f"  dot jt={jt_code} at "
-                f"({pos.X:.1f},{pos.Y:.1f},{pos.Z:.1f}): "
-                f"no edge within {snap_radius}mm — skipped."
-            )
-            continue
-
-        for d, pid, edge_idx in matched:
-            face_slot = edge_idx + 2
-            if pid not in updates:
-                updates[pid] = {}
-            updates[pid][face_slot] = jt_code
-            _log(
-                f"  dot jt={jt_code} → plate {pid}, "
-                f"edge {edge_idx} (face slot {face_slot}), "
-                f"dist={d:.1f}mm."
-            )
-
-    if not updates:
-        _log("assign_joint_types: no dots matched any plate edge.")
+    # =========================================================================
+    # RHINO UI — write joint type assignments back to plate UserStrings
+    # =========================================================================
+    if not matches:
+        Rhino.RhinoApp.WriteLine("assign_joint_types: no dots matched any plate edge.")
         return
 
-    # 6. Write updated joint_types for each affected plate.
-    #    Length = n_side_edges + 2 (bot cap + top cap + side faces).
-    #    -1 = unset (use global defaults).
-    n_updated = 0
-    for pid, slot_map in updates.items():
+    updates: dict[int, dict[int, int]] = {}  # plate_idx → {face_slot: jt_code}  (last match wins per slot)
+    for dot_idx, plate_idx, edge_idx in matches:
+        updates.setdefault(plate_idx, {})[edge_idx + 2] = dots[dot_idx][0]
+
+    n_updated: int = 0
+    for plate_idx, slot_map in updates.items():
+        pid: int    = plate_ids[plate_idx]
+        n_faces: int = plate_nedges[plate_idx] + 2
         existing_jt, _ = topo.get_plate_joinery(pid)
-        n_edges = plate_nedges.get(pid, 4)
-        n_faces = n_edges + 2
-
-        # Use existing valid data if length matches; otherwise initialise with -1.
-        if existing_jt and len(existing_jt) == n_faces:
-            jt = list(existing_jt)
-        else:
-            jt = [-1] * n_faces
-
+        jt: list[int] = list(existing_jt) if existing_jt and len(existing_jt) == n_faces else [-1] * n_faces
         for face_slot, jt_code in slot_map.items():
             if face_slot < n_faces:
                 jt[face_slot] = jt_code
-            else:
-                _log(f"  plate {pid}: face_slot {face_slot} >= n_faces {n_faces} — skipped.")
-
-        jt_str = json.dumps([int(x) for x in jt])
-        _write_plate_userstring(plate_map, pid, "joint_types", jt_str)
-        _log(f"  plate {pid}: joint_types = {jt}.")
+        write_plate_userstring(plate_map, pid, "joint_types",
+                               json.dumps([int(x) for x in jt]))
+        Rhino.RhinoApp.WriteLine(f"  plate {pid}: joint_types = {jt}.")
         n_updated += 1
 
-    sc.doc.Views.Redraw()
-    _log(f"assign_joint_types: {n_updated} plate(s) updated.")
+    Rhino.RhinoDoc.ActiveDoc.Views.Redraw()
+    Rhino.RhinoApp.WriteLine(f"assign_joint_types: {n_updated} plate(s) updated.")
 
 
 run()
