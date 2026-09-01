@@ -10,9 +10,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # FetchContent_Populate is deprecated since CMake 3.30 / 4.0 (policy CMP0169).
-# We rely on it intentionally to separate "download" from "configure" so we can
-# copy generated protobuf files into CMAKE_SOURCE_DIR before add_subdirectory
-# processes session_cpp. Silence the dev warning explicitly.
+# We rely on it intentionally to separate "download" from "configure": `wood` is
+# consumed as SOURCES ONLY and must never be add_subdirectory'd (its CMakeLists has
+# local-only paths), which _MakeAvailable would do immediately. Silence the dev
+# warning explicitly.
+#
+# It also used to be needed to copy session_cpp's generated protobufs into place
+# before add_subdirectory saw them; session_cpp now finds its own, so that reason is
+# gone but the `wood` one stands.
 cmake_policy(SET CMP0169 OLD)
 include(FetchContent)
 
@@ -43,7 +48,16 @@ endif()
 # Use FetchContent_Populate (not _MakeAvailable) so we can copy the generated
 # protobuf files into CMAKE_SOURCE_DIR BEFORE add_subdirectory configures it.
 # _MakeAvailable calls add_subdirectory immediately, before the copy step runs.
-set(SESSION_CPP_LOCAL "C:/pc/3_code/code_rust/session/session_cpp")
+# CACHE PATH, so -DSESSION_CPP_LOCAL=<checkout> actually takes. A plain set() here
+# shadows the cache variable, so the command-line value was silently discarded and the
+# build always fell through to FetchContent - which is how a machine with a perfectly
+# good session_cpp checkout still failed to compile against GitHub's `main`:
+#   wood/src/joinery_solver/wood_session.h:76:18:
+#     error: 'ElementPlate' is not a member of 'session_cpp'
+# session_cpp@main has no ElementPlate; the checkout that wood_session.h was written
+# against does. wood/CMakeLists.txt already declares this the same way.
+set(SESSION_CPP_LOCAL "C:/pc/3_code/code_rust/session/session_cpp" CACHE PATH
+    "Local session_cpp checkout; fetched from GitHub when absent")
 if(EXISTS "${SESSION_CPP_LOCAL}/CMakeLists.txt")
     set(SESSION_CPP_DIR "${SESSION_CPP_LOCAL}")
 else()
@@ -59,25 +73,19 @@ else()
     set(SESSION_CPP_DIR "${session_cpp_SOURCE_DIR}")
 endif()
 
-# session_cpp's CMakeLists uses CMAKE_SOURCE_DIR to locate generated/.
-# When session_cpp is fetched, CMAKE_SOURCE_DIR = wood_nano root (not session_cpp).
-# Copy the committed generated files there before add_subdirectory runs.
-# Refresh it on every configure rather than copying once. Guarding this with
-# `if(NOT EXISTS ...)` means that once the directory exists it is never updated,
-# so a session_cpp that has regenerated its protobuf sources with a newer protoc
-# leaves a stale snapshot behind and the build eventually dies with
-#   error C1189: "Protobuf C++ gencode is built with an incompatible version"
-# That is exactly what happened to the wood repo. Here the local checkout uses a
-# symlink and so stayed current by luck; CI and any fresh clone copy for real.
+# No generated/ mirror here any more.
 #
-# file(COPY) preserves timestamps and skips files that already match, so this
-# costs nothing when it is already current.
-if(IS_SYMLINK "${CMAKE_SOURCE_DIR}/generated")
-    message(STATUS "generated/ is a symlink, leaving it as is")
-else()
-    message(STATUS "Syncing session_cpp/generated into ${CMAKE_SOURCE_DIR}/generated")
-    file(COPY "${SESSION_CPP_DIR}/generated" DESTINATION "${CMAKE_SOURCE_DIR}")
-endif()
+# session_cpp used to locate its own protobuf sources through CMAKE_SOURCE_DIR, which
+# under add_subdirectory() is THIS project rather than session_cpp - so every consumer
+# had to copy session_cpp/generated into its own root just to be found. session_cpp now
+# anchors those paths to its own directory (SESSION_CPP_ROOT), so the copy is obsolete.
+#
+# Deleting it also removes the failure it caused. file(COPY) preserves timestamps, so a
+# regenerated element.pb.h could land here OLDER than the objects already compiled
+# against the previous one; the build then linked two different layouts of
+# session_proto::Element together and corrupted the heap at runtime. The local checkout
+# dodged it via a symlink; CI and any fresh clone copied for real. There is now one copy
+# of the generated sources, in session_cpp, and nothing to go stale.
 
 add_subdirectory(${SESSION_CPP_DIR} session_cpp EXCLUDE_FROM_ALL)
 
