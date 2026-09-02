@@ -44,22 +44,34 @@ else()
 endif()
 
 # ── session_cpp ──────────────────────────────────────────────────────────────
-# Use local checkout if present, otherwise download from GitHub (CI).
-# Use FetchContent_Populate (not _MakeAvailable) so we can copy the generated
-# protobuf files into CMAKE_SOURCE_DIR BEFORE add_subdirectory configures it.
-# _MakeAvailable calls add_subdirectory immediately, before the copy step runs.
-# CACHE PATH, so -DSESSION_CPP_LOCAL=<checkout> actually takes. A plain set() here
-# shadows the cache variable, so the command-line value was silently discarded and the
-# build always fell through to FetchContent - which is how a machine with a perfectly
-# good session_cpp checkout still failed to compile against GitHub's `main`:
-#   wood/src/joinery_solver/wood_session.h:76:18:
-#     error: 'ElementPlate' is not a member of 'session_cpp'
-# session_cpp@main has no ElementPlate; the checkout that wood_session.h was written
-# against does. wood/CMakeLists.txt already declares this the same way.
-set(SESSION_CPP_LOCAL "C:/pc/3_code/code_rust/session/session_cpp" CACHE PATH
-    "Local session_cpp checkout; fetched from GitHub when absent")
-if(EXISTS "${SESSION_CPP_LOCAL}/CMakeLists.txt")
-    set(SESSION_CPP_DIR "${SESSION_CPP_LOCAL}")
+# Where the kernel comes from. First hit wins, same order as wood/CMakeLists.txt:
+#
+#   1. -DSESSION_CPP_LOCAL=<dir> (a CACHE PATH, so the command line actually takes;
+#      a plain set() used to shadow it and the value was silently discarded), or
+#      the SESSION_CPP_LOCAL environment variable
+#   2. ../session_cpp next to this repo - a checkout, or a symlink to one. This is
+#      the wood_project layout (see ../README.md): wood and wood_nano compile the
+#      SAME kernel checkout, so `git pull` there updates both, and the two can
+#      never disagree about what an Element is.
+#   3. a fresh FetchContent clone of GitHub main (CI, wheels)
+#
+# Use FetchContent_Populate (not _MakeAvailable) so the clone is only a source
+# directory here and add_subdirectory happens below, once, for whichever candidate won.
+set(SESSION_CPP_LOCAL "" CACHE PATH
+    "Local session_cpp checkout; ../session_cpp or a GitHub clone when empty")
+set(SESSION_CPP_DIR "")
+foreach(_candidate IN ITEMS
+        "${SESSION_CPP_LOCAL}"
+        "$ENV{SESSION_CPP_LOCAL}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../session_cpp"
+        "C:/pc/3_code/code_rust/session/session_cpp")
+    if(NOT "${_candidate}" STREQUAL "" AND EXISTS "${_candidate}/CMakeLists.txt")
+        get_filename_component(SESSION_CPP_DIR "${_candidate}" REALPATH)
+        break()
+    endif()
+endforeach()
+if(SESSION_CPP_DIR)
+    message(STATUS "wood_nano: using local session_cpp at ${SESSION_CPP_DIR}")
 else()
     FetchContent_Declare(session_cpp
         GIT_REPOSITORY https://github.com/petrasvestartas/session_cpp.git
@@ -71,6 +83,7 @@ else()
         FetchContent_Populate(session_cpp)
     endif()
     set(SESSION_CPP_DIR "${session_cpp_SOURCE_DIR}")
+    message(STATUS "wood_nano: fetched session_cpp to ${SESSION_CPP_DIR}")
 endif()
 
 # No generated/ mirror here any more.
@@ -290,10 +303,16 @@ target_include_directories(_datasets PRIVATE
 )
 
 # _joinery_solver — cross-joint detection + merge pipeline
-# Compiles the full wood joinery kernel (8 translation units) alongside the
-# nanobind binding.  joint geometry headers (joints/*.h) are header-only.
+# Compiles the full wood joinery kernel alongside the nanobind binding. joint
+# geometry headers (joints/*.h) are header-only. Clipper2 does the 2D boolean in
+# wood_face_to_face.cpp's face_overlap_area; it ships inside session_cpp but
+# session_core does not compile it, so its three translation units are listed
+# here exactly as wood/CMakeLists.txt lists them for wood_core.
 nanobind_add_module(_joinery_solver STABLE_ABI NB_STATIC NOMINSIZE
     src/_joinery_solver.cpp
+    ${SESSION_CPP_DIR}/src/clipper2/clipper.engine.cpp
+    ${SESSION_CPP_DIR}/src/clipper2/clipper.offset.cpp
+    ${SESSION_CPP_DIR}/src/clipper2/clipper.rectclip.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_element.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_main.cpp
     ${WOOD_DIR}/src/joinery_solver/wood_merge.cpp

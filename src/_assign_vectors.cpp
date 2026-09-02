@@ -27,7 +27,8 @@ static double seg_dist(const Point& p, const Point& a, const Point& b)
     double ab2 = abx*abx + aby*aby + abz*abz;
     if (ab2 < 1e-20) return std::sqrt(apx*apx + apy*apy + apz*apz);
     double t = (apx*abx + apy*aby + apz*abz) / ab2;
-    if (t < 0.0) t = 0.0; if (t > 1.0) t = 1.0;
+    if (t < 0.0) t = 0.0;
+    if (t > 1.0) t = 1.0;
     double dx = apx - t*abx, dy = apy - t*aby, dz = apz - t*abz;
     return std::sqrt(dx*dx + dy*dy + dz*dz);
 }
